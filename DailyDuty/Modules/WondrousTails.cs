@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
@@ -8,7 +8,7 @@ using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace DailyDuty.Modules;
 
