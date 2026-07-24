@@ -1,10 +1,11 @@
 {
-  "Author": "MidoriKami",
+  "Author": "MidoriKami, Lother",
   "Name": "DailyDuty",
-  "Punchline": "Easily Track Daily and Weekly tasks",
-  "Description": "Automatically track and complete many daily and weekly tasks.",
+  "Punchline": "輕鬆追蹤每日／每週任務",
+  "Description": "自動追蹤並完成各種每日與每週任務",
   "Tags": [    "utility", "gil", "tasks", "dailies", "tracking", "todo"   ],
   "InternalName": "dailyduty",
-  "RepoUrl": "https://github.com/MidoriKami/DailyDuty",
+  "RepoUrl": "https://github.com/Lother/DailyDuty",
+  "IconUrl": "https://raw.githubusercontent.com/Lother/DalamudPluginsTC/main/icons/DailyDuty.png",
   "AcceptsFeedback": false
 }
