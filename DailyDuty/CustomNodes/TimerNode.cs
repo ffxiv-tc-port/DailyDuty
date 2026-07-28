@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Numerics;
+using DailyDuty.Localization;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
@@ -57,7 +58,7 @@ public sealed class TimerNode : SimpleComponentNode {
 			TextOutlineColor = KnownColor.Black.Vector(),
 			AlignmentType = AlignmentType.Center,
 			Text = "?",
-			Tooltip = "Overlay from DailyDuty plugin",
+			Tooltip = Strings.DailyDutyOverlayTooltip,
 			EventFlagsSet = true,
 			IsVisible = true,
 		};
@@ -129,25 +130,25 @@ public sealed class TimerNode : SimpleComponentNode {
 	public override void DrawConfig() {
 		base.DrawConfig();
 				
-		using (var progressBar = ImRaii.TreeNode("Progress Bar")) {
+		using (var progressBar = ImRaii.TreeNode($"{Strings.ProgressBar}###ProgressBar")) {
 			if (progressBar) {
 				progressBarNode.DrawConfig();
 			}
 		}
-				
-		using (var moduleName = ImRaii.TreeNode("Module Name")) {
+
+		using (var moduleName = ImRaii.TreeNode($"{Strings.ModuleName}###ModuleName")) {
 			if (moduleName) {
 				moduleNameNode.DrawConfig();
 			}
 		}
-				
-		using (var timeRemaining = ImRaii.TreeNode("Time Remaining")) {
+
+		using (var timeRemaining = ImRaii.TreeNode($"{Strings.TimeRemaining}###TimeRemaining")) {
 			if (timeRemaining) {
 				timeRemainingNode.DrawConfig();
 			}
 		}
-				
-		using (var tooltip = ImRaii.TreeNode("Tooltip")) {
+
+		using (var tooltip = ImRaii.TreeNode($"{Strings.Tooltip}###Tooltip")) {
 			if (tooltip) {
 				tooltipNode.DrawConfig();
 			}

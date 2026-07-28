@@ -667,4 +667,196 @@ Limited to once per 5 mins</value>
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>Window Dragging Enabled</value>
     </data>
+    <data name="NoAdditionalOptions" xml:space="preserve">
+        <value>No additional options for this module</value>
+    </data>
+    <data name="Module" xml:space="preserve">
+        <value>Module</value>
+    </data>
+    <data name="Notifications" xml:space="preserve">
+        <value>Notifications</value>
+    </data>
+    <data name="Todo" xml:space="preserve">
+        <value>Todo</value>
+    </data>
+    <data name="StyleConfiguration" xml:space="preserve">
+        <value>Style Configuration</value>
+    </data>
+    <data name="AdvancedMode" xml:space="preserve">
+        <value>Advanced Mode</value>
+    </data>
+    <data name="SimpleMode" xml:space="preserve">
+        <value>Simple Mode</value>
+    </data>
+    <data name="Label" xml:space="preserve">
+        <value>Label</value>
+    </data>
+    <data name="Modules" xml:space="preserve">
+        <value>Modules</value>
+    </data>
+    <data name="OpenConfigurationManager" xml:space="preserve">
+        <value>Open Configuration Manager</value>
+    </data>
+    <data name="TodoList" xml:space="preserve">
+        <value>Todo List</value>
+    </data>
+    <data name="TodoListConfig" xml:space="preserve">
+        <value>Todo List Config</value>
+    </data>
+    <data name="AllowMoving" xml:space="preserve">
+        <value>Allow Moving</value>
+    </data>
+    <data name="AllowResizing" xml:space="preserve">
+        <value>Allow Resizing</value>
+    </data>
+    <data name="FunctionalOptions" xml:space="preserve">
+        <value>Functional Options</value>
+    </data>
+    <data name="TodoListStyle" xml:space="preserve">
+        <value>Todo List Style</value>
+    </data>
+    <data name="DailyTasks" xml:space="preserve">
+        <value>Daily Tasks</value>
+    </data>
+    <data name="WeeklyTasks" xml:space="preserve">
+        <value>Weekly Tasks</value>
+    </data>
+    <data name="SpecialTasks" xml:space="preserve">
+        <value>Special Tasks</value>
+    </data>
+    <data name="Size" xml:space="preserve">
+        <value>Size</value>
+    </data>
+    <data name="ListOrientation" xml:space="preserve">
+        <value>List Orientation</value>
+    </data>
+    <data name="AnchorCorner" xml:space="preserve">
+        <value>Anchor Corner</value>
+    </data>
+    <data name="CategoryVerticalSpacing" xml:space="preserve">
+        <value>Category Vertical Spacing</value>
+    </data>
+    <data name="CategoryHorizontalSpacing" xml:space="preserve">
+        <value>Category Horizontal Spacing</value>
+    </data>
+    <data name="ShowBackground" xml:space="preserve">
+        <value>Show Background</value>
+    </data>
+    <data name="ShowBorder" xml:space="preserve">
+        <value>Show Border</value>
+    </data>
+    <data name="Alignment" xml:space="preserve">
+        <value>Alignment</value>
+    </data>
+    <data name="ShowHeader" xml:space="preserve">
+        <value>Show Header</value>
+    </data>
+    <data name="Timers" xml:space="preserve">
+        <value>Timers</value>
+    </data>
+    <data name="TimersConfig" xml:space="preserve">
+        <value>Timers Config</value>
+    </data>
+    <data name="DailyTimerEnable" xml:space="preserve">
+        <value>Daily Timer Enable</value>
+    </data>
+    <data name="WeeklyTimerEnable" xml:space="preserve">
+        <value>Weekly Timer Enable</value>
+    </data>
+    <data name="HideSeconds" xml:space="preserve">
+        <value>Hide Seconds</value>
+    </data>
+    <data name="DailyTimer" xml:space="preserve">
+        <value>Daily Timer</value>
+    </data>
+    <data name="WeeklyTimer" xml:space="preserve">
+        <value>Weekly Timer</value>
+    </data>
+    <data name="BarColor" xml:space="preserve">
+        <value>Bar Color</value>
+    </data>
+    <data name="LabelColor" xml:space="preserve">
+        <value>Label Color</value>
+    </data>
+    <data name="TimerColor" xml:space="preserve">
+        <value>Timer Color</value>
+    </data>
+    <data name="ShowLabel" xml:space="preserve">
+        <value>Show Label</value>
+    </data>
+    <data name="ShowTimer" xml:space="preserve">
+        <value>Show Timer</value>
+    </data>
+    <data name="EntryTracking" xml:space="preserve">
+        <value>Entry Tracking</value>
+    </data>
+    <data name="DutyFinderWarning" xml:space="preserve">
+        <value>Duty Finder Warning</value>
+    </data>
+    <data name="AddTasks" xml:space="preserve">
+        <value>Add Tasks</value>
+    </data>
+    <data name="NoTasksTracked" xml:space="preserve">
+        <value>No tasks are currently tracked</value>
+    </data>
+    <data name="ClearAll" xml:space="preserve">
+        <value>Clear All</value>
+    </data>
+    <data name="EnableDutyFinderWarnings" xml:space="preserve">
+        <value>Enable Duty Finder Warnings</value>
+    </data>
+    <data name="DutyFinderWarningHelp" xml:space="preserve">
+        <value>Post a warning to chat upon opening duty finder when any of the following challenges are incomplete</value>
+    </data>
+    <data name="AddWarning" xml:space="preserve">
+        <value>Add Warning</value>
+    </data>
+    <data name="NoWarningsActive" xml:space="preserve">
+        <value>No warnings are currently active</value>
+    </data>
+    <data name="TaskStillIncomplete" xml:space="preserve">
+        <value>{0} is still incomplete!</value>
+    </data>
+    <data name="ShowOpenDailyDutyButton" xml:space="preserve">
+        <value>Show 'Open DailyDuty' button</value>
+    </data>
+    <data name="ShowDailyResetTimerInDutyFinder" xml:space="preserve">
+        <value>Show Daily Reset Timer in Duty Finder</value>
+    </data>
+    <data name="ColorDutyFinder" xml:space="preserve">
+        <value>Color Duty Finder</value>
+    </data>
+    <data name="OpenDailyDuty" xml:space="preserve">
+        <value>Open DailyDuty</value>
+    </data>
+    <data name="DailyDutyFeatureTooltip" xml:space="preserve">
+        <value>Feature from DailyDuty Plugin</value>
+    </data>
+    <data name="DailyResetTimerTooltip" xml:space="preserve">
+        <value>[DailyDuty] Time until next daily reset</value>
+    </data>
+    <data name="IncompleteTask" xml:space="preserve">
+        <value>Incomplete Task</value>
+    </data>
+    <data name="CompleteTask" xml:space="preserve">
+        <value>Complete Task</value>
+    </data>
+    <data name="DailyDutyOverlayTooltip" xml:space="preserve">
+        <value>Overlay from DailyDuty plugin</value>
+    </data>
+    <data name="ProgressBar" xml:space="preserve">
+        <value>Progress Bar</value>
+    </data>
+    <data name="ModuleName" xml:space="preserve">
+        <value>Module Name</value>
+    </data>
+    <data name="Tooltip" xml:space="preserve">
+        <value>Tooltip</value>
+    </data>
+    <data name="HeaderTextNode" xml:space="preserve">
+        <value>Header Text Node</value>
+    </data>
+    <data name="ListNode" xml:space="preserve">
+        <value>List Node</value>
+    </data>
 </root>

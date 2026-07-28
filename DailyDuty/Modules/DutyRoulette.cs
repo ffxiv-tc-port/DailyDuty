@@ -60,11 +60,11 @@ public class DutyRouletteConfig : ModuleTaskConfig<ContentRoulette> {
     protected override void DrawModuleConfig() {
         ConfigChanged |= ImGui.Checkbox(Strings.ClickableLink, ref ClickableLink);
         ConfigChanged |= ImGui.Checkbox(Strings.CompleteWhenTomeCapped, ref CompleteWhenCapped);
-        ConfigChanged |= ImGui.Checkbox("Show 'Open DailyDuty' button", ref ShowOpenDailyDutyButton);
-        
+        ConfigChanged |= ImGui.Checkbox(Strings.ShowOpenDailyDutyButton, ref ShowOpenDailyDutyButton);
+
         ImGui.Spacing();
 
-        ConfigChanged |= ImGui.Checkbox("Show Daily Reset Timer in Duty Finder", ref ShowResetTimer);
+        ConfigChanged |= ImGui.Checkbox(Strings.ShowDailyResetTimerInDutyFinder, ref ShowResetTimer);
 
         if (ShowResetTimer) {
             ConfigChanged |= ImGuiTweaks.ColorEditWithDefault("Timer Color", ref TimerColor, ColorHelper.GetColor(7));
@@ -72,7 +72,7 @@ public class DutyRouletteConfig : ModuleTaskConfig<ContentRoulette> {
         
         ImGui.Spacing();
 
-        ConfigChanged |= ImGui.Checkbox("Color Duty Finder", ref ColorContentFinder);
+        ConfigChanged |= ImGui.Checkbox(Strings.ColorDutyFinder, ref ColorContentFinder);
         
         if (ColorContentFinder) {
             ImGuiHelpers.ScaledDummy(5.0f);
@@ -202,7 +202,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             TextFlags = TextFlags.AutoAdjustNodeSize,
             AlignmentType = AlignmentType.TopLeft,
             Text = GetHintText(),
-            Tooltip = "Feature from DailyDuty Plugin",
+            Tooltip = Strings.DailyDutyFeatureTooltip,
             EnableEventFlags = true,
             IsVisible = false,
         };
@@ -212,7 +212,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             Position = new Vector2(50.0f, 622.0f),
             Size = new Vector2(130.0f, 28.0f),
             IsVisible = true,
-            Label = "Open DailyDuty",
+            Label = Strings.OpenDailyDuty,
         };
         openDailyDutyButton.AddEvent(AddonEventType.ButtonClick, _ => System.WindowManager.GetWindow<ConfigurationWindow>()?.UnCollapseOrToggle() );
         System.NativeController.AttachNode(openDailyDutyButton, addon->RootNode);
@@ -223,7 +223,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
                 Position = new Vector2(targetComponent->X, targetComponent->Y),
                 Size = new Vector2(targetComponent->Width, targetComponent->Height),
                 AlignmentType = AlignmentType.Center,
-                Tooltip = "[DailyDuty] Time until next daily reset",
+                Tooltip = Strings.DailyResetTimerTooltip,
                 Text = "0:00:00:00",
                 EnableEventFlags = true,
                 TextColor = Config.TimerColor,
@@ -278,11 +278,11 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
     private SeString GetHintText()
         => SeString.Parse(new SeStringBuilder()
             .PushColorRgba(Config.IncompleteColor)
-            .Append("Incomplete Task")
+            .Append(Strings.IncompleteTask)
             .PopColor()
             .Append("        ")
             .PushColorRgba(Config.CompleteColor)
-            .Append("Complete Task")
+            .Append(Strings.CompleteTask)
             .PopColor()
             .ToSeString()
             .RawData);

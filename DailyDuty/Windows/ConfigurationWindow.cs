@@ -22,7 +22,7 @@ namespace DailyDuty.Windows;
 
 public class ConfigurationWindow : TabbedSelectionWindow<Module> {
 
-    protected override string SelectionListTabName => "Modules";
+    protected override string SelectionListTabName => Strings.Modules;
     
     protected override List<ITabItem> Tabs { get; } = [
         new TodoConfigTab(),
@@ -44,7 +44,7 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
         TitleBarButtons.Add(new TitleBarButton {
             Click = _ => System.WindowManager.AddWindow(new ConfigurationManagerWindow(), WindowFlags.OpenImmediately),
             Icon = FontAwesomeIcon.Cog,
-            ShowTooltip = () => ImGui.SetTooltip("Open Configuration Manager"),
+            ShowTooltip = () => ImGui.SetTooltip(Strings.OpenConfigurationManager),
             IconOffset = new Vector2(2.0f, 1.0f),
         });
         
@@ -126,7 +126,7 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
 }
 
 public class TodoConfigTab : ITabItem {
-    public string Name => "Todo List";
+    public string Name => Strings.TodoList;
     public bool Disabled => false;
 
     public void Draw() {
@@ -136,30 +136,30 @@ public class TodoConfigTab : ITabItem {
 
         using var id = ImRaii.PushId("main_config");
   
-        ImGuiTweaks.Header("Todo List Config");
+        ImGuiTweaks.Header(Strings.TodoListConfig);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.Enable, ref System.TodoConfig.Enabled);
 
             ImGuiHelpers.ScaledDummy(5.0f);
-            
+
             var enableMoving = listNode.EnableMoving;
-            if (ImGui.Checkbox("Allow Moving", ref enableMoving)) {
+            if (ImGui.Checkbox(Strings.AllowMoving, ref enableMoving)) {
                 listNode.EnableMoving = enableMoving;
             }
-        
+
             var enableResizing = listNode.EnableResizing;
-            if (ImGui.Checkbox("Allow Resizing", ref enableResizing)) {
+            if (ImGui.Checkbox(Strings.AllowResizing, ref enableResizing)) {
                 listNode.EnableResizing = enableResizing;
             }
         }
-        
-        ImGuiTweaks.Header("Functional Options");
+
+        ImGuiTweaks.Header(Strings.FunctionalOptions);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.HideInQuestEvent, ref System.TodoConfig.HideDuringQuests);
             configChanged |= ImGui.Checkbox(Strings.HideInDuties, ref System.TodoConfig.HideInDuties);
         }
         
-        ImGuiTweaks.Header("Todo List Style");
+        ImGuiTweaks.Header(Strings.TodoListStyle);
         DrawTodoConfig();
         
         if (configChanged) {
@@ -178,7 +178,7 @@ public class TodoConfigTab : ITabItem {
     }
 
     private static void DrawSimpleModeConfig() {
-        using var simpleMode = ImRaii.TabItem("Simple Mode");
+        using var simpleMode = ImRaii.TabItem($"{Strings.SimpleMode}###SimpleMode");
         if (!simpleMode) return;
 
         using var tabChild = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
@@ -196,21 +196,21 @@ public class TodoConfigTab : ITabItem {
     }
 
     private static void DrawSimpleDailyTab() {
-        using var dailyTab = ImRaii.TabItem("Daily Tasks");
+        using var dailyTab = ImRaii.TabItem($"{Strings.DailyTasks}###DailyTasks");
         if (!dailyTab) return;
-        
-        DrawSimpleCategoryConfig(System.TodoListController.DailyTaskNode);        
+
+        DrawSimpleCategoryConfig(System.TodoListController.DailyTaskNode);
     }
-    
+
     private static void DrawSimpleWeeklyTab() {
-        using var weeklyTab = ImRaii.TabItem("Weekly Tasks");
+        using var weeklyTab = ImRaii.TabItem($"{Strings.WeeklyTasks}###WeeklyTasks");
         if (!weeklyTab) return;
-        
-        DrawSimpleCategoryConfig(System.TodoListController.WeeklyTaskNode);        
+
+        DrawSimpleCategoryConfig(System.TodoListController.WeeklyTaskNode);
     }
-    
+
     private static void DrawSimpleSpecialTab() {
-        using var specialTab = ImRaii.TabItem("Special Tasks");
+        using var specialTab = ImRaii.TabItem($"{Strings.SpecialTasks}###SpecialTasks");
         if (!specialTab) return;
         
         DrawSimpleCategoryConfig(System.TodoListController.SpecialTaskNode);        
@@ -240,8 +240,8 @@ public class TodoConfigTab : ITabItem {
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        ImGui.Text("Position");
-                        
+        ImGui.Text(Strings.Position);
+
         ImGui.TableNextColumn();
         var position = listNode.Position;
         ImGuiTweaks.SetFullWidth();
@@ -250,8 +250,8 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Size");
-                
+        ImGui.Text(Strings.Size);
+
         ImGui.TableNextColumn();
         var size = listNode.Size;
         ImGuiTweaks.SetFullWidth();
@@ -260,8 +260,8 @@ public class TodoConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Background Color");
-                
+        ImGui.Text(Strings.CategoryBackgroundColor);
+
         ImGui.TableNextColumn();
         var backgroundColor = listNode.BackgroundColor;
         ImGuiTweaks.SetFullWidth();
@@ -270,8 +270,8 @@ public class TodoConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("List Orientation");
-                
+        ImGui.Text(Strings.ListOrientation);
+
         ImGui.TableNextColumn();
         var orientation = listNode.LayoutOrientation;
         ImGuiTweaks.SetFullWidth();
@@ -280,8 +280,8 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Anchor Corner");
-                
+        ImGui.Text(Strings.AnchorCorner);
+
         ImGui.TableNextColumn();
         var anchor = listNode.LayoutAnchor;
         ImGuiTweaks.SetFullWidth();
@@ -306,8 +306,8 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Category Vertical Spacing");
-        
+        ImGui.Text(Strings.CategoryVerticalSpacing);
+
         ImGui.TableNextColumn();
         var categorySpacing = dailyCategory.Margin.Top;
         ImGuiTweaks.SetFullWidth();
@@ -329,8 +329,8 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Category Horizontal Spacing");
-                
+        ImGui.Text(Strings.CategoryHorizontalSpacing);
+
         ImGui.TableNextColumn();
         var horizontalSpacing = dailyCategory.Margin.Left;
         ImGuiTweaks.SetFullWidth();
@@ -352,7 +352,7 @@ public class TodoConfigTab : ITabItem {
         }
         
         ImGui.TableNextColumn();
-        ImGui.Text("Show Background");
+        ImGui.Text(Strings.ShowBackground);
 
         ImGui.TableNextColumn();
         var background = listNode.ShowBackground;
@@ -362,7 +362,7 @@ public class TodoConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Show Border");
+        ImGui.Text(Strings.ShowBorder);
 
         ImGui.TableNextColumn();
         var border = listNode.ShowBorder;
@@ -385,7 +385,7 @@ public class TodoConfigTab : ITabItem {
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        ImGui.Text("Header Color");
+        ImGui.Text(Strings.HeaderColor);
 
         ImGui.TableNextColumn();
         var headerColor = node.HeaderTextNode.TextColor;
@@ -395,8 +395,8 @@ public class TodoConfigTab : ITabItem {
         }
         
         ImGui.TableNextColumn();
-        ImGui.Text("Alignment");
-        
+        ImGui.Text(Strings.Alignment);
+
         ImGui.TableNextColumn();
         var alignment = listNode.LayoutOrientation;
         ImGuiTweaks.SetFullWidth();
@@ -405,7 +405,7 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Font Size");
+        ImGui.Text(Strings.FontSize);
 
         ImGui.TableNextColumn();
         var firstNode = node.TaskNodes.FirstOrDefault();
@@ -422,8 +422,8 @@ public class TodoConfigTab : ITabItem {
         }
         
         ImGui.TableNextColumn();
-        ImGui.Text("Show Header");
-        
+        ImGui.Text(Strings.ShowHeader);
+
         ImGui.TableNextColumn();
         var showHeader = node.HeaderTextNode.IsVisible;
         ImGuiTweaks.SetFullWidth();
@@ -433,9 +433,9 @@ public class TodoConfigTab : ITabItem {
     }
 
     private static void DrawAdvancedModeConfig() {
-        using var advancedMode = ImRaii.TabItem("Advanced Mode");
+        using var advancedMode = ImRaii.TabItem($"{Strings.AdvancedMode}###AdvancedMode");
         if (!advancedMode) return;
-        
+
         using var tabChild = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
         if (!tabChild) return;
 
@@ -444,7 +444,7 @@ public class TodoConfigTab : ITabItem {
 }
 
 public class TimersConfigTab : ITabItem {
-    public string Name => "Timers";
+    public string Name => Strings.Timers;
     public bool Disabled => false;
     public void Draw() {
         if (System.TimersController.DailyTimerNode is not { } dailyTimerNode) return;
@@ -452,36 +452,36 @@ public class TimersConfigTab : ITabItem {
         
         var configChanged = false;
 
-        ImGuiTweaks.Header("Timers Config");
+        ImGuiTweaks.Header(Strings.TimersConfig);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.Enable, ref System.TimersConfig.Enabled);
-            
+
             ImGuiHelpers.ScaledDummy(5.0f);
-            
+
             var enableMoving = dailyTimerNode.EnableMoving;
-            if (ImGui.Checkbox("Allow Moving", ref enableMoving)) {
+            if (ImGui.Checkbox(Strings.AllowMoving, ref enableMoving)) {
                 dailyTimerNode.EnableMoving = enableMoving;
                 weeklyTimerNode.EnableMoving = enableMoving;
             }
-        
+
             var enableResizing = dailyTimerNode.EnableResizing;
-            if (ImGui.Checkbox("Allow Resizing", ref enableResizing)) {
+            if (ImGui.Checkbox(Strings.AllowResizing, ref enableResizing)) {
                 dailyTimerNode.EnableResizing = enableResizing;
                 weeklyTimerNode.EnableResizing = enableResizing;
             }
 
             ImGuiHelpers.ScaledDummy(5.0f);
-            
-            configChanged |= ImGui.Checkbox("Daily Timer Enable", ref System.TimersConfig.EnableDailyTimer);
-            configChanged |= ImGui.Checkbox("Weekly Timer Enable", ref System.TimersConfig.EnableWeeklyTimer);
-            
+
+            configChanged |= ImGui.Checkbox(Strings.DailyTimerEnable, ref System.TimersConfig.EnableDailyTimer);
+            configChanged |= ImGui.Checkbox(Strings.WeeklyTimerEnable, ref System.TimersConfig.EnableWeeklyTimer);
+
             ImGuiHelpers.ScaledDummy(5.0f);
 
             configChanged |= ImGui.Checkbox(Strings.HideInDuties, ref System.TimersConfig.HideInDuties);
             configChanged |= ImGui.Checkbox(Strings.HideInQuestEvent, ref System.TimersConfig.HideInQuestEvents);
-            
+
             ImGuiHelpers.ScaledDummy(5.0f);
-            configChanged |= ImGui.Checkbox("Hide Seconds", ref System.TimersConfig.HideTimerSeconds);
+            configChanged |= ImGui.Checkbox(Strings.HideSeconds, ref System.TimersConfig.HideTimerSeconds);
 
         }
 
@@ -512,7 +512,7 @@ public class TimersConfigTab : ITabItem {
         if (!weeklyChild) return;
 
         using (ImRaii.PushId("Daily")) {
-            ImGui.TextUnformatted("Daily Timer");
+            ImGui.TextUnformatted(Strings.DailyTimer);
             ImGuiHelpers.ScaledDummy(5.0f);
             DrawTimerConfig(System.TimersController.DailyTimerNode);
         }
@@ -523,7 +523,7 @@ public class TimersConfigTab : ITabItem {
         if (!weeklyChild) return;
         
         using (ImRaii.PushId("Weekly")) {
-            ImGui.TextUnformatted("Weekly Timer");
+            ImGui.TextUnformatted(Strings.WeeklyTimer);
             ImGuiHelpers.ScaledDummy(5.0f);
             DrawTimerConfig(System.TimersController.WeeklyTimerNode);
         }
@@ -540,14 +540,14 @@ public class TimersConfigTab : ITabItem {
     }
 
     private static void DrawAdvancedModeConfig(TimerNode node) {
-        using var advancedMode = ImRaii.TabItem("Advanced Mode");
+        using var advancedMode = ImRaii.TabItem($"{Strings.AdvancedMode}###AdvancedMode");
         if (!advancedMode) return;
-        
+
         node.DrawConfig();
     }
 
     private static void DrawSimpleModeConfig(TimerNode node) {
-        using var simpleMode = ImRaii.TabItem("Simple Mode");
+        using var simpleMode = ImRaii.TabItem($"{Strings.SimpleMode}###SimpleMode");
         if (!simpleMode) return;
 
         using var table = ImRaii.Table("simple_mode_table", 2);
@@ -559,7 +559,7 @@ public class TimersConfigTab : ITabItem {
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        ImGui.Text("Position");
+        ImGui.Text(Strings.Position);
 
         ImGui.TableNextColumn();
         var position = node.Position;
@@ -569,7 +569,7 @@ public class TimersConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Size");
+        ImGui.Text(Strings.Size);
 
         ImGui.TableNextColumn();
         var size = node.Size;
@@ -579,8 +579,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Bar Color");
-                
+        ImGui.Text(Strings.BarColor);
+
         ImGui.TableNextColumn();
         var color = node.BarColor;
         ImGuiTweaks.SetFullWidth();
@@ -589,8 +589,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Label Color");
-                
+        ImGui.Text(Strings.LabelColor);
+
         ImGui.TableNextColumn();
         var labelColor = node.LabelColor;
         ImGuiTweaks.SetFullWidth();
@@ -599,8 +599,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Timer Color");
-                
+        ImGui.Text(Strings.TimerColor);
+
         ImGui.TableNextColumn();
         var timerColor = node.TimerColor;
         ImGuiTweaks.SetFullWidth();
@@ -609,8 +609,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Show Label");
-                
+        ImGui.Text(Strings.ShowLabel);
+
         ImGui.TableNextColumn();
         var showText = node.ShowLabel;
         ImGuiTweaks.SetFullWidth();
@@ -619,8 +619,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Show Timer");
-                
+        ImGui.Text(Strings.ShowTimer);
+
         ImGui.TableNextColumn();
         var showTimer = node.ShowTimer;
         ImGuiTweaks.SetFullWidth();

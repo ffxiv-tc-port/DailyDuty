@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using DailyDuty.CustomNodes;
+using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using Dalamud.Interface;
@@ -112,19 +113,19 @@ public class TodoListController : IDisposable {
 	public void DrawConfig() {
 		TodoListNode?.DrawConfig();
 
-		using (var dailyCategory = ImRaii.TreeNode("Daily Tasks")) {
+		using (var dailyCategory = ImRaii.TreeNode($"{Strings.DailyTasks}###DailyTasks")) {
 			if (dailyCategory) {
 				DailyTaskNode?.DrawConfig();
 			}
 		}
 
-		using (var weeklyCategory = ImRaii.TreeNode("Weekly Tasks")) {
+		using (var weeklyCategory = ImRaii.TreeNode($"{Strings.WeeklyTasks}###WeeklyTasks")) {
 			if (weeklyCategory) {
 				WeeklyTaskNode?.DrawConfig();
 			}
 		}
 
-		using (var specialCategory = ImRaii.TreeNode("Special Tasks")) {
+		using (var specialCategory = ImRaii.TreeNode($"{Strings.SpecialTasks}###SpecialTasks")) {
 			if (specialCategory) {
 				SpecialTaskNode?.DrawConfig();
 			}

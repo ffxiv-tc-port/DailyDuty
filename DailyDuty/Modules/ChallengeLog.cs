@@ -29,13 +29,13 @@ public class ChallengeLogConfig : ModuleTaskConfig<ContentsNote> {
     protected override void DrawModuleConfig() {
         using var tabBar = ImRaii.TabBar("##SubOptionsTabBar");
         if (tabBar) {
-            using (var entryTracking = ImRaii.TabItem("Entry Tracking##entryTracking")) {
+            using (var entryTracking = ImRaii.TabItem($"{Strings.EntryTracking}##entryTracking")) {
                 if (entryTracking) {
                     DrawEntryTrackingOptions();
                 }
             }
-                
-            using (var dutyFinderWarningTab = ImRaii.TabItem("Duty Finder Warning##dutyFinderFeature")) {
+
+            using (var dutyFinderWarningTab = ImRaii.TabItem($"{Strings.DutyFinderWarning}##dutyFinderFeature")) {
                 if (dutyFinderWarningTab) {
                     DrawDutyFinderWarnings();
                 }
@@ -44,7 +44,7 @@ public class ChallengeLogConfig : ModuleTaskConfig<ContentsNote> {
     }
 
     private void DrawEntryTrackingOptions() {
-        if (ImGui.Button("Add Tasks", new Vector2(ImGui.GetContentRegionAvail().X, 24.0f * ImGuiHelpers.GlobalScale))) {
+        if (ImGui.Button(Strings.AddTasks, new Vector2(ImGui.GetContentRegionAvail().X, 24.0f * ImGuiHelpers.GlobalScale))) {
             System.WindowManager.AddWindow(new ContentsNoteSelectionWindow(Service.PluginInterface) {
                 MultiSelectionCallback = selections => {
                     foreach (var selection in selections) {
@@ -75,25 +75,25 @@ public class ChallengeLogConfig : ModuleTaskConfig<ContentsNote> {
         }
 
         if (enabledTasks.Count == 0) {
-            ImGuiTweaks.CenteredWarning("No tasks are currently tracked");
+            ImGuiTweaks.CenteredWarning(Strings.NoTasksTracked);
         }
 
         ImGui.Spacing();
-        
-        ImGuiTweaks.DisabledButton("Clear All", () => {
+
+        ImGuiTweaks.DisabledButton(Strings.ClearAll, () => {
             TaskConfig.ConfigList.ForEach(task => task.Enabled = false);
         });
     }
 
     private void DrawDutyFinderWarnings() {
-        ImGui.Checkbox("Enable Duty Finder Warnings", ref EnableContentFinderWarning);
+        ImGui.Checkbox(Strings.EnableDutyFinderWarnings, ref EnableContentFinderWarning);
         if (!EnableContentFinderWarning) return;
 
-        ImGui.TextWrapped("Post a warning to chat upon opening duty finder when any of the following challenges are incomplete");
+        ImGui.TextWrapped(Strings.DutyFinderWarningHelp);
 
         ImGui.Spacing();
-        
-        if (ImGui.Button("Add Warning", new Vector2(ImGui.GetContentRegionAvail().X, 24.0f * ImGuiHelpers.GlobalScale))) {
+
+        if (ImGui.Button(Strings.AddWarning, new Vector2(ImGui.GetContentRegionAvail().X, 24.0f * ImGuiHelpers.GlobalScale))) {
             System.WindowManager.AddWindow(new ContentsNoteSelectionWindow(Service.PluginInterface) {
                 MultiSelectionCallback = selections => {
                     foreach (var selection in selections) {
@@ -119,12 +119,12 @@ public class ChallengeLogConfig : ModuleTaskConfig<ContentsNote> {
         }
 
         if (enabledWarnings.Count == 0) {
-            ImGuiTweaks.CenteredWarning("No warnings are currently active");
+            ImGuiTweaks.CenteredWarning(Strings.NoWarningsActive);
         }
-        
+
         ImGui.Spacing();
 
-        ImGuiTweaks.DisabledButton("Clear All", WarningEntries.Clear);
+        ImGuiTweaks.DisabledButton(Strings.ClearAll, WarningEntries.Clear);
     }
 }
 
@@ -179,7 +179,7 @@ public unsafe class ChallengeLog : BaseModules.Modules.WeeklyTask<ModuleTaskData
             if (!matchingTaskData.Complete) {
                 var taskInfo = Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(warningId);
                 
-                StatusMessage.PrintTaggedMessage($"{taskInfo.Name.ExtractText()} is still incomplete!", "ChallengeLog");
+                StatusMessage.PrintTaggedMessage(string.Format(Strings.TaskStillIncomplete, taskInfo.Name.ExtractText()), "ChallengeLog");
                 anyWarningGenerated = true;
             }
         }

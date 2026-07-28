@@ -2003,5 +2003,581 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("WondrousTailsClickableLink", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No additional options for this module.
+        /// </summary>
+        internal static string NoAdditionalOptions {
+            get {
+                return ResourceManager.GetString("NoAdditionalOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Module.
+        /// </summary>
+        internal static string Module {
+            get {
+                return ResourceManager.GetString("Module", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Notifications.
+        /// </summary>
+        internal static string Notifications {
+            get {
+                return ResourceManager.GetString("Notifications", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo.
+        /// </summary>
+        internal static string Todo {
+            get {
+                return ResourceManager.GetString("Todo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Style Configuration.
+        /// </summary>
+        internal static string StyleConfiguration {
+            get {
+                return ResourceManager.GetString("StyleConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Advanced Mode.
+        /// </summary>
+        internal static string AdvancedMode {
+            get {
+                return ResourceManager.GetString("AdvancedMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Simple Mode.
+        /// </summary>
+        internal static string SimpleMode {
+            get {
+                return ResourceManager.GetString("SimpleMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Label.
+        /// </summary>
+        internal static string Label {
+            get {
+                return ResourceManager.GetString("Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Modules.
+        /// </summary>
+        internal static string Modules {
+            get {
+                return ResourceManager.GetString("Modules", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Open Configuration Manager.
+        /// </summary>
+        internal static string OpenConfigurationManager {
+            get {
+                return ResourceManager.GetString("OpenConfigurationManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo List.
+        /// </summary>
+        internal static string TodoList {
+            get {
+                return ResourceManager.GetString("TodoList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo List Config.
+        /// </summary>
+        internal static string TodoListConfig {
+            get {
+                return ResourceManager.GetString("TodoListConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Allow Moving.
+        /// </summary>
+        internal static string AllowMoving {
+            get {
+                return ResourceManager.GetString("AllowMoving", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Allow Resizing.
+        /// </summary>
+        internal static string AllowResizing {
+            get {
+                return ResourceManager.GetString("AllowResizing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Functional Options.
+        /// </summary>
+        internal static string FunctionalOptions {
+            get {
+                return ResourceManager.GetString("FunctionalOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo List Style.
+        /// </summary>
+        internal static string TodoListStyle {
+            get {
+                return ResourceManager.GetString("TodoListStyle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Daily Tasks.
+        /// </summary>
+        internal static string DailyTasks {
+            get {
+                return ResourceManager.GetString("DailyTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Weekly Tasks.
+        /// </summary>
+        internal static string WeeklyTasks {
+            get {
+                return ResourceManager.GetString("WeeklyTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Special Tasks.
+        /// </summary>
+        internal static string SpecialTasks {
+            get {
+                return ResourceManager.GetString("SpecialTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Size.
+        /// </summary>
+        internal static string Size {
+            get {
+                return ResourceManager.GetString("Size", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to List Orientation.
+        /// </summary>
+        internal static string ListOrientation {
+            get {
+                return ResourceManager.GetString("ListOrientation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Anchor Corner.
+        /// </summary>
+        internal static string AnchorCorner {
+            get {
+                return ResourceManager.GetString("AnchorCorner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Category Vertical Spacing.
+        /// </summary>
+        internal static string CategoryVerticalSpacing {
+            get {
+                return ResourceManager.GetString("CategoryVerticalSpacing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Category Horizontal Spacing.
+        /// </summary>
+        internal static string CategoryHorizontalSpacing {
+            get {
+                return ResourceManager.GetString("CategoryHorizontalSpacing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Background.
+        /// </summary>
+        internal static string ShowBackground {
+            get {
+                return ResourceManager.GetString("ShowBackground", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Border.
+        /// </summary>
+        internal static string ShowBorder {
+            get {
+                return ResourceManager.GetString("ShowBorder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Alignment.
+        /// </summary>
+        internal static string Alignment {
+            get {
+                return ResourceManager.GetString("Alignment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Header.
+        /// </summary>
+        internal static string ShowHeader {
+            get {
+                return ResourceManager.GetString("ShowHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Timers.
+        /// </summary>
+        internal static string Timers {
+            get {
+                return ResourceManager.GetString("Timers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Timers Config.
+        /// </summary>
+        internal static string TimersConfig {
+            get {
+                return ResourceManager.GetString("TimersConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Daily Timer Enable.
+        /// </summary>
+        internal static string DailyTimerEnable {
+            get {
+                return ResourceManager.GetString("DailyTimerEnable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Weekly Timer Enable.
+        /// </summary>
+        internal static string WeeklyTimerEnable {
+            get {
+                return ResourceManager.GetString("WeeklyTimerEnable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hide Seconds.
+        /// </summary>
+        internal static string HideSeconds {
+            get {
+                return ResourceManager.GetString("HideSeconds", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Daily Timer.
+        /// </summary>
+        internal static string DailyTimer {
+            get {
+                return ResourceManager.GetString("DailyTimer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Weekly Timer.
+        /// </summary>
+        internal static string WeeklyTimer {
+            get {
+                return ResourceManager.GetString("WeeklyTimer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bar Color.
+        /// </summary>
+        internal static string BarColor {
+            get {
+                return ResourceManager.GetString("BarColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Label Color.
+        /// </summary>
+        internal static string LabelColor {
+            get {
+                return ResourceManager.GetString("LabelColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Timer Color.
+        /// </summary>
+        internal static string TimerColor {
+            get {
+                return ResourceManager.GetString("TimerColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Label.
+        /// </summary>
+        internal static string ShowLabel {
+            get {
+                return ResourceManager.GetString("ShowLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Timer.
+        /// </summary>
+        internal static string ShowTimer {
+            get {
+                return ResourceManager.GetString("ShowTimer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Entry Tracking.
+        /// </summary>
+        internal static string EntryTracking {
+            get {
+                return ResourceManager.GetString("EntryTracking", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Duty Finder Warning.
+        /// </summary>
+        internal static string DutyFinderWarning {
+            get {
+                return ResourceManager.GetString("DutyFinderWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add Tasks.
+        /// </summary>
+        internal static string AddTasks {
+            get {
+                return ResourceManager.GetString("AddTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No tasks are currently tracked.
+        /// </summary>
+        internal static string NoTasksTracked {
+            get {
+                return ResourceManager.GetString("NoTasksTracked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Clear All.
+        /// </summary>
+        internal static string ClearAll {
+            get {
+                return ResourceManager.GetString("ClearAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enable Duty Finder Warnings.
+        /// </summary>
+        internal static string EnableDutyFinderWarnings {
+            get {
+                return ResourceManager.GetString("EnableDutyFinderWarnings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Post a warning to chat upon opening duty finder when any of the following challenges are incomplete.
+        /// </summary>
+        internal static string DutyFinderWarningHelp {
+            get {
+                return ResourceManager.GetString("DutyFinderWarningHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add Warning.
+        /// </summary>
+        internal static string AddWarning {
+            get {
+                return ResourceManager.GetString("AddWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No warnings are currently active.
+        /// </summary>
+        internal static string NoWarningsActive {
+            get {
+                return ResourceManager.GetString("NoWarningsActive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} is still incomplete!.
+        /// </summary>
+        internal static string TaskStillIncomplete {
+            get {
+                return ResourceManager.GetString("TaskStillIncomplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show 'Open DailyDuty' button.
+        /// </summary>
+        internal static string ShowOpenDailyDutyButton {
+            get {
+                return ResourceManager.GetString("ShowOpenDailyDutyButton", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Daily Reset Timer in Duty Finder.
+        /// </summary>
+        internal static string ShowDailyResetTimerInDutyFinder {
+            get {
+                return ResourceManager.GetString("ShowDailyResetTimerInDutyFinder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Color Duty Finder.
+        /// </summary>
+        internal static string ColorDutyFinder {
+            get {
+                return ResourceManager.GetString("ColorDutyFinder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Open DailyDuty.
+        /// </summary>
+        internal static string OpenDailyDuty {
+            get {
+                return ResourceManager.GetString("OpenDailyDuty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Feature from DailyDuty Plugin.
+        /// </summary>
+        internal static string DailyDutyFeatureTooltip {
+            get {
+                return ResourceManager.GetString("DailyDutyFeatureTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [DailyDuty] Time until next daily reset.
+        /// </summary>
+        internal static string DailyResetTimerTooltip {
+            get {
+                return ResourceManager.GetString("DailyResetTimerTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Incomplete Task.
+        /// </summary>
+        internal static string IncompleteTask {
+            get {
+                return ResourceManager.GetString("IncompleteTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Complete Task.
+        /// </summary>
+        internal static string CompleteTask {
+            get {
+                return ResourceManager.GetString("CompleteTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Overlay from DailyDuty plugin.
+        /// </summary>
+        internal static string DailyDutyOverlayTooltip {
+            get {
+                return ResourceManager.GetString("DailyDutyOverlayTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Progress Bar.
+        /// </summary>
+        internal static string ProgressBar {
+            get {
+                return ResourceManager.GetString("ProgressBar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Module Name.
+        /// </summary>
+        internal static string ModuleName {
+            get {
+                return ResourceManager.GetString("ModuleName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tooltip.
+        /// </summary>
+        internal static string Tooltip {
+            get {
+                return ResourceManager.GetString("Tooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Header Text Node.
+        /// </summary>
+        internal static string HeaderTextNode {
+            get {
+                return ResourceManager.GetString("HeaderTextNode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to List Node.
+        /// </summary>
+        internal static string ListNode {
+            get {
+                return ResourceManager.GetString("ListNode", resourceCulture);
+            }
+        }
     }
 }

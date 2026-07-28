@@ -32,7 +32,7 @@ public abstract class ModuleConfig {
     [JsonIgnore] public bool ConfigChanged;
 	    
     protected virtual void DrawModuleConfig() {
-        ImGui.TextColored(KnownColor.Orange.Vector(), "No additional options for this module");
+        ImGui.TextColored(KnownColor.Orange.Vector(), Strings.NoAdditionalOptions);
     }
     
     public void DrawConfigUi(Module module) {
@@ -45,7 +45,7 @@ public abstract class ModuleConfig {
     }
 
     private void DrawModuleTab() {
-        using var moduleTab = ImRaii.TabItem("Module");
+        using var moduleTab = ImRaii.TabItem($"{Strings.Module}###Module");
         if (!moduleTab) return;
         
         using var tabChild = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
@@ -63,7 +63,7 @@ public abstract class ModuleConfig {
     }
 
     private void DrawNotificationTab() {
-        using var notificationTab = ImRaii.TabItem("Notifications");
+        using var notificationTab = ImRaii.TabItem($"{Strings.Notifications}###Notifications");
         if (!notificationTab) return;
                 
         using var tabChild = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
@@ -102,7 +102,7 @@ public abstract class ModuleConfig {
     }
 
     private void DrawTodoTab(Module module) {
-        using var todoTab = ImRaii.TabItem("Todo");
+        using var todoTab = ImRaii.TabItem($"{Strings.Todo}###Todo");
         if (!todoTab) return;
 
         using var tabChild = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
@@ -113,7 +113,7 @@ public abstract class ModuleConfig {
             ConfigChanged |= ImGui.Checkbox(Strings.TodoEnable, ref TodoEnabled);
         }
 
-        ImGuiTweaks.Header("Style Configuration");
+        ImGuiTweaks.Header(Strings.StyleConfiguration);
         DrawNodeConfig(module);
 
         System.TodoListController.Refresh();
@@ -128,7 +128,7 @@ public abstract class ModuleConfig {
     }
 
     private static void DrawAdvancedConfigTab(Module module) {
-        using var advancedModeTab = ImRaii.TabItem("Advanced Mode");
+        using var advancedModeTab = ImRaii.TabItem($"{Strings.AdvancedMode}###AdvancedMode");
         if (!advancedModeTab) return;
         
         using var child = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
@@ -138,7 +138,7 @@ public abstract class ModuleConfig {
     }
 
     private void DrawSimpleConfigTab(Module module) {
-        using var simpleModeTab = ImRaii.TabItem("Simple Mode");
+        using var simpleModeTab = ImRaii.TabItem($"{Strings.SimpleMode}###SimpleMode");
         if (!simpleModeTab) return;
 
         DrawSimpleModeConfig(module.TodoTaskNode);
@@ -156,7 +156,7 @@ public abstract class ModuleConfig {
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        ImGui.Text("Text Color");
+        ImGui.Text(Strings.TextColor);
 
         ImGui.TableNextColumn();
         var textColor = node.TextColor;
@@ -178,8 +178,8 @@ public abstract class ModuleConfig {
         // }
         
         ImGui.TableNextColumn();
-        ImGui.Text("Label");
-        
+        ImGui.Text(Strings.Label);
+
         ImGui.TableNextColumn();
         var label = node.Text.ToString();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
