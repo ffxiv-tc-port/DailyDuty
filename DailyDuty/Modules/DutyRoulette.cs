@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -19,7 +19,7 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 using KamiLib.Extensions;
 using KamiToolKit.Classes;
@@ -276,7 +276,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
         => addon->DutyList->CategoryItemRendererList->AtkComponentListItemRenderer->ComponentNode;
 
     private SeString GetHintText()
-        => new SeStringBuilder()
+        => SeString.Parse(new SeStringBuilder()
             .PushColorRgba(Config.IncompleteColor)
             .Append("Incomplete Task")
             .PopColor()
@@ -285,7 +285,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             .Append("Complete Task")
             .PopColor()
             .ToSeString()
-            .ToDalamudString();
+            .RawData);
 
     protected override void UpdateTaskLists() {
         var luminaUpdater = new LuminaTaskUpdater<ContentRoulette>(this, roulette => roulette.DutyType.ExtractText() != string.Empty);

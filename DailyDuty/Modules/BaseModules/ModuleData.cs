@@ -4,7 +4,7 @@ using DailyDuty.Localization;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 
 namespace DailyDuty.Modules.BaseModules;

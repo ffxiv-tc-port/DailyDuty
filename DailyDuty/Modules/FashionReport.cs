@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using DailyDuty.Classes;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 
 namespace DailyDuty.Modules;

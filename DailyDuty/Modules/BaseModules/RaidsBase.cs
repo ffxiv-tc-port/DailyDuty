@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using DailyDuty.Classes;
 using DailyDuty.Localization;
@@ -8,7 +8,7 @@ using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 
 namespace DailyDuty.Modules.BaseModules;
