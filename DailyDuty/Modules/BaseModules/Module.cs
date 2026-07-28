@@ -95,7 +95,14 @@ public abstract class Module<T, TU> : Module where T : ModuleData, new() where T
     public override void DrawConfig() {
         Config.DrawConfigUi(this);
 
+        // Config.ConfigChanged is a latch that must be cleared the instant it is consumed.
+        // Every write to it happens inside DrawConfigUi() (the ModuleConfig.DrawModuleConfig
+        // overrides), so clearing it here - immediately after consuming it, in the same frame,
+        // on the same call path - cannot drop a pending change. Clearing it in Update() instead
+        // would race: Update() runs on the framework tick, before Draw, so it could wipe a flag
+        // that DrawConfig() has not consumed yet and the setting would never be persisted.
         ConfigChanged |= Config.ConfigChanged;
+        Config.ConfigChanged = false;
     }
 
     public override void DrawData() {

@@ -29,7 +29,10 @@ public class LevequestConfig : ModuleConfig {
         ConfigChanged |= ImGuiTweaks.EnumCombo(Strings.ComparisonMode, ref ComparisonMode);
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2.0f);
-        ConfigChanged |= ImGui.SliderInt(Strings.NotificationThreshold, ref NotificationThreshold, 0, 100);
+        ImGui.SliderInt(Strings.NotificationThreshold, ref NotificationThreshold, 0, 100);
+        if (ImGui.IsItemDeactivatedAfterEdit()) {
+            ConfigChanged = true;
+        }
     }
 }
 
