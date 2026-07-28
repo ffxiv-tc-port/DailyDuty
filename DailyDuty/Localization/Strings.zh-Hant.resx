@@ -70,7 +70,7 @@
         <value>狀態未知</value>
     </data>
     <data name="GilRemaining" xml:space="preserve">
-        <value>剩餘金幣</value>
+        <value>剩餘Gil</value>
     </data>
     <data name="InProgress" xml:space="preserve">
         <value>進行中</value>
