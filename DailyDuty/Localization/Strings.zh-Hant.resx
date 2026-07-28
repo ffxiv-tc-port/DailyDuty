@@ -82,7 +82,7 @@
         <value>多瑪飛地</value>
     </data>
     <data name="DutyRoulette" xml:space="preserve">
-        <value>通關輪盤</value>
+        <value>隨機任務</value>
     </data>
     <data name="MiniCactpot" xml:space="preserve">
         <value>仙人微彩</value>
@@ -266,7 +266,7 @@
         <value>關閉</value>
     </data>
     <data name="DutyRouletteOpenDutyFinder" xml:space="preserve">
-        <value>點擊通知可開啟任務登錄視窗</value>
+        <value>點擊通知可開啟任務搜尋器</value>
     </data>
     <data name="CompleteWhenTomeCapped" xml:space="preserve">
         <value>達到石板上限時視為完成</value>
@@ -368,7 +368,7 @@
         <value>有可用地圖</value>
     </data>
     <data name="OpenDutyFinderToRaid" xml:space="preserve">
-        <value>點擊通知可開啟任務登錄視窗的大型任務分類</value>
+        <value>點擊通知可開啟任務搜尋器的大型任務分類</value>
     </data>
     <data name="InstanceNotifications" xml:space="preserve">
         <value>副本通知</value>
