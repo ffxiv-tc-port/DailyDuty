@@ -872,7 +872,7 @@
         <value>未取得收藏品:</value>
     </data>
     <data name="CollectableHintTooltip" xml:space="preserve">
-        <value>此副本尚未取得的收藏品（DailyDuty）</value>
+        <value>（滑鼠停留檢視明細）</value>
     </data>
     <data name="CollectableTypeMount" xml:space="preserve">
         <value>坐騎</value>

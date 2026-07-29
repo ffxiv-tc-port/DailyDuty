@@ -872,7 +872,7 @@ Limited to once per 5 mins</value>
         <value>Uncollected Items:</value>
     </data>
     <data name="CollectableHintTooltip" xml:space="preserve">
-        <value>Collectables from this duty you haven't obtained yet (DailyDuty)</value>
+        <value>(hover for details)</value>
     </data>
     <data name="CollectableTypeMount" xml:space="preserve">
         <value>Mounts</value>

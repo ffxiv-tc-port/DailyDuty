@@ -112,14 +112,16 @@ public unsafe class CollectableController : IDisposable {
         // button that DutyRoulette already attaches there (Position(50, 622) Size(130, 28)) -
         // this strip is empty space below the native duty list/detail panel and does not
         // overlap any native ContentsFinder elements.
+        // 單行摘要 + 滑鼠停留 tooltip 顯示完整名單。自建 AtkTextNode 的 LineSpacing
+        // 預設為 0,MultiLine 會把所有行疊印在同一個 Y(實測 2026-07-30),所以
+        // 節點本體絕不多行,明細一律走 tooltip。
         infoTextNode = new TextNode {
             NodeId = 1001,
-            Position = new Vector2(190.0f, 610.0f),
-            Size = new Vector2(600.0f, 56.0f),
-            TextFlags = TextFlags.MultiLine | TextFlags.WordWrap | TextFlags.AutoAdjustNodeSize,
+            Position = new Vector2(16.0f, 598.0f),
+            Size = new Vector2(620.0f, 20.0f),
+            TextFlags = TextFlags.AutoAdjustNodeSize,
             AlignmentType = AlignmentType.TopLeft,
-            FontSize = 11,
-            Tooltip = Strings.CollectableHintTooltip,
+            FontSize = 12,
             EnableEventFlags = true,
             IsVisible = false,
         };
@@ -194,17 +196,28 @@ public unsafe class CollectableController : IDisposable {
             return;
         }
 
-        var builder = new StringBuilder();
-        builder.Append(Strings.CollectableHintHeader);
-
+        // 節點本體:一行數量摘要;完整名單放 tooltip(見 AttachNodes 的說明)。
+        var summary = new StringBuilder();
+        summary.Append(Strings.CollectableHintHeader);
+        var detail = new StringBuilder();
+        var first = true;
         foreach (var (type, names) in missingByType) {
-            builder.Append('\n');
-            builder.Append(GetTypeName(type));
-            builder.Append(':');
-            builder.Append(string.Join('、', names));
-        }
+            if (!first) summary.Append('、');
+            first = false;
+            summary.Append(GetTypeName(type));
+            summary.Append('×');
+            summary.Append(names.Count);
 
-        infoTextNode.Text = builder.ToString();
+            if (detail.Length != 0) detail.Append('\n');
+            detail.Append(GetTypeName(type));
+            detail.Append(':');
+            detail.Append(string.Join('、', names));
+        }
+        summary.Append(' ');
+        summary.Append(Strings.CollectableHintTooltip);
+
+        infoTextNode.Text = summary.ToString();
+        infoTextNode.Tooltip = detail.ToString();
         infoTextNode.IsVisible = true;
     }
 
