@@ -27,6 +27,7 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
     protected override List<ITabItem> Tabs { get; } = [
         new TodoConfigTab(),
         new TimersConfigTab(),
+        new CollectableConfigTab(),
     ];
     
     protected override List<Module> Options => System.ModuleController.Modules;
@@ -626,6 +627,36 @@ public class TimersConfigTab : ITabItem {
         ImGuiTweaks.SetFullWidth();
         if (ImGui.Checkbox("##ShowTimer", ref showTimer)) {
             node.ShowTimer = showTimer;
+        }
+    }
+}
+
+public class CollectableConfigTab : ITabItem {
+    public string Name => Strings.CollectableHints;
+    public bool Disabled => false;
+
+    public void Draw() {
+        var configChanged = false;
+
+        ImGuiTweaks.Header(Strings.CollectableHintsConfig);
+        using (ImRaii.PushIndent()) {
+            configChanged |= ImGui.Checkbox(Strings.Enable, ref System.CollectableConfig.Enabled);
+
+            ImGuiHelpers.ScaledDummy(5.0f);
+
+            ImGui.TextUnformatted(Strings.CollectableHintTypesLabel);
+
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeMount, ref System.CollectableConfig.ShowMounts);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeMinion, ref System.CollectableConfig.ShowMinions);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeOrchestrionRoll, ref System.CollectableConfig.ShowOrchestrionRolls);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeTimewornOrchestrionRoll, ref System.CollectableConfig.ShowTimewornOrchestrionRolls);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeTripleTriadCard, ref System.CollectableConfig.ShowTripleTriadCards);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeChocoboBarding, ref System.CollectableConfig.ShowChocoboBarding);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeOther, ref System.CollectableConfig.ShowOther);
+        }
+
+        if (configChanged) {
+            System.CollectableConfig.Save();
         }
     }
 }

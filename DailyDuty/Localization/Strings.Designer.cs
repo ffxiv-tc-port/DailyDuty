@@ -2579,5 +2579,113 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("ListNode", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectable Hints.
+        /// </summary>
+        internal static string CollectableHints {
+            get {
+                return ResourceManager.GetString("CollectableHints", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectable Hints.
+        /// </summary>
+        internal static string CollectableHintsConfig {
+            get {
+                return ResourceManager.GetString("CollectableHintsConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show Types:.
+        /// </summary>
+        internal static string CollectableHintTypesLabel {
+            get {
+                return ResourceManager.GetString("CollectableHintTypesLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Uncollected Items:.
+        /// </summary>
+        internal static string CollectableHintHeader {
+            get {
+                return ResourceManager.GetString("CollectableHintHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectables from this duty you haven't obtained yet (DailyDuty).
+        /// </summary>
+        internal static string CollectableHintTooltip {
+            get {
+                return ResourceManager.GetString("CollectableHintTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mounts.
+        /// </summary>
+        internal static string CollectableTypeMount {
+            get {
+                return ResourceManager.GetString("CollectableTypeMount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Minions.
+        /// </summary>
+        internal static string CollectableTypeMinion {
+            get {
+                return ResourceManager.GetString("CollectableTypeMinion", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Orchestrion Rolls.
+        /// </summary>
+        internal static string CollectableTypeOrchestrionRoll {
+            get {
+                return ResourceManager.GetString("CollectableTypeOrchestrionRoll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timeworn Orchestrion Rolls.
+        /// </summary>
+        internal static string CollectableTypeTimewornOrchestrionRoll {
+            get {
+                return ResourceManager.GetString("CollectableTypeTimewornOrchestrionRoll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Triple Triad Cards.
+        /// </summary>
+        internal static string CollectableTypeTripleTriadCard {
+            get {
+                return ResourceManager.GetString("CollectableTypeTripleTriadCard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Chocobo Barding.
+        /// </summary>
+        internal static string CollectableTypeChocoboBarding {
+            get {
+                return ResourceManager.GetString("CollectableTypeChocoboBarding", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Other.
+        /// </summary>
+        internal static string CollectableTypeOther {
+            get {
+                return ResourceManager.GetString("CollectableTypeOther", resourceCulture);
+            }
+        }
     }
 }

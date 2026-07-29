@@ -859,4 +859,40 @@
     <data name="ListNode" xml:space="preserve">
         <value>清單節點</value>
     </data>
+    <data name="CollectableHints" xml:space="preserve">
+        <value>收藏品提示</value>
+    </data>
+    <data name="CollectableHintsConfig" xml:space="preserve">
+        <value>收藏品提示設定</value>
+    </data>
+    <data name="CollectableHintTypesLabel" xml:space="preserve">
+        <value>顯示類型:</value>
+    </data>
+    <data name="CollectableHintHeader" xml:space="preserve">
+        <value>未取得收藏品:</value>
+    </data>
+    <data name="CollectableHintTooltip" xml:space="preserve">
+        <value>此副本尚未取得的收藏品（DailyDuty）</value>
+    </data>
+    <data name="CollectableTypeMount" xml:space="preserve">
+        <value>坐騎</value>
+    </data>
+    <data name="CollectableTypeMinion" xml:space="preserve">
+        <value>寵物</value>
+    </data>
+    <data name="CollectableTypeOrchestrionRoll" xml:space="preserve">
+        <value>樂譜</value>
+    </data>
+    <data name="CollectableTypeTimewornOrchestrionRoll" xml:space="preserve">
+        <value>陳舊樂譜</value>
+    </data>
+    <data name="CollectableTypeTripleTriadCard" xml:space="preserve">
+        <value>幻卡</value>
+    </data>
+    <data name="CollectableTypeChocoboBarding" xml:space="preserve">
+        <value>陸行鳥裝甲</value>
+    </data>
+    <data name="CollectableTypeOther" xml:space="preserve">
+        <value>其他</value>
+    </data>
 </root>

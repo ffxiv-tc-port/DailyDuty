@@ -859,4 +859,40 @@ Limited to once per 5 mins</value>
     <data name="ListNode" xml:space="preserve">
         <value>List Node</value>
     </data>
+    <data name="CollectableHints" xml:space="preserve">
+        <value>Collectable Hints</value>
+    </data>
+    <data name="CollectableHintsConfig" xml:space="preserve">
+        <value>Collectable Hints</value>
+    </data>
+    <data name="CollectableHintTypesLabel" xml:space="preserve">
+        <value>Show Types:</value>
+    </data>
+    <data name="CollectableHintHeader" xml:space="preserve">
+        <value>Uncollected Items:</value>
+    </data>
+    <data name="CollectableHintTooltip" xml:space="preserve">
+        <value>Collectables from this duty you haven't obtained yet (DailyDuty)</value>
+    </data>
+    <data name="CollectableTypeMount" xml:space="preserve">
+        <value>Mounts</value>
+    </data>
+    <data name="CollectableTypeMinion" xml:space="preserve">
+        <value>Minions</value>
+    </data>
+    <data name="CollectableTypeOrchestrionRoll" xml:space="preserve">
+        <value>Orchestrion Rolls</value>
+    </data>
+    <data name="CollectableTypeTimewornOrchestrionRoll" xml:space="preserve">
+        <value>Timeworn Orchestrion Rolls</value>
+    </data>
+    <data name="CollectableTypeTripleTriadCard" xml:space="preserve">
+        <value>Triple Triad Cards</value>
+    </data>
+    <data name="CollectableTypeChocoboBarding" xml:space="preserve">
+        <value>Chocobo Barding</value>
+    </data>
+    <data name="CollectableTypeOther" xml:space="preserve">
+        <value>Other</value>
+    </data>
 </root>

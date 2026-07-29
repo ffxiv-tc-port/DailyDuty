@@ -25,7 +25,9 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         System.LocalizationController = new LocalizationController();
         System.PayloadController = new PayloadController();
         System.ContentsFinderController = new AddonController<AddonContentsFinder>("ContentsFinder");
-        
+        System.CollectableConfig = new CollectableConfig();
+        System.CollectableController = new CollectableController();
+
         System.ModuleController = new ModuleController();
         System.TodoListController = new TodoListController();
         System.TimersController = new TimersController();
@@ -56,6 +58,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         System.PayloadController.Dispose();
         System.OverlayController.Dispose();
         System.ContentsFinderController.Dispose();
+        System.CollectableController.Dispose();
 
         System.ModuleController.Dispose();
 
@@ -82,6 +85,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     
     private static void OnLogin() {
         System.SystemConfig = SystemConfig.Load();
+        System.CollectableConfig = CollectableConfig.Load();
         System.ModuleController.LoadModules();
         System.ContentsFinderController.Enable();
         System.OverlayController.Enable();

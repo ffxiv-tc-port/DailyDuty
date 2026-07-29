@@ -26,4 +26,6 @@ public static class System {
 	public static TimersConfig TimersConfig { get; set; }
 	public static AddonController<AddonContentsFinder> ContentsFinderController { get; set; }
 	public static OverlayController OverlayController { get; set; }
+	public static CollectableConfig CollectableConfig { get; set; }
+	public static CollectableController CollectableController { get; set; }
 }
