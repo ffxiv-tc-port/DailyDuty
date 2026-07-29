@@ -4,6 +4,7 @@ namespace DailyDuty.Models;
 
 public class CollectableConfig {
     public bool Enabled = true;
+    public bool MarkDutyList = true;
 
     public bool ShowMounts = true;
     public bool ShowMinions = true;

@@ -874,6 +874,9 @@ Limited to once per 5 mins</value>
     <data name="CollectableHintTooltip" xml:space="preserve">
         <value>(hover for details)</value>
     </data>
+    <data name="CollectableMarkDutyList" xml:space="preserve">
+        <value>Highlight duties with unobtained collectables in the duty list</value>
+    </data>
     <data name="CollectableTypeMount" xml:space="preserve">
         <value>Mounts</value>
     </data>

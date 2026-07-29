@@ -641,6 +641,7 @@ public class CollectableConfigTab : ITabItem {
         ImGuiTweaks.Header(Strings.CollectableHintsConfig);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.Enable, ref System.CollectableConfig.Enabled);
+            configChanged |= ImGui.Checkbox(Strings.CollectableMarkDutyList, ref System.CollectableConfig.MarkDutyList);
 
             ImGuiHelpers.ScaledDummy(5.0f);
 
@@ -657,6 +658,7 @@ public class CollectableConfigTab : ITabItem {
 
         if (configChanged) {
             System.CollectableConfig.Save();
+            System.CollectableController.InvalidateCache();
         }
     }
 }

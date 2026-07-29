@@ -874,6 +874,9 @@
     <data name="CollectableHintTooltip" xml:space="preserve">
         <value>（滑鼠停留檢視明細）</value>
     </data>
+    <data name="CollectableMarkDutyList" xml:space="preserve">
+        <value>在任務列表以金色標示有未取得收藏品的副本</value>
+    </data>
     <data name="CollectableTypeMount" xml:space="preserve">
         <value>坐騎</value>
     </data>

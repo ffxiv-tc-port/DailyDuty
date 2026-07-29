@@ -6,11 +6,18 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 using DailyDuty.Localization;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Hooking;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiLib.Classes;
+using KamiLib.Extensions;
+using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
 using Lumina.Excel.Sheets;
 using Newtonsoft.Json;
@@ -39,8 +46,17 @@ public unsafe class CollectableController : IDisposable {
     private ContentsId.ContentsType lastContentType;
     private uint lastContentId;
 
+    // 任務列表逐行標示:同 DutyRoulette 的 populate hook 模式。
+    private Hook<AtkComponentListItemPopulator.PopulateDelegate>? onDutyListPopulate;
+    private readonly List<uint> markedIndexes = [];
+    private readonly Dictionary<uint, bool> missingCache = [];
+    private Dictionary<string, uint>? nameToCfc;
+
     public CollectableController() {
         dutyCollectables = LoadEmbeddedData();
+
+        Service.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "ContentsFinder", OnContentsFinderSetup);
+        Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "ContentsFinder", OnContentsFinderFinalize);
 
         System.ContentsFinderController.OnAttach += AttachNodes;
         System.ContentsFinderController.OnDetach += DetachNodes;
@@ -48,14 +64,101 @@ public unsafe class CollectableController : IDisposable {
     }
 
     public void Dispose() {
+        Service.AddonLifecycle.UnregisterListener(OnContentsFinderSetup, OnContentsFinderFinalize);
+
         System.ContentsFinderController.OnAttach -= AttachNodes;
         System.ContentsFinderController.OnDetach -= DetachNodes;
         System.ContentsFinderController.OnUpdate -= OnContentsFinderUpdate;
+
+        onDutyListPopulate?.Dispose();
 
         System.NativeController.DetachNode(infoTextNode, () => {
             infoTextNode?.Dispose();
             infoTextNode = null;
         });
+    }
+
+    private void OnContentsFinderSetup(AddonEvent type, AddonArgs args) {
+        if (dutyCollectables is null) return;
+
+        // 解鎖狀態在開窗時重抓一次(同場學到新收藏品的過期程度可接受)。
+        missingCache.Clear();
+
+        var addon = args.GetAddon<AddonContentsFinder>();
+        var populateMethod = addon->DutyList->GetItemRendererByNodeId(6)->Populator.Populate;
+
+        onDutyListPopulate = Service.Hooker.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod, OnPopulateHook);
+        onDutyListPopulate?.Enable();
+    }
+
+    private void OnContentsFinderFinalize(AddonEvent type, AddonArgs args) {
+        onDutyListPopulate?.Dispose();
+        onDutyListPopulate = null;
+        markedIndexes.Clear();
+    }
+
+    private void OnPopulateHook(AtkUnitBase* unitBase, AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList) => HookSafety.ExecuteSafe(() => {
+        var index = listItemInfo->ListItem->Renderer->OwnerNode->NodeId;
+        var dutyNameTextNode = (AtkTextNode*) nodeList[3];
+        var levelTextNode = (AtkTextNode*) nodeList[4];
+
+        var shouldMark = false;
+        if (System.CollectableConfig is { Enabled: true, MarkDutyList: true }) {
+            var dutyName = listItemInfo->ListItem->StringValues[0].ToString();
+            nameToCfc ??= BuildNameMap();
+            if (nameToCfc.TryGetValue(dutyName, out var cfcId)) {
+                shouldMark = HasMissing(cfcId);
+            }
+        }
+
+        if (shouldMark) {
+            dutyNameTextNode->TextColor = MarkColor;
+            if (!markedIndexes.Contains(index)) {
+                markedIndexes.Add(index);
+            }
+        }
+        else if (markedIndexes.Contains(index)) {
+            dutyNameTextNode->TextColor = levelTextNode->TextColor;
+            markedIndexes.Remove(index);
+        }
+
+        onDutyListPopulate!.Original(unitBase, listItemInfo, nodeList);
+    }, Service.Log);
+
+    private static FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor MarkColor
+        => new Vector4(1.0f, 0.83f, 0.29f, 1.0f).ToByteColor();
+
+    private Dictionary<string, uint> BuildNameMap() {
+        var map = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
+        if (dutyCollectables is null) return map;
+
+        var sheet = Service.DataManager.GetExcelSheet<ContentFinderCondition>();
+        foreach (var cfcId in dutyCollectables.Keys) {
+            var row = sheet.GetRowOrDefault(cfcId);
+            if (row is null) continue;
+
+            var name = row.Value.Name.ExtractText();
+            if (!string.IsNullOrEmpty(name)) {
+                map.TryAdd(name, cfcId);
+            }
+        }
+
+        return map;
+    }
+
+    /// <summary>設定變更後呼叫:類型開關會影響「有無未取得」的判定與底部摘要。</summary>
+    public void InvalidateCache() {
+        missingCache.Clear();
+        hasLastSelection = false;
+    }
+
+    private bool HasMissing(uint cfcId) {
+        if (missingCache.TryGetValue(cfcId, out var cached)) return cached;
+        if (dutyCollectables is null || !dutyCollectables.TryGetValue(cfcId, out var entries)) return false;
+
+        var missing = entries.Any(entry => ShouldShowType(entry.Type) && !IsAcquired(entry));
+        missingCache[cfcId] = missing;
+        return missing;
     }
 
     private static Dictionary<uint, List<CollectableEntry>>? LoadEmbeddedData() {

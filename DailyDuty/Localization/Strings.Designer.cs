@@ -2617,6 +2617,15 @@ namespace DailyDuty.Localization {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Highlight duties with unobtained collectables in the duty list.
+        /// </summary>
+        internal static string CollectableMarkDutyList {
+            get {
+                return ResourceManager.GetString("CollectableMarkDutyList", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Collectables from this duty you haven't obtained yet (DailyDuty).
         /// </summary>
         internal static string CollectableHintTooltip {
