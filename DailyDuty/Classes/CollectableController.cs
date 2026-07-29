@@ -8,6 +8,7 @@ using System.Text;
 using DailyDuty.Localization;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -50,6 +51,7 @@ public unsafe class CollectableController : IDisposable {
     private Hook<AtkComponentListItemPopulator.PopulateDelegate>? onDutyListPopulate;
     private readonly List<uint> markedIndexes = [];
     private readonly Dictionary<uint, bool> missingCache = [];
+    private readonly Dictionary<uint, byte[]> markedNameCache = [];
     private Dictionary<string, uint>? nameToCfc;
 
     public CollectableController() {
@@ -103,16 +105,33 @@ public unsafe class CollectableController : IDisposable {
         var levelTextNode = (AtkTextNode*) nodeList[4];
 
         var shouldMark = false;
+        var markCfc = 0u;
+        var dutyName = string.Empty;
         if (System.CollectableConfig is { Enabled: true, MarkDutyList: true }) {
-            var dutyName = listItemInfo->ListItem->StringValues[0].ToString();
+            dutyName = listItemInfo->ListItem->StringValues[0].ToString();
             nameToCfc ??= BuildNameMap();
             if (nameToCfc.TryGetValue(dutyName, out var cfcId)) {
                 shouldMark = HasMissing(cfcId);
+                markCfc = cfcId;
             }
         }
 
+        // 先讓原生 populate 填好整列(它每次都會重寫文字),再疊我們的標示——
+        // 圖示前綴才不會在列被回收重用時累積或殘留。
+        onDutyListPopulate!.Original(unitBase, listItemInfo, nodeList);
+
         if (shouldMark) {
             dutyNameTextNode->TextColor = MarkColor;
+
+            if (!markedNameCache.TryGetValue(markCfc, out var seBytes)) {
+                seBytes = new SeStringBuilder()
+                    .AddIcon(BitmapFontIcon.GoldStar)
+                    .AddText(dutyName)
+                    .Encode();
+                markedNameCache[markCfc] = seBytes;
+            }
+            dutyNameTextNode->SetText(seBytes);
+
             if (!markedIndexes.Contains(index)) {
                 markedIndexes.Add(index);
             }
@@ -121,8 +140,6 @@ public unsafe class CollectableController : IDisposable {
             dutyNameTextNode->TextColor = levelTextNode->TextColor;
             markedIndexes.Remove(index);
         }
-
-        onDutyListPopulate!.Original(unitBase, listItemInfo, nodeList);
     }, Service.Log);
 
     private static FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor MarkColor
