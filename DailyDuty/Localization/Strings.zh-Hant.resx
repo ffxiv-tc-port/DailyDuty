@@ -112,7 +112,7 @@
         <value>藏寶圖</value>
     </data>
     <data name="JumboCactpot" xml:space="preserve">
-        <value>仙人彩</value>
+        <value>仙人仙彩</value>
     </data>
     <data name="Levequest" xml:space="preserve">
         <value>委託</value>
@@ -139,7 +139,7 @@
         <value>比較模式</value>
     </data>
     <data name="DomanEnclaveTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至多瑪飛地</value>
+        <value>點選通知可傳送至多瑪飛地</value>
     </data>
     <data name="WeeklyAllowance" xml:space="preserve">
         <value>每週配額</value>
@@ -169,7 +169,7 @@
         <value>預設</value>
     </data>
     <data name="ClickableLink" xml:space="preserve">
-        <value>可點擊連結</value>
+        <value>可點選連結</value>
     </data>
     <data name="Enable" xml:space="preserve">
         <value>啟用</value>
@@ -266,7 +266,7 @@
         <value>關閉</value>
     </data>
     <data name="DutyRouletteOpenDutyFinder" xml:space="preserve">
-        <value>點擊通知可開啟任務搜尋器</value>
+        <value>點選通知可開啟任務搜尋器</value>
     </data>
     <data name="CompleteWhenTomeCapped" xml:space="preserve">
         <value>達到石板上限時視為完成</value>
@@ -293,7 +293,7 @@
         <value>完成模式</value>
     </data>
     <data name="GoldSaucerTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至金碟遊樂場</value>
+        <value>點選通知可傳送至金碟遊樂園</value>
     </data>
     <data name="HighestWeeklyScore" xml:space="preserve">
         <value>最高分數</value>
@@ -311,7 +311,7 @@
         <value>包含重演</value>
     </data>
     <data name="IdyllshireTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至田園郡</value>
+        <value>點選通知可傳送至田園郡</value>
     </data>
     <data name="FauxHollowsCompletions" xml:space="preserve">
         <value>幻巧拼圖完成次數</value>
@@ -350,7 +350,7 @@
         <value>已接受的委託</value>
     </data>
     <data name="UldahTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至烏爾達哈</value>
+        <value>點選通知可傳送至烏爾達哈</value>
     </data>
     <data name="ChallengesRemaining" xml:space="preserve">
         <value>剩餘挑戰次數</value>
@@ -368,7 +368,7 @@
         <value>有可用地圖</value>
     </data>
     <data name="OpenDutyFinderToRaid" xml:space="preserve">
-        <value>點擊通知可開啟任務搜尋器的大型任務分類</value>
+        <value>點選通知可開啟任務搜尋器的大型任務分類</value>
     </data>
     <data name="InstanceNotifications" xml:space="preserve">
         <value>副本通知</value>
@@ -377,7 +377,7 @@
         <value>進入副本時，顯示是否需要重抽或已經可完成</value>
     </data>
     <data name="WondrousTailsClickableLink" xml:space="preserve">
-        <value>點擊通知可開啟天書奇談手冊或傳送至田園郡</value>
+        <value>點選通知可開啟天書奇談手冊或傳送至田園郡</value>
     </data>
     <data name="StickerAvailableNotice" xml:space="preserve">
         <value>貼紙可領取提醒</value>
