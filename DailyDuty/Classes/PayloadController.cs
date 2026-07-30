@@ -130,11 +130,18 @@ public unsafe class PayloadController : IDisposable {
             ClearDutyFinderSelection();
         },
         PayloadId.OpenDutyFinderAllianceRaid => (_, _) => {
-            var currentAllianceRaid = Service.DataManager.GetExcelSheet<ContentFinderCondition>()
-                .Where(cfc => cfc.ContentType.RowId is 5 && cfc is { Unknown33: 0, Unknown28: true })
-                .Last();
+            // 原本自己用 Unknown33/Unknown28 重查一次再 .Last()，序列為空時直接丟例外
+            // ——點擊團隊任務提醒連結就會炸。改用模組本身在用的同一個 helper，
+            // 並比照隔壁的 OpenDutyFinderRaid 用 LastOrDefault + RowId 守衛。
+            var currentAllianceRaid = Service.DataManager.GetLimitedAllianceRaidDuties().LastOrDefault();
+
+            if (currentAllianceRaid.RowId is 0) {
+                Service.Log.Warning("[PayloadController] 找不到任何週限團隊任務，略過開啟任務搜尋器。");
+                return;
+            }
 
             AgentContentsFinder.Instance()->OpenRegularDuty(currentAllianceRaid.RowId);
+            ClearDutyFinderSelection();
         },
         PayloadId.GoldSaucerTeleport => (_, _) => {
             System.Teleporter.Teleport(62);
