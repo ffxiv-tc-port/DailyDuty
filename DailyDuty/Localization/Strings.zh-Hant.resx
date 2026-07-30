@@ -898,4 +898,70 @@
     <data name="CollectableTypeOther" xml:space="preserve">
         <value>其他</value>
     </data>
+    <data name="HuntAssistSectionTitle" xml:space="preserve">
+        <value>討伐佈告板捷徑</value>
+    </data>
+    <data name="HuntAssistHelp" xml:space="preserve">
+        <value>每次點擊只執行一個步驟。進入戰鬥、進入副本,或你自己操作移動時都會停下。</value>
+    </data>
+    <data name="HuntAssistGoToBoard" xml:space="preserve">
+        <value>前往佈告板</value>
+    </data>
+    <data name="HuntAssistCancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="HuntAssistBillObtained" xml:space="preserve">
+        <value>已接單</value>
+    </data>
+    <data name="HuntAssistBillAvailable" xml:space="preserve">
+        <value>未接單</value>
+    </data>
+    <data name="HuntAssistAlreadyRunning" xml:space="preserve">
+        <value>已有其他討伐輔助動作進行中。</value>
+    </data>
+    <data name="HuntAssistStatusTeleporting" xml:space="preserve">
+        <value>正在傳送到佈告板所在城市……</value>
+    </data>
+    <data name="HuntAssistStatusAethernet" xml:space="preserve">
+        <value>正在傳送到最近的乙太之光……</value>
+    </data>
+    <data name="HuntAssistStatusWalking" xml:space="preserve">
+        <value>正在前往討伐佈告板……</value>
+    </data>
+    <data name="HuntAssistStatusArrived" xml:space="preserve">
+        <value>已抵達討伐佈告板。</value>
+    </data>
+    <data name="HuntAssistStatusStopped" xml:space="preserve">
+        <value>移動已停止。</value>
+    </data>
+    <data name="HuntAssistStatusCancelled" xml:space="preserve">
+        <value>已取消討伐輔助。</value>
+    </data>
+    <data name="HuntAssistStoppedInCombat" xml:space="preserve">
+        <value>已停止:目前處於戰鬥中。</value>
+    </data>
+    <data name="HuntAssistStoppedInDuty" xml:space="preserve">
+        <value>已停止:目前在副本中。</value>
+    </data>
+    <data name="HuntAssistStoppedTimeout" xml:space="preserve">
+        <value>已停止:動作逾時。</value>
+    </data>
+    <data name="HuntAssistTeleportFailed" xml:space="preserve">
+        <value>無法開始傳送。</value>
+    </data>
+    <data name="HuntAssistNoBoardData" xml:space="preserve">
+        <value>找不到這張通緝令對應的佈告板資料。</value>
+    </data>
+    <data name="HuntAssistNavmeshMissing" xml:space="preserve">
+        <value>未安裝 vnavmesh,已改為在地圖上標記討伐佈告板。</value>
+    </data>
+    <data name="HuntAssistNavmeshNotReady" xml:space="preserve">
+        <value>vnavmesh 無法規劃路徑,已改為在地圖上標記討伐佈告板。</value>
+    </data>
+    <data name="HuntAssistLifestreamMissing" xml:space="preserve">
+        <value>未安裝 Lifestream,改用遊戲內建的傳送功能。</value>
+    </data>
+    <data name="HuntAssistWrongZone" xml:space="preserve">
+        <value>無法進入佈告板所在區域,已改為在地圖上標記討伐佈告板。</value>
+    </data>
 </root>

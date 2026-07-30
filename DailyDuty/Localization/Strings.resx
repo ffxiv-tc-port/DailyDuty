@@ -898,4 +898,70 @@ Limited to once per 5 mins</value>
     <data name="CollectableTypeOther" xml:space="preserve">
         <value>Other</value>
     </data>
+    <data name="HuntAssistSectionTitle" xml:space="preserve">
+        <value>Hunt Board Shortcuts</value>
+    </data>
+    <data name="HuntAssistHelp" xml:space="preserve">
+        <value>One click performs one step. Movement stops when you enter combat or a duty, and when you take the controls back.</value>
+    </data>
+    <data name="HuntAssistGoToBoard" xml:space="preserve">
+        <value>Go to Board</value>
+    </data>
+    <data name="HuntAssistCancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="HuntAssistBillObtained" xml:space="preserve">
+        <value>Accepted</value>
+    </data>
+    <data name="HuntAssistBillAvailable" xml:space="preserve">
+        <value>Not Accepted</value>
+    </data>
+    <data name="HuntAssistAlreadyRunning" xml:space="preserve">
+        <value>Another hunt assistant action is already running.</value>
+    </data>
+    <data name="HuntAssistStatusTeleporting" xml:space="preserve">
+        <value>Teleporting to the board's city...</value>
+    </data>
+    <data name="HuntAssistStatusAethernet" xml:space="preserve">
+        <value>Taking the aethernet to the nearest aetheryte...</value>
+    </data>
+    <data name="HuntAssistStatusWalking" xml:space="preserve">
+        <value>Walking to the hunt board...</value>
+    </data>
+    <data name="HuntAssistStatusArrived" xml:space="preserve">
+        <value>Arrived at the hunt board.</value>
+    </data>
+    <data name="HuntAssistStatusStopped" xml:space="preserve">
+        <value>Movement stopped.</value>
+    </data>
+    <data name="HuntAssistStatusCancelled" xml:space="preserve">
+        <value>Hunt assistant cancelled.</value>
+    </data>
+    <data name="HuntAssistStoppedInCombat" xml:space="preserve">
+        <value>Stopped: you are in combat.</value>
+    </data>
+    <data name="HuntAssistStoppedInDuty" xml:space="preserve">
+        <value>Stopped: you are in a duty.</value>
+    </data>
+    <data name="HuntAssistStoppedTimeout" xml:space="preserve">
+        <value>Stopped: the action timed out.</value>
+    </data>
+    <data name="HuntAssistTeleportFailed" xml:space="preserve">
+        <value>Could not start the teleport.</value>
+    </data>
+    <data name="HuntAssistNoBoardData" xml:space="preserve">
+        <value>No hunt board data is available for this bill.</value>
+    </data>
+    <data name="HuntAssistNavmeshMissing" xml:space="preserve">
+        <value>vnavmesh is not installed - the hunt board was flagged on your map instead.</value>
+    </data>
+    <data name="HuntAssistNavmeshNotReady" xml:space="preserve">
+        <value>vnavmesh could not path here - the hunt board was flagged on your map instead.</value>
+    </data>
+    <data name="HuntAssistLifestreamMissing" xml:space="preserve">
+        <value>Lifestream is not installed - using the game's own teleport.</value>
+    </data>
+    <data name="HuntAssistWrongZone" xml:space="preserve">
+        <value>Could not reach the board's zone - the hunt board was flagged on your map instead.</value>
+    </data>
 </root>

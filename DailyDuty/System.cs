@@ -1,4 +1,5 @@
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Models;
 using DailyDuty.Windows;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -28,4 +29,5 @@ public static class System {
 	public static OverlayController OverlayController { get; set; }
 	public static CollectableConfig CollectableConfig { get; set; }
 	public static CollectableController CollectableController { get; set; }
+	public static HuntAssistController HuntAssistController { get; set; }
 }

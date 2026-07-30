@@ -1,4 +1,5 @@
 ﻿using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using Dalamud.Plugin;
 using DailyDuty.Models;
 using DailyDuty.Windows;
@@ -27,6 +28,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         System.ContentsFinderController = new AddonController<AddonContentsFinder>("ContentsFinder");
         System.CollectableConfig = new CollectableConfig();
         System.CollectableController = new CollectableController();
+        System.HuntAssistController = new HuntAssistController();
 
         System.ModuleController = new ModuleController();
         System.TodoListController = new TodoListController();
@@ -52,7 +54,10 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         Service.ClientState.Login -= OnLogin;
         Service.ClientState.Logout -= OnLogout;
         Service.ClientState.TerritoryChanged -= OnZoneChange;
-        
+
+        // Never leave vnavmesh walking the character around after we are gone.
+        System.HuntAssistController.Cancel();
+
         System.WindowManager.Dispose();
         System.LocalizationController.Dispose();
         System.PayloadController.Dispose();
@@ -81,6 +86,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         
         System.TodoListController.Update();
         System.TimersController.Update();
+        System.HuntAssistController.Update();
     }
     
     private static void OnLogin() {
@@ -92,6 +98,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     }
     
     private static void OnLogout(int type, int code) {
+        System.HuntAssistController.Cancel();
         System.OverlayController.Disable();
         System.ContentsFinderController.Disable();
         System.ModuleController.UnloadModules();

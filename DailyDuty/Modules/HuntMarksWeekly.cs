@@ -1,13 +1,24 @@
-﻿using System;
+using System;
+using System.Drawing;
+using System.Linq;
+using System.Numerics;
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
+using DailyDuty.Localization;
 using DailyDuty.Modules.BaseModules;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using KamiLib.Classes;
 using Lumina.Excel.Sheets;
 
 namespace DailyDuty.Modules;
 
 public class HuntMarksWeekly : HuntMarksBase {
 	public override ModuleName ModuleName => ModuleName.HuntMarksWeekly;
-	
+
 	public override ModuleType ModuleType => ModuleType.Weekly;
 
 	public override DateTime GetNextReset() => Time.NextWeeklyReset() + TimeSpan.FromMinutes(1);
@@ -16,5 +27,91 @@ public class HuntMarksWeekly : HuntMarksBase {
 		var luminaUpdater = new LuminaTaskUpdater<MobHuntOrderType>(this, order => order.Type is 2);
 		luminaUpdater.UpdateConfig(Config.TaskConfig);
 		luminaUpdater.UpdateData(Data.TaskData);
+	}
+
+	public override void DrawData() {
+		base.DrawData();
+
+		DrawHuntAssist();
+	}
+
+	/// <summary>
+	/// Per-expansion shortcuts to the hunt board that issues each weekly elite bill.
+	/// Everything here is user-triggered: one click starts one trip and it can be cancelled at
+	/// any point. Nothing runs on its own, and nothing here fights anything.
+	/// </summary>
+	private unsafe void DrawHuntAssist() {
+		var controller = System.HuntAssistController;
+
+		ImGuiTweaks.Header(Strings.HuntAssistSectionTitle);
+		using var indent = ImRaii.PushIndent();
+
+		ImGui.TextWrapped(Strings.HuntAssistHelp);
+		ImGuiHelpers.ScaledDummy(5.0f);
+
+		if (controller.StatusText.Length > 0) {
+			var statusColor = controller.IsRunning ? KnownColor.Orange.Vector() : KnownColor.Gray.Vector();
+			ImGui.TextColored(statusColor, controller.StatusText);
+		}
+
+		if (controller.IsRunning) {
+			if (ImGui.Button(Strings.HuntAssistCancel, new Vector2(ImGui.GetContentRegionAvail().X, 23.0f * ImGuiHelpers.GlobalScale))) {
+				controller.Cancel();
+			}
+		}
+
+		ImGuiHelpers.ScaledDummy(5.0f);
+
+		using var table = ImRaii.Table("hunt_assist_table", 3, ImGuiTableFlags.SizingStretchProp);
+		if (!table) return;
+
+		ImGui.TableSetupColumn("##version", ImGuiTableColumnFlags.WidthStretch, 0.5f);
+		ImGui.TableSetupColumn("##bill", ImGuiTableColumnFlags.WidthStretch, 2.0f);
+		ImGui.TableSetupColumn("##action", ImGuiTableColumnFlags.WidthStretch, 2.0f);
+
+		var huntData = MobHunt.Instance();
+
+		foreach (var config in Config.TaskConfig.ConfigList.OrderBy(entry => entry.RowId)) {
+			if (!HuntBoards.IsWeeklyOrderTypeSupported(config.RowId)) continue;
+
+			var boards = HuntBoards.GetBoards(config.RowId);
+
+			ImGui.TableNextColumn();
+			var version = boards.Count > 0 ? boards[0].ExpansionVersion : 0;
+			ImGui.TextUnformatted(version > 0 ? $"{version}.x" : "-");
+
+			ImGui.TableNextColumn();
+			ImGui.TextUnformatted(config.Label());
+
+			var complete = Data.TaskData.DataList.FirstOrDefault(entry => entry.RowId == config.RowId)?.Complete ?? false;
+			var obtained = huntData is not null && huntData->IsMarkBillObtained((int) config.RowId);
+
+			if (complete) {
+				ImGui.TextColored(KnownColor.Green.Vector(), Strings.Complete);
+			}
+			else {
+				ImGui.TextColored(obtained ? KnownColor.Green.Vector() : KnownColor.Orange.Vector(),
+					obtained ? Strings.HuntAssistBillObtained : Strings.HuntAssistBillAvailable);
+			}
+
+			ImGui.TableNextColumn();
+			if (boards.Count is 0) {
+				ImGui.TextColored(KnownColor.Orange.Vector(), Strings.HuntAssistNoBoardData);
+				continue;
+			}
+
+			using var disabled = ImRaii.Disabled(controller.IsRunning);
+			foreach (var board in boards) {
+				var label = board.ZoneName.Length > 0 ? board.ZoneName : Strings.HuntAssistGoToBoard;
+
+				if (ImGui.Button($"{label}##hunt_board_{board.EObjectId}")) {
+					controller.GoToHuntBoard(board, config.RowId);
+				}
+
+				if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
+					ImGui.SetTooltip(Strings.HuntAssistGoToBoard);
+				}
+			}
+		}
 	}
 }

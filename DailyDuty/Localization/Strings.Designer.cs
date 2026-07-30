@@ -2696,5 +2696,203 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("CollectableTypeOther", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hunt Board Shortcuts.
+        /// </summary>
+        internal static string HuntAssistSectionTitle {
+            get {
+                return ResourceManager.GetString("HuntAssistSectionTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to One click performs one step. Movement stops when you enter combat or a duty, and when you take the controls back..
+        /// </summary>
+        internal static string HuntAssistHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Go to Board.
+        /// </summary>
+        internal static string HuntAssistGoToBoard {
+            get {
+                return ResourceManager.GetString("HuntAssistGoToBoard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cancel.
+        /// </summary>
+        internal static string HuntAssistCancel {
+            get {
+                return ResourceManager.GetString("HuntAssistCancel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Accepted.
+        /// </summary>
+        internal static string HuntAssistBillObtained {
+            get {
+                return ResourceManager.GetString("HuntAssistBillObtained", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not Accepted.
+        /// </summary>
+        internal static string HuntAssistBillAvailable {
+            get {
+                return ResourceManager.GetString("HuntAssistBillAvailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Another hunt assistant action is already running..
+        /// </summary>
+        internal static string HuntAssistAlreadyRunning {
+            get {
+                return ResourceManager.GetString("HuntAssistAlreadyRunning", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Teleporting to the board's city....
+        /// </summary>
+        internal static string HuntAssistStatusTeleporting {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusTeleporting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Taking the aethernet to the nearest aetheryte....
+        /// </summary>
+        internal static string HuntAssistStatusAethernet {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusAethernet", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Walking to the hunt board....
+        /// </summary>
+        internal static string HuntAssistStatusWalking {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusWalking", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Arrived at the hunt board..
+        /// </summary>
+        internal static string HuntAssistStatusArrived {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusArrived", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Movement stopped..
+        /// </summary>
+        internal static string HuntAssistStatusStopped {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusStopped", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hunt assistant cancelled..
+        /// </summary>
+        internal static string HuntAssistStatusCancelled {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusCancelled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stopped: you are in combat..
+        /// </summary>
+        internal static string HuntAssistStoppedInCombat {
+            get {
+                return ResourceManager.GetString("HuntAssistStoppedInCombat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stopped: you are in a duty..
+        /// </summary>
+        internal static string HuntAssistStoppedInDuty {
+            get {
+                return ResourceManager.GetString("HuntAssistStoppedInDuty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stopped: the action timed out..
+        /// </summary>
+        internal static string HuntAssistStoppedTimeout {
+            get {
+                return ResourceManager.GetString("HuntAssistStoppedTimeout", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Could not start the teleport..
+        /// </summary>
+        internal static string HuntAssistTeleportFailed {
+            get {
+                return ResourceManager.GetString("HuntAssistTeleportFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No hunt board data is available for this bill..
+        /// </summary>
+        internal static string HuntAssistNoBoardData {
+            get {
+                return ResourceManager.GetString("HuntAssistNoBoardData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to vnavmesh is not installed - the hunt board was flagged on your map instead..
+        /// </summary>
+        internal static string HuntAssistNavmeshMissing {
+            get {
+                return ResourceManager.GetString("HuntAssistNavmeshMissing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to vnavmesh could not path here - the hunt board was flagged on your map instead..
+        /// </summary>
+        internal static string HuntAssistNavmeshNotReady {
+            get {
+                return ResourceManager.GetString("HuntAssistNavmeshNotReady", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Lifestream is not installed - using the game's own teleport..
+        /// </summary>
+        internal static string HuntAssistLifestreamMissing {
+            get {
+                return ResourceManager.GetString("HuntAssistLifestreamMissing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Could not reach the board's zone - the hunt board was flagged on your map instead.
+        /// </summary>
+        internal static string HuntAssistWrongZone {
+            get {
+                return ResourceManager.GetString("HuntAssistWrongZone", resourceCulture);
+            }
+        }
     }
 }
