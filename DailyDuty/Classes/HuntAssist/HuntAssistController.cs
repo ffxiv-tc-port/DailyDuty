@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using DailyDuty.Localization;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -17,6 +20,7 @@ public enum HuntAssistStep {
 	AethernetHop,
 	WaitingForAethernet,
 	Walking,
+	Patrolling,
 	Finished,
 	Stopped,
 }
@@ -49,6 +53,14 @@ public sealed class HuntAssistController {
 	/// <summary>Only hop the aethernet when it saves at least this much walking.</summary>
 	private const float AethernetWorthwhileMargin = 30.0f;
 
+	/// <summary>Spawn points are approximate, so "near enough" is generous.</summary>
+	private const float PatrolArrivalRadius = 12.0f;
+
+	private static readonly TimeSpan WaypointTimeout = TimeSpan.FromSeconds(120);
+
+	/// <summary>Below this much travel, an idle navmesh means "no path", not "user took over".</summary>
+	private const float UnreachableMoveThreshold = 3.0f;
+
 	public NavmeshIpc Navmesh { get; } = new();
 
 	public LifestreamIpc Lifestream { get; } = new();
@@ -57,13 +69,17 @@ public sealed class HuntAssistController {
 
 	public string StatusText { get; private set; } = string.Empty;
 
-	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking;
+	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.Patrolling;
 
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
 
 	private HuntBoardLocation? target;
 	private HuntTargetInfo? zoneTarget;
+	private HuntTargetInfo? patrolTarget;
+	private List<Vector3> patrolRoute = [];
+	private int patrolIndex;
+	private Vector3 moveStartPosition;
 	private readonly Stopwatch stepClock = new();
 	private bool teleportIssued;
 	private bool moveIssued;
@@ -157,6 +173,88 @@ public sealed class HuntAssistController {
 		return true;
 	}
 
+	/// <summary>
+	/// Walks the zone's known spawn points for the mark's rank, in a short greedy route from
+	/// wherever the player is standing, and stops as soon as the mark shows up.
+	///
+	/// It never attacks and never targets: finding the mark ends the run and hands control
+	/// back. Any manual movement also ends it - clicking patrol again re-plans from the new
+	/// position.
+	/// </summary>
+	public bool StartPatrol(HuntTargetInfo targetInfo, uint orderTypeRowId) {
+		if (IsRunning) {
+			StatusText = Strings.HuntAssistAlreadyRunning;
+			return false;
+		}
+
+		if (!Service.ClientState.IsLoggedIn || Service.ClientState.LocalPlayer is not { } player) return false;
+
+		if (Service.Condition.IsBoundByDuty()) {
+			Fail(Strings.HuntAssistStoppedInDuty);
+			return false;
+		}
+
+		if (Service.ClientState.TerritoryType != targetInfo.TerritoryId) {
+			StatusText = Strings.HuntAssistPatrolWrongZone;
+			PrintMessage(StatusText);
+			return false;
+		}
+
+		if (!Navmesh.IsInstalled) {
+			StatusText = Strings.HuntAssistPatrolNeedsNavmesh;
+			PrintMessage(StatusText);
+			return false;
+		}
+
+		var spawnPoints = HuntSpawnPoints.GetSpawnPoints(targetInfo.TerritoryId, targetInfo.Rank);
+		if (spawnPoints.Count is 0) {
+			StatusText = Strings.HuntAssistNoSpawnData;
+			PrintMessage(StatusText);
+			return false;
+		}
+
+		patrolRoute = BuildGreedyRoute(player.Position, spawnPoints);
+		patrolIndex = 0;
+		patrolTarget = targetInfo;
+		target = null;
+		zoneTarget = null;
+		ActiveOrderTypeRowId = orderTypeRowId;
+		moveIssued = false;
+		Step = HuntAssistStep.Patrolling;
+		StatusText = $"{Strings.HuntAssistStatusPatrolling} (1/{patrolRoute.Count})";
+		stepClock.Restart();
+		return true;
+	}
+
+	/// <summary>Nearest-neighbour ordering. Not optimal, but instant and close enough here.</summary>
+	private static List<Vector3> BuildGreedyRoute(Vector3 start, IReadOnlyList<Vector3> points) {
+		var remaining = new List<Vector3>(points);
+		var ordered = new List<Vector3>(points.Count);
+		var current = start;
+
+		while (remaining.Count > 0) {
+			var bestIndex = 0;
+			var bestDistance = float.MaxValue;
+
+			for (var index = 0; index < remaining.Count; index++) {
+				var distance = Vector2.DistanceSquared(
+					new Vector2(current.X, current.Z),
+					new Vector2(remaining[index].X, remaining[index].Z));
+
+				if (distance >= bestDistance) continue;
+
+				bestDistance = distance;
+				bestIndex = index;
+			}
+
+			current = remaining[bestIndex];
+			ordered.Add(current);
+			remaining.RemoveAt(bestIndex);
+		}
+
+		return ordered;
+	}
+
 	/// <summary>Stops everything this controller started. Safe to call at any time.</summary>
 	public void Cancel() {
 		if (!IsRunning) return;
@@ -167,6 +265,9 @@ public sealed class HuntAssistController {
 		stepClock.Reset();
 		target = null;
 		zoneTarget = null;
+		patrolTarget = null;
+		patrolRoute = [];
+		patrolIndex = 0;
 		ActiveOrderTypeRowId = 0;
 	}
 
@@ -187,6 +288,11 @@ public sealed class HuntAssistController {
 
 		if (Step is HuntAssistStep.TeleportingToZone) {
 			UpdateTeleportToZone();
+			return;
+		}
+
+		if (Step is HuntAssistStep.Patrolling) {
+			if (Service.ClientState.LocalPlayer is { } patrolPlayer) UpdatePatrol(patrolPlayer.Position);
 			return;
 		}
 
@@ -404,6 +510,105 @@ public sealed class HuntAssistController {
 		}
 	}
 
+	private void UpdatePatrol(Vector3 playerPosition) {
+		if (patrolTarget is not { } targetInfo) {
+			Cancel();
+			return;
+		}
+
+		if (Service.ClientState.TerritoryType != targetInfo.TerritoryId) {
+			StopMovement();
+			Fail(Strings.HuntAssistPatrolWrongZone);
+			return;
+		}
+
+		// Finding the mark is the whole point - stop the moment it is in range. We only read
+		// the object table; nothing is targeted and nothing is attacked.
+		if (FindTargetObject(targetInfo) is { } found) {
+			StopMovement();
+			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, found.Position, true);
+			Finish($"{Strings.HuntAssistTargetFound} {targetInfo.Name}");
+			return;
+		}
+
+		if (Service.Condition[ConditionFlag.InCombat]) {
+			StopMovement();
+			Fail(Strings.HuntAssistStoppedInCombat);
+			return;
+		}
+
+		if (patrolIndex >= patrolRoute.Count) {
+			StopMovement();
+			Finish(Strings.HuntAssistPatrolComplete);
+			return;
+		}
+
+		var waypoint = patrolRoute[patrolIndex];
+
+		if (!moveIssued) {
+			// Spawn points carry no height, so seed the query with the player's own Y - they
+			// are standing in this zone, which is a far better guess than 0.
+			var probe = new Vector3(waypoint.X, playerPosition.Y, waypoint.Z);
+			var destination = Navmesh.NearestPoint(probe, 20.0f, 500.0f)
+			                  ?? Navmesh.PointOnFloor(probe, 20.0f);
+
+			// A spawn point we cannot path to is skipped, not fatal.
+			if (destination is null || !Navmesh.MoveTo(destination.Value)) {
+				patrolIndex++;
+				return;
+			}
+
+			moveIssued = true;
+			moveStartPosition = playerPosition;
+			stepClock.Restart();
+			StatusText = $"{Strings.HuntAssistStatusPatrolling} ({patrolIndex + 1}/{patrolRoute.Count})";
+			return;
+		}
+
+		if (Vector2.Distance(new Vector2(playerPosition.X, playerPosition.Z), new Vector2(waypoint.X, waypoint.Z)) <= PatrolArrivalRadius) {
+			moveIssued = false;
+			patrolIndex++;
+			return;
+		}
+
+		if (stepClock.Elapsed > WaypointTimeout) {
+			moveIssued = false;
+			patrolIndex++;
+			return;
+		}
+
+		if (stepClock.Elapsed < MoveStartGrace) return;
+		if (Navmesh.PathfindInProgress || Navmesh.IsPathRunning) return;
+
+		// vnavmesh went idle without us arriving. Two very different causes, told apart by
+		// whether the character actually went anywhere:
+		//  * barely moved -> no path to that spawn point, skip it and carry on,
+		//  * moved -> the player took the controls back, so stop rather than fight them for
+		//    the character. Clicking patrol again re-plans from wherever they now are.
+		if (Vector3.Distance(playerPosition, moveStartPosition) < UnreachableMoveThreshold) {
+			moveIssued = false;
+			patrolIndex++;
+			return;
+		}
+
+		Finish(Strings.HuntAssistStatusStopped);
+	}
+
+	/// <summary>Read-only object table scan for the mark. Never targets or attacks anything.</summary>
+	private static IGameObject? FindTargetObject(HuntTargetInfo targetInfo) {
+		if (targetInfo.BNpcBaseId is 0) return null;
+
+		foreach (var gameObject in Service.ObjectTable) {
+			if (gameObject.ObjectKind is not ObjectKind.BattleNpc) continue;
+			if (gameObject.DataId != targetInfo.BNpcBaseId) continue;
+			if (!gameObject.IsValid()) continue;
+
+			return gameObject;
+		}
+
+		return null;
+	}
+
 	private void EnterStep(HuntAssistStep step, string status) {
 		Step = step;
 		StatusText = status;
@@ -416,6 +621,9 @@ public sealed class HuntAssistController {
 		stepClock.Reset();
 		target = null;
 		zoneTarget = null;
+		patrolTarget = null;
+		patrolRoute = [];
+		patrolIndex = 0;
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}
@@ -426,6 +634,9 @@ public sealed class HuntAssistController {
 		stepClock.Reset();
 		target = null;
 		zoneTarget = null;
+		patrolTarget = null;
+		patrolRoute = [];
+		patrolIndex = 0;
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}

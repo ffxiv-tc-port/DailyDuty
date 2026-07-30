@@ -991,4 +991,28 @@
     <data name="HuntAssistRankS" xml:space="preserve">
         <value>S級</value>
     </data>
+    <data name="HuntAssistPatrol" xml:space="preserve">
+        <value>巡邏重生點</value>
+    </data>
+    <data name="HuntAssistPatrolTooltip" xml:space="preserve">
+        <value>依較短路徑巡邏已知的重生點,發現目標就停下。不會自動攻擊;你自己操作移動就會結束巡邏。</value>
+    </data>
+    <data name="HuntAssistStatusPatrolling" xml:space="preserve">
+        <value>巡邏重生點中</value>
+    </data>
+    <data name="HuntAssistPatrolComplete" xml:space="preserve">
+        <value>巡邏結束:沒有發現目標。</value>
+    </data>
+    <data name="HuntAssistTargetFound" xml:space="preserve">
+        <value>發現目標:</value>
+    </data>
+    <data name="HuntAssistNoSpawnData" xml:space="preserve">
+        <value>沒有這張地圖的重生點資料。</value>
+    </data>
+    <data name="HuntAssistPatrolNeedsNavmesh" xml:space="preserve">
+        <value>巡邏功能需要安裝 vnavmesh。</value>
+    </data>
+    <data name="HuntAssistPatrolWrongZone" xml:space="preserve">
+        <value>必須先到目標所在地圖才能巡邏。</value>
+    </data>
 </root>

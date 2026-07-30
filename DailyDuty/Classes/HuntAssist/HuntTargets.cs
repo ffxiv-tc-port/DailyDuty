@@ -20,6 +20,9 @@ public sealed class HuntTargetInfo {
 
 	public HuntSpawnPoints.MarkRank Rank { get; init; } = HuntSpawnPoints.MarkRank.B;
 
+	/// <summary>BNpcBase row id of the mark - this is what IGameObject.DataId reports.</summary>
+	public uint BNpcBaseId { get; init; }
+
 	/// <summary>Aetheryte chosen as the best patrol start. 0 when the zone has none.</summary>
 	public uint AetheryteId { get; init; }
 
@@ -120,7 +123,7 @@ public static class HuntTargets {
 			if (mapRowId is 0) mapRowId = territory.Map.RowId;
 		}
 
-		var rank = ResolveRank(target.Name.RowId);
+		var (rank, bNpcBaseId) = ResolveMonster(target.Name.RowId);
 		var (aetheryteId, aetheryteName, fromRoute) = ChooseAetheryte(territoryId, rank);
 
 		return new HuntTargetInfo {
@@ -129,6 +132,7 @@ public static class HuntTargets {
 			MapId = mapRowId,
 			ZoneName = zoneName,
 			Rank = rank,
+			BNpcBaseId = bNpcBaseId,
 			AetheryteId = aetheryteId,
 			AetheryteName = aetheryteName,
 			AetheryteChosenFromRoute = fromRoute,
@@ -141,20 +145,22 @@ public static class HuntTargets {
 	/// than assume it, so a future patch that changes this does not silently send the player
 	/// to the wrong spawn points.
 	/// </summary>
-	private static HuntSpawnPoints.MarkRank ResolveRank(uint bNpcNameRowId) {
-		if (bNpcNameRowId is 0) return HuntSpawnPoints.MarkRank.B;
+	private static (HuntSpawnPoints.MarkRank Rank, uint BNpcBaseId) ResolveMonster(uint bNpcNameRowId) {
+		if (bNpcNameRowId is 0) return (HuntSpawnPoints.MarkRank.B, 0);
 
 		foreach (var monster in Service.DataManager.GetExcelSheet<NotoriousMonster>()) {
 			if (monster.BNpcName.RowId != bNpcNameRowId) continue;
 
-			return monster.Rank switch {
+			var rank = monster.Rank switch {
 				2 => HuntSpawnPoints.MarkRank.A,
 				3 => HuntSpawnPoints.MarkRank.S,
 				_ => HuntSpawnPoints.MarkRank.B,
 			};
+
+			return (rank, monster.BNpcBase.RowId);
 		}
 
-		return HuntSpawnPoints.MarkRank.B;
+		return (HuntSpawnPoints.MarkRank.B, 0);
 	}
 
 	/// <summary>

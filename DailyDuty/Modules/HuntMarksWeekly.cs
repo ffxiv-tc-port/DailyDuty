@@ -141,6 +141,14 @@ public class HuntMarksWeekly : HuntMarksBase {
 
 				ImGui.SetTooltip(tooltip);
 			}
+
+			if (ImGui.Button($"{Strings.HuntAssistPatrol}##hunt_patrol_{config.RowId}")) {
+				controller.StartPatrol(targetInfo, config.RowId);
+			}
+
+			if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
+				ImGui.SetTooltip(Strings.HuntAssistPatrolTooltip);
+			}
 		}
 	}
 }

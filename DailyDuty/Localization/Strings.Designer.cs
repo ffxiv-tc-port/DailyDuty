@@ -2976,5 +2976,77 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntAssistRankS", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrol Spawn Points.
+        /// </summary>
+        internal static string HuntAssistPatrol {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrol", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Walks the known spawn points on a short route and stops when the mark appears. It never attacks - moving yourself ends the patrol..
+        /// </summary>
+        internal static string HuntAssistPatrolTooltip {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrolling spawn points.
+        /// </summary>
+        internal static string HuntAssistStatusPatrolling {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusPatrolling", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrol finished - the mark was not found..
+        /// </summary>
+        internal static string HuntAssistPatrolComplete {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolComplete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark found:.
+        /// </summary>
+        internal static string HuntAssistTargetFound {
+            get {
+                return ResourceManager.GetString("HuntAssistTargetFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No spawn point data for this zone..
+        /// </summary>
+        internal static string HuntAssistNoSpawnData {
+            get {
+                return ResourceManager.GetString("HuntAssistNoSpawnData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrolling needs vnavmesh to be installed..
+        /// </summary>
+        internal static string HuntAssistPatrolNeedsNavmesh {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolNeedsNavmesh", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to You must be in the mark's zone to patrol..
+        /// </summary>
+        internal static string HuntAssistPatrolWrongZone {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolWrongZone", resourceCulture);
+            }
+        }
     }
 }
