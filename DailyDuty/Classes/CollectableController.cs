@@ -124,10 +124,14 @@ public unsafe class CollectableController : IDisposable {
             dutyNameTextNode->TextColor = MarkColor;
 
             if (!markedNameCache.TryGetValue(markCfc, out var seBytes)) {
-                seBytes = new SeStringBuilder()
+                var encoded = new SeStringBuilder()
                     .AddIcon(BitmapFontIcon.GoldStar)
                     .AddText(dutyName)
                     .Encode();
+                // CS 的 SetText(ReadOnlySpan<byte>) 直接把指標交給原生端,原生端
+                // 讀到 null 為止——Encode() 不含終止符,必須自己補,否則讀過界。
+                seBytes = new byte[encoded.Length + 1];
+                encoded.CopyTo(seBytes, 0);
                 markedNameCache[markCfc] = seBytes;
             }
             dutyNameTextNode->SetText(seBytes);
