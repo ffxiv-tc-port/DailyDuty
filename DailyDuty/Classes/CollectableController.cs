@@ -69,15 +69,32 @@ public unsafe class CollectableController : IDisposable {
     private const int NameNodeIndex = 3;
     private const int LevelNodeIndex = 4;
 
-    private const int DebugDumpLimit = 40;
+    // 診斷輸出走 Information,不是 Debug。
+    // ⚠️ 實測(2026-07-31 01:20 之後的 dalamud.log):使用者目前的 Dalamud 記錄等級把
+    //    DBG/VRB 全濾掉了(該小時 DBG = 0 筆,前一小時是 2997 筆)。
+    //    v7.20.0.19 的 [Collectable] Debug 行因此一行都沒進 log ——
+    //    這也是為什麼上一輪完全拿不到實據。診斷要有用就不能寫在 Debug。
+    private const int InfoDumpLimit = 6;
 
     // 強制重跑 populate 後的冷卻幀數:避免「重跑 → 列數又變 → 再重跑」互相追逐。
     private const int ForcedUpdateCooldownFrames = 15;
 
+    // 開窗後不管訊號有沒有動,都無條件重整這麼多次。
+    // 上一版完全倚賴「偵測到 ListLength / LayoutRefreshPending 變化」才觸發,
+    // 實測等於沒作用 —— 首開時這兩個訊號很可能從頭到尾不動。
+    private const int SettleForceCount = 3;
+
+    // 強制重整之後隔多少幀回報「populate 到底有沒有重跑」。
+    private const int ForceReportFrames = 20;
+
+    // 單次開窗的重整次數硬上限。設 LayoutRefreshPending 有可能讓遊戲再發一次
+    // PostRefresh,進而又排一次重整——這個上限保證它一定會停,不會變成永久刷新迴圈。
+    private const int MaxForcesPerOpen = 20;
+
     private Hook<AtkComponentListItemPopulator.PopulateDelegate>? onDutyListPopulate;
     private readonly Dictionary<uint, bool> missingCache = [];
     private Dictionary<string, uint>? nameToCfc;
-    private int debugDumpRemaining;
+    private int infoDumpRemaining;
 
     // 開窗時從 renderer 讀一次的樣板欄位數。之後 detour 只看這個 int,不再碰 renderer。
     // 0 = 沒讀到 → 整個標示功能停用(fail-closed,絕不猜)。
@@ -87,8 +104,16 @@ public unsafe class CollectableController : IDisposable {
     private bool repopulatePending;
     private bool inForcedUpdate;
     private int forcedUpdateCooldown;
+    private int settleForcesRemaining;
+    private int forcesRemainingThisOpen;
     private int lastListLength = int.MinValue;
     private bool lastLayoutRefreshPending;
+
+    // 診斷計數器(全部是純量)。
+    private bool sawPostUpdate;
+    private int forceReportCountdown;
+    private int detourCallCount;
+    private int detourMarkCount;
 
     // 金星圖示的 SeString payload,標示時接在該列「原始位元組」前面,
     // 保留原名裡可能存在的其他 payload。
@@ -166,7 +191,7 @@ public unsafe class CollectableController : IDisposable {
 
         // 解鎖狀態在開窗時重抓一次(同場學到新收藏品的過期程度可接受)。
         missingCache.Clear();
-        debugDumpRemaining = DebugDumpLimit;
+        infoDumpRemaining = InfoDumpLimit;
 
         var addon = args.GetAddon<AddonContentsFinder>();
         if (!IsPlausible(addon)) return;
@@ -176,7 +201,7 @@ public unsafe class CollectableController : IDisposable {
 
         var renderer = dutyList->GetItemRendererByNodeId(DutyRowRendererNodeId);
         if (!IsPlausible(renderer)) {
-            Service.Log.Warning($"[CollectableController] ContentsFinder 找不到列樣板 renderer(node id {DutyRowRendererNodeId}),列表標示停用。");
+            Service.Log.Warning($"[Collectable] PostSetup:找不到列樣板 renderer(node id {DutyRowRendererNodeId}),列表標示停用。");
             return;
         }
 
@@ -184,13 +209,13 @@ public unsafe class CollectableController : IDisposable {
         // 讀到的欄位數之後只以 int 形式使用,不保存 renderer 指標。
         var nodeCount = renderer->RowTemplateNodeCount;
         if (nodeCount <= LevelNodeIndex) {
-            Service.Log.Warning($"[CollectableController] 列樣板只有 {nodeCount} 個節點(需要 > {LevelNodeIndex}),列表標示停用。");
+            Service.Log.Warning($"[Collectable] PostSetup:列樣板只有 {nodeCount} 個節點(需要 > {LevelNodeIndex}),列表標示停用。");
             return;
         }
 
         var populateMethod = (nint) renderer->Populator.Populate;
         if ((ulong) populateMethod < MinPlausiblePointer) {
-            Service.Log.Warning("[CollectableController] 列樣板 populate 函式位址無效,列表標示停用。");
+            Service.Log.Warning("[Collectable] PostSetup:列樣板 populate 函式位址無效,列表標示停用。");
             return;
         }
 
@@ -202,11 +227,18 @@ public unsafe class CollectableController : IDisposable {
         // 首開時列在 hook 掛上之前就已經 populate 完了。
         // ⚠️ 不去「自己補畫」那些列——那正是 v7.20.0.16 的崩潰來源。
         // 改成請遊戲自己重跑一次 populate,標示會經由 hook 補上。
-        // 這件事延後到 PostUpdate 做:PostSetup 當下 addon 的陣列資料還不一定就緒。
+        // 這件事延後到 PostUpdate 做:PostSetup 當下 addon 的資料還不一定就緒。
         repopulatePending = true;
+        settleForcesRemaining = SettleForceCount;
+        forcesRemainingThisOpen = MaxForcesPerOpen;
+
+        Service.Log.Information($"[Collectable] PostSetup:hook 已掛上(populate=0x{populateMethod:X}, 樣板節點 {nodeCount} 個),排定 {SettleForceCount} 次重整。");
     }, Service.Log);
 
-    private void OnContentsFinderFinalize(AddonEvent type, AddonArgs args) => HookSafety.ExecuteSafe(ResetListState, Service.Log);
+    private void OnContentsFinderFinalize(AddonEvent type, AddonArgs args) => HookSafety.ExecuteSafe(() => {
+        Service.Log.Information($"[Collectable] PreFinalize:釋放 hook(本次開窗 PostUpdate 有跑={sawPostUpdate})。");
+        ResetListState();
+    }, Service.Log);
 
     private void ResetListState() {
         onDutyListPopulate?.Dispose();
@@ -216,8 +248,15 @@ public unsafe class CollectableController : IDisposable {
         repopulatePending = false;
         inForcedUpdate = false;
         forcedUpdateCooldown = 0;
+        settleForcesRemaining = 0;
+        forcesRemainingThisOpen = 0;
         lastListLength = int.MinValue;
         lastLayoutRefreshPending = false;
+
+        sawPostUpdate = false;
+        forceReportCountdown = 0;
+        detourCallCount = 0;
+        detourMarkCount = 0;
     }
 
     #endregion
@@ -255,6 +294,8 @@ public unsafe class CollectableController : IDisposable {
     }
 
     private void ApplyMarkToPopulatedRow(AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList) {
+        detourCallCount++;
+
         if (dutyCollectables is null) return;
 
         // 開窗時沒能確認樣板欄位數 → 整列不碰(fail-closed)。
@@ -294,10 +335,12 @@ public unsafe class CollectableController : IDisposable {
             }
         }
 
-        if (debugDumpRemaining > 0) {
-            debugDumpRemaining--;
-            Service.Log.Debug($"[Collectable] name='{dutyName}' matched={matched} mark={shouldMark}");
+        if (infoDumpRemaining > 0) {
+            infoDumpRemaining--;
+            Service.Log.Information($"[Collectable] populate: name='{dutyName}' matched={matched} mark={shouldMark} marking={marking}");
         }
+
+        if (shouldMark) detourMarkCount++;
 
         if (shouldMark) {
             // 金星 + 原始位元組 + null 終止符(原生 SetText 讀到 null 為止)。
@@ -329,58 +372,108 @@ public unsafe class CollectableController : IDisposable {
 
     /// <summary>
     ///     金星只在 populate 時套上,所以任何「沒有重跑 populate」的路徑都會留下沒星號的列:
-    ///     首開(列早於 hook 掛上就填好了)、展開/收合分類、資料重載。
+    ///     首開(列早於 hook 掛上就填好了)、展開/收合分類、換區後重開。
     ///
-    ///     這裡不去自己走列表補畫,而是偵測到列表形狀變了就請遊戲重跑一次 populate。
-    ///     🔑 偵測**只讀純量欄位**(int / bool),不解參考 Items 裡的任何元素,
+    ///     🔴 v7.20.0.19 的教訓:上一版**只在偵測到 ListLength / LayoutRefreshPending 變化時**
+    ///        才重整,實測完全沒生效——首開時這兩個訊號很可能從頭到尾不動。
+    ///        所以現在改成「開窗後無條件重整 <see cref="SettleForceCount" /> 次」為主,
+    ///        訊號變化只當額外觸發。**不再倚賴任何偵測假設。**
+    ///
+    ///     🔑 偵測與觸發**只讀寫純量欄位**(int / bool),不解參考 Items 裡的任何元素,
     ///        也不保存任何原生指標——addon 指標由 AddonLifecycle 當幀交付,用完即棄。
     /// </summary>
     private void ConvergeDutyListMarks(AddonContentsFinder* addon) {
-        if (dutyCollectables is null || onDutyListPopulate is null) return;
+        if (dutyCollectables is null) return;
         if (inForcedUpdate) return;
         if (!IsPlausible(addon)) return;
 
         var dutyList = addon->DutyList;
         if (!IsPlausible(dutyList)) return;
 
-        if (forcedUpdateCooldown > 0) forcedUpdateCooldown--;
-
         // ListLength = 目前可見的列數。展開/收合分類、切換副本類型、資料重載都會改到它。
         var listLength = dutyList->AtkComponentList.ListLength;
+
+        // 遊戲要重排樹狀清單時會把這個旗標設起來(展開/收合)。
+        var layoutRefreshPending = dutyList->LayoutRefreshPending;
+
+        if (!sawPostUpdate) {
+            sawPostUpdate = true;
+            Service.Log.Information($"[Collectable] PostUpdate 首次觸發:hook={(onDutyListPopulate is not null ? "在" : "無")} ListLength={listLength} LayoutRefreshPending={layoutRefreshPending} settle={settleForcesRemaining}");
+        }
+
+        if (forcedUpdateCooldown > 0) forcedUpdateCooldown--;
+
+        // 診斷:上一次強制重整之後,populate 到底有沒有真的重跑?
+        if (forceReportCountdown > 0 && --forceReportCountdown == 0) {
+            Service.Log.Information($"[Collectable] 重整後 {ForceReportFrames} 幀:populate 跑了 {detourCallCount} 次、標示 {detourMarkCount} 列,ListLength={listLength}");
+        }
+
         if (listLength != lastListLength) {
+            if (lastListLength != int.MinValue) {
+                Service.Log.Information($"[Collectable] ListLength {lastListLength} → {listLength},排定重整。");
+            }
             lastListLength = listLength;
             repopulatePending = true;
         }
 
-        // 遊戲要重排樹狀清單時會把這個旗標設起來(展開/收合)。
         // 只在 false → true 的邊緣觸發,萬一它長期為 true 也不會每幀重跑。
-        var layoutRefreshPending = dutyList->LayoutRefreshPending;
         if (layoutRefreshPending && !lastLayoutRefreshPending) repopulatePending = true;
         lastLayoutRefreshPending = layoutRefreshPending;
 
-        if (!repopulatePending || forcedUpdateCooldown > 0) return;
+        if (onDutyListPopulate is null) return;
+        if (forcedUpdateCooldown > 0) return;
+        if (!repopulatePending && settleForcesRemaining <= 0) return;
+
+        if (forcesRemainingThisOpen <= 0) {
+            if (repopulatePending || settleForcesRemaining > 0) {
+                repopulatePending = false;
+                settleForcesRemaining = 0;
+                Service.Log.Information("[Collectable] 本次開窗的重整次數已達上限,停止重整。");
+            }
+            return;
+        }
 
         repopulatePending = false;
+        forcesRemainingThisOpen--;
+        if (settleForcesRemaining > 0) settleForcesRemaining--;
         forcedUpdateCooldown = ForcedUpdateCooldownFrames;
 
-        ForceRepopulate(addon);
+        ForceRepopulate(addon, dutyList, listLength);
     }
 
     /// <summary>
-    ///     叫 addon 用目前的陣列資料重跑一次自己的更新,它會連帶重跑列 populate,
-    ///     我們的 hook 就會把標示補上。整個過程由遊戲主導,我們不碰任何列節點。
+    ///     請遊戲自己把可見列重跑一次 populate,標示會經由 hook 補上。
+    ///     我們不碰任何列節點,也不走 Items。
     /// </summary>
-    private void ForceRepopulate(AddonContentsFinder* addon) {
+    private void ForceRepopulate(AddonContentsFinder* addon, AtkComponentTreeList* dutyList, int listLength) {
         inForcedUpdate = true;
+        detourCallCount = 0;
+        detourMarkCount = 0;
+        forceReportCountdown = ForceReportFrames;
 
         try {
-            var stage = AtkStage.Instance();
-            if (!IsPlausible(stage)) return;
+            // ① 樹狀清單自己的「請重新排版」旗標(FFXIVClientStructs 對 ExpandGroupExclusively
+            //    的註解就是叫呼叫端接著把它設為 true)。重排會把可見列重新綁到 renderer,
+            //    連帶重跑 populate。**純量寫入,不走任何指標鏈。**
+            dutyList->LayoutRefreshPending = true;
 
-            addon->AtkUnitBase.OnRequestedUpdate(stage->GetNumberArrayData(), stage->GetStringArrayData());
+            // 別讓自己的寫入觸發自己的邊緣偵測。
+            lastLayoutRefreshPending = true;
+
+            // ② 另外請 addon 重跑一次自己的更新。
+            //    ⚠️ ContentsFinder 的副本清單是走 AtkValue 灌進 AtkComponentTreeList 的
+            //    (CS 對 AddonContentsFinder.DutyList 的註解:"Does not contain a pointer to
+            //    the rendered list"),所以它不見得吃這條——v7.20.0.11 用的就是這一招,
+            //    而實測首開一直沒修好。留著當第二保險,沒作用也只是沒動作。
+            var stage = AtkStage.Instance();
+            if (IsPlausible(stage)) {
+                addon->AtkUnitBase.OnRequestedUpdate(stage->GetNumberArrayData(), stage->GetStringArrayData());
+            }
+
+            Service.Log.Information($"[Collectable] 觸發列表重整(ListLength={listLength},settle 剩 {settleForcesRemaining})。");
         }
         catch (Exception exception) {
-            Service.Log.Error(exception, "[CollectableController] 請求列表重整失敗。");
+            Service.Log.Error(exception, "[Collectable] 請求列表重整失敗。");
         }
         finally {
             inForcedUpdate = false;
