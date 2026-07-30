@@ -76,20 +76,43 @@ public static class HuntSpawnPoints {
 	/// World-space spawn points for a zone, filtered to the ranks that can use them.
 	/// Empty when we have no data for that zone - callers must degrade, not assume.
 	/// </summary>
-	public static IReadOnlyList<Vector3> GetSpawnPoints(uint territoryId, MarkRank rank) {
-		lock (CacheLock) {
-			if (WorldPointCache.TryGetValue((territoryId, rank), out var cached)) return cached;
+	public static IReadOnlyList<Vector3> GetSpawnPoints(uint territoryId, MarkRank rank)
+		=> TryGetSpawnPoints(territoryId, rank, out var points) ? points : [];
 
-			var result = new List<Vector3>();
+	/// <summary>
+	/// World-space spawn points for a zone, filtered to the ranks that can use them.
+	///
+	/// Returns false when the conversion data is not available *yet* - that is a different
+	/// thing from a zone having no spawn points, and the caller must not treat it as "nothing
+	/// to do". Nothing is cached in that case, so a later call can succeed.
+	/// </summary>
+	public static bool TryGetSpawnPoints(uint territoryId, MarkRank rank, out IReadOnlyList<Vector3> points) {
+		lock (CacheLock) {
+			if (WorldPointCache.TryGetValue((territoryId, rank), out var cached)) {
+				points = cached;
+				return true;
+			}
+
+			List<Vector3>? built;
 			try {
-				result = BuildSpawnPoints(territoryId, rank);
+				built = BuildSpawnPoints(territoryId, rank);
 			}
 			catch (Exception ex) {
+				// An exception is "not ready", never "no points" - caching an empty list here
+				// would make one bad moment permanent for the rest of the session.
 				Service.Log.Error(ex, $"[HuntAssist] Failed to build spawn points for territory {territoryId}");
+				points = [];
+				return false;
 			}
 
-			WorldPointCache[(territoryId, rank)] = result;
-			return result;
+			if (built is null) {
+				points = [];
+				return false;
+			}
+
+			WorldPointCache[(territoryId, rank)] = built;
+			points = built;
+			return true;
 		}
 	}
 
@@ -100,21 +123,26 @@ public static class HuntSpawnPoints {
 		}
 	}
 
-	private static List<Vector3> BuildSpawnPoints(uint territoryId, MarkRank rank) {
+	/// <summary>
+	/// Null means "the conversion data is not available yet, ask again later". An empty list
+	/// means "this zone genuinely has no spawn points" and is safe to cache.
+	/// </summary>
+	private static List<Vector3>? BuildSpawnPoints(uint territoryId, MarkRank rank) {
 		EnsureRawData();
 
 		if (!rawZones!.TryGetValue((ushort) territoryId, out var positions)) return [];
 
-		var scale = 100.0f;
-		var offsetX = 0;
-		var offsetY = 0;
+		// The conversion needs this zone's own Map row: SizeFactor is not a constant (the six
+		// Heavensward zones are 95, everything else 100) and it divides into the result. The
+		// old code silently fell back to 100 and then cached the outcome forever, which turned
+		// one unlucky moment into permanently misplaced points. Refuse instead, and retry.
+		if (!Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.TerritoryType>().TryGetRow(territoryId, out var territory)) return null;
+		if (territory.Map.ValueNullable is not { } map) return null;
+		if (map.SizeFactor is 0) return null;
 
-		if (Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.TerritoryType>().TryGetRow(territoryId, out var territory) &&
-		    territory.Map.ValueNullable is { } map) {
-			scale = map.SizeFactor;
-			offsetX = map.OffsetX;
-			offsetY = map.OffsetY;
-		}
+		float scale = map.SizeFactor;
+		int offsetX = map.OffsetX;
+		int offsetY = map.OffsetY;
 
 		var result = new List<Vector3>(positions.Count);
 		foreach (var position in positions) {

@@ -1033,4 +1033,10 @@
     <data name="HuntAssistPatrolSettings" xml:space="preserve">
         <value>巡邏設定</value>
     </data>
+    <data name="HuntAssistStatusPreparing" xml:space="preserve">
+        <value>正在準備巡邏……</value>
+    </data>
+    <data name="HuntAssistSpawnDataNotReady" xml:space="preserve">
+        <value>重生點資料尚未就緒,請稍候再試一次。</value>
+    </data>
 </root>

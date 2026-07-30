@@ -3050,6 +3050,24 @@ namespace DailyDuty.Localization {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Preparing patrol....
+        /// </summary>
+        internal static string HuntAssistStatusPreparing {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusPreparing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Spawn point data is not ready yet - try again in a moment..
+        /// </summary>
+        internal static string HuntAssistSpawnDataNotReady {
+            get {
+                return ResourceManager.GetString("HuntAssistSpawnDataNotReady", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Open.
         /// </summary>
         internal static string OpenModuleLink {

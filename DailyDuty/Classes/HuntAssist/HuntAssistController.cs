@@ -21,6 +21,7 @@ public enum HuntAssistStep {
 	AethernetHop,
 	WaitingForAethernet,
 	Walking,
+	PreparingPatrol,
 	MountingForPatrol,
 	Patrolling,
 	Finished,
@@ -55,6 +56,9 @@ public sealed class HuntAssistController {
 	/// <summary>Only hop the aethernet when it saves at least this much walking.</summary>
 	private const float AethernetWorthwhileMargin = 30.0f;
 
+	/// <summary>How long to wait for the spawn point data to become usable.</summary>
+	private static readonly TimeSpan SpawnDataTimeout = TimeSpan.FromSeconds(10);
+
 	/// <summary>How long to keep trying to mount before giving up and walking.</summary>
 	private static readonly TimeSpan MountTimeout = TimeSpan.FromSeconds(12);
 
@@ -74,7 +78,7 @@ public sealed class HuntAssistController {
 
 	public string StatusText { get; private set; } = string.Empty;
 
-	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling;
+	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling;
 
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
@@ -215,41 +219,66 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
-		var spawnPoints = HuntSpawnPoints.GetSpawnPoints(targetInfo.TerritoryId, targetInfo.Rank);
-		if (spawnPoints.Count is 0) {
-			StatusText = Strings.HuntAssistNoSpawnData;
-			PrintMessage(StatusText);
-			return false;
-		}
-
+		// The point list is deliberately NOT resolved here. Building it needs the zone's Map
+		// row, which can still be settling right after a zone change, and nothing about "not
+		// ready yet" should look like "there is nothing to patrol". Prepare, with a timeout.
 		patrolRemaining.Clear();
-		patrolRemaining.AddRange(spawnPoints);
-		patrolTotal = patrolRemaining.Count;
+		patrolTotal = 0;
 		patrolWaypoint = null;
 		patrolTarget = targetInfo;
 		target = null;
 		zoneTarget = null;
 		ActiveOrderTypeRowId = orderTypeRowId;
 		moveIssued = false;
+		patrolFlying = false;
 
-		// Anything already inside the detection radius is checked before we take a step.
-		ConsumeCoveredPoints(player.Position);
+		Step = HuntAssistStep.PreparingPatrol;
+		StatusText = Strings.HuntAssistStatusPreparing;
+		stepClock.Restart();
+		return true;
+	}
+
+	/// <summary>
+	/// Waits until the spawn points can actually be placed, then starts the run.
+	///
+	/// The distinction this step exists to protect: zero points is never "finished". Either the
+	/// data is not ready (retry, then say so), or the zone genuinely has none (say that
+	/// instead) - neither is a completed patrol.
+	/// </summary>
+	private void UpdatePreparingPatrol() {
+		if (patrolTarget is not { } targetInfo) {
+			Cancel();
+			return;
+		}
+
+		if (!HuntSpawnPoints.TryGetSpawnPoints(targetInfo.TerritoryId, targetInfo.Rank, out var spawnPoints)) {
+			if (stepClock.Elapsed > SpawnDataTimeout) Fail(Strings.HuntAssistSpawnDataNotReady);
+			return;
+		}
+
+		if (spawnPoints.Count is 0) {
+			Fail(Strings.HuntAssistNoSpawnData);
+			return;
+		}
+
+		patrolRemaining.Clear();
+		patrolRemaining.AddRange(spawnPoints);
+		patrolTotal = patrolRemaining.Count;
 
 		patrolFlying = System.HuntAssistConfig.UseFlying && HuntFlight.IsFlyingAvailable();
 
+		// Coverage is only counted once we are actually under way - never during the mount and
+		// take-off, and never before the points exist.
 		if (patrolFlying && !HuntFlight.IsFlying) {
 			Step = HuntAssistStep.MountingForPatrol;
 			StatusText = Strings.HuntAssistStatusMounting;
 			mountClock.Restart();
 			mountRetryClock.Reset();
-		}
-		else {
-			Step = HuntAssistStep.Patrolling;
-			StatusText = PatrolStatusText;
+			stepClock.Restart();
+			return;
 		}
 
-		stepClock.Restart();
-		return true;
+		BeginPatrolStep();
 	}
 
 	private string PatrolStatusText
@@ -343,6 +372,11 @@ public sealed class HuntAssistController {
 
 		if (Step is HuntAssistStep.TeleportingToZone) {
 			UpdateTeleportToZone();
+			return;
+		}
+
+		if (Step is HuntAssistStep.PreparingPatrol) {
+			UpdatePreparingPatrol();
 			return;
 		}
 
@@ -648,7 +682,10 @@ public sealed class HuntAssistController {
 
 		if (patrolRemaining.Count is 0) {
 			StopMovement();
-			Finish(Strings.HuntAssistPatrolComplete);
+
+			// Guard the distinction one last time: we only "finished" if there was something
+			// to finish. Zero out of zero is a data problem, not a completed patrol.
+			Finish(patrolTotal > 0 ? Strings.HuntAssistPatrolComplete : Strings.HuntAssistSpawnDataNotReady);
 			return;
 		}
 
@@ -666,7 +703,7 @@ public sealed class HuntAssistController {
 
 			if (NextWaypoint(playerPosition) is not { } waypoint) {
 				StopMovement();
-				Finish(Strings.HuntAssistPatrolComplete);
+				Finish(patrolTotal > 0 ? Strings.HuntAssistPatrolComplete : Strings.HuntAssistSpawnDataNotReady);
 				return;
 			}
 

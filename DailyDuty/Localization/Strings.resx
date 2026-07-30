@@ -1033,4 +1033,10 @@ Limited to once per 5 mins</value>
     <data name="HuntAssistPatrolSettings" xml:space="preserve">
         <value>Patrol Settings</value>
     </data>
+    <data name="HuntAssistStatusPreparing" xml:space="preserve">
+        <value>Preparing patrol...</value>
+    </data>
+    <data name="HuntAssistSpawnDataNotReady" xml:space="preserve">
+        <value>Spawn point data is not ready yet - try again in a moment.</value>
+    </data>
 </root>

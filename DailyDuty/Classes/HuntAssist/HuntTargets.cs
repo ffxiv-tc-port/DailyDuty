@@ -31,6 +31,9 @@ public sealed class HuntTargetInfo {
 
 	/// <summary>True when the choice was made against real spawn-point data.</summary>
 	public bool AetheryteChosenFromRoute { get; init; }
+
+	/// <summary>False when the spawn point data could not be built yet - do not cache this.</summary>
+	public bool SpawnDataReady { get; init; }
 }
 
 /// <summary>
@@ -63,8 +66,13 @@ public static class HuntTargets {
 
 			var resolved = ResolveTarget(orderTypeRowId, obtainedIndex);
 
-			lock (CacheLock) {
-				TargetCache[(orderTypeRowId, obtainedIndex)] = resolved;
+			// Only cache a fully-resolved answer. If the spawn data was not available the
+			// aetheryte choice is a fallback, and caching it would freeze the wrong answer in
+			// for the rest of the session.
+			if (resolved is null or { SpawnDataReady: true }) {
+				lock (CacheLock) {
+					TargetCache[(orderTypeRowId, obtainedIndex)] = resolved;
+				}
 			}
 
 			return resolved;
@@ -124,7 +132,7 @@ public static class HuntTargets {
 		}
 
 		var (rank, bNpcBaseId) = ResolveMonster(target.Name.RowId);
-		var (aetheryteId, aetheryteName, fromRoute) = ChooseAetheryte(territoryId, rank);
+		var (aetheryteId, aetheryteName, fromRoute, dataReady) = ChooseAetheryte(territoryId, rank);
 
 		return new HuntTargetInfo {
 			Name = target.Name.ValueNullable?.Singular.ExtractText() ?? string.Empty,
@@ -136,6 +144,7 @@ public static class HuntTargets {
 			AetheryteId = aetheryteId,
 			AetheryteName = aetheryteName,
 			AetheryteChosenFromRoute = fromRoute,
+			SpawnDataReady = dataReady,
 		};
 	}
 
@@ -168,8 +177,10 @@ public static class HuntTargets {
 	/// each aetheryte by how long a greedy patrol of the zone's spawn points would be if it
 	/// started there, so the teleport already sets up the next step.
 	/// </summary>
-	private static (uint AetheryteId, string Name, bool FromRoute) ChooseAetheryte(uint territoryId, HuntSpawnPoints.MarkRank rank) {
-		var spawnPoints = HuntSpawnPoints.GetSpawnPoints(territoryId, rank);
+	private static (uint AetheryteId, string Name, bool FromRoute, bool DataReady) ChooseAetheryte(uint territoryId, HuntSpawnPoints.MarkRank rank) {
+		// Readiness matters here too: scoring against an empty list silently picks the first
+		// aetheryte in the zone, and that answer would then be cached for the session.
+		var dataReady = HuntSpawnPoints.TryGetSpawnPoints(territoryId, rank, out var spawnPoints);
 
 		uint bestId = 0;
 		var bestName = string.Empty;
@@ -203,7 +214,7 @@ public static class HuntTargets {
 			fromRoute = true;
 		}
 
-		return (bestId, bestName, fromRoute);
+		return (bestId, bestName, fromRoute, dataReady);
 	}
 
 	/// <summary>Drops cached target resolutions; used on logout so a new character re-resolves.</summary>
