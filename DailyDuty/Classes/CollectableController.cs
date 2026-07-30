@@ -97,6 +97,14 @@ public unsafe class CollectableController : IDisposable {
 
         onDutyListPopulate = Service.Hooker.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod, OnPopulateHook);
         onDutyListPopulate?.Enable();
+
+        // 首開時列表在 setup 期間就 populate 完、早於本 hook 掛上——強制它用
+        // 目前的陣列資料重跑一次 populate,金星標示第一次開窗就會套上,
+        // 不用開關兩次。
+        HookSafety.ExecuteSafe(() => {
+            var stage = AtkStage.Instance();
+            addon->AtkUnitBase.OnRequestedUpdate(stage->GetNumberArrayData(), stage->GetStringArrayData());
+        }, Service.Log);
     }
 
     private void OnContentsFinderFinalize(AddonEvent type, AddonArgs args) {
