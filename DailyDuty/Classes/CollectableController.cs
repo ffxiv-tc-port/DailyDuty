@@ -6,14 +6,17 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 using DailyDuty.Localization;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Hooking;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using InteropGenerator.Runtime;
+using KamiLib.Classes;
 using KamiLib.Extensions;
 using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
@@ -44,25 +47,12 @@ public unsafe class CollectableController : IDisposable {
     private ContentsId.ContentsType lastContentType;
     private uint lastContentId;
 
-    // 任務列表逐行標示。
-    //
-    // ⚠️ 這裡刻意「不」用 populate hook。標示只在 populate 時套用的話,任何沒有重跑
-    // populate 的路徑都會留下沒有星號的列——首開(列在 hook 掛上前就填好了)、展開
-    // 分類、換區後重開,全都是同一個根因的不同觸發方式。改成每幀對帳:以列表資料
-    // 為準,把「該有星號」的狀態收斂回去,不管中間經過了什麼路徑。
+    // 任務列表逐行標示:同 DutyRoulette 的 populate hook 模式。
+    private Hook<AtkComponentListItemPopulator.PopulateDelegate>? onDutyListPopulate;
+    private readonly List<uint> markedIndexes = [];
     private readonly Dictionary<uint, bool> missingCache = [];
     private Dictionary<string, uint>? nameToCfc;
-
-    // 列樣板的節點索引:3 = 副本名稱,4 = 等級(原生 populate 填的就是這兩個)。
-    private const int NameNodeIndex = 3;
-    private const int LevelNodeIndex = 4;
-
-    // 每列的判定快取。用字串指標當 key,但每次命中都拿實際位元組再比對一次——
-    // 列表重建時遊戲會重用同一塊緩衝區,光看指標會把別的副本的判定沿用下去。
-    private readonly Dictionary<nint, (byte[] Raw, bool Mark)> rowMarkCache = [];
-
-    // Renderers already written this frame - see the note in ReconcileDutyListMarks.
-    private readonly HashSet<nint> handledRenderers = [];
+    private int debugDumpRemaining;
 
     // 金星圖示的 SeString payload,標示時接在該列「原始位元組」前面,
     // 保留原名裡可能存在的其他 payload。
@@ -72,17 +62,22 @@ public unsafe class CollectableController : IDisposable {
     public CollectableController() {
         dutyCollectables = LoadEmbeddedData();
 
-        // ContentsFinderController already listens for PostSetup/PreFinalize/PostUpdate,
-        // so there is no need for a second set of AddonLifecycle registrations.
+        Service.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "ContentsFinder", OnContentsFinderSetup);
+        Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "ContentsFinder", OnContentsFinderFinalize);
+
         System.ContentsFinderController.OnAttach += AttachNodes;
         System.ContentsFinderController.OnDetach += DetachNodes;
         System.ContentsFinderController.OnUpdate += OnContentsFinderUpdate;
     }
 
     public void Dispose() {
+        Service.AddonLifecycle.UnregisterListener(OnContentsFinderSetup, OnContentsFinderFinalize);
+
         System.ContentsFinderController.OnAttach -= AttachNodes;
         System.ContentsFinderController.OnDetach -= DetachNodes;
         System.ContentsFinderController.OnUpdate -= OnContentsFinderUpdate;
+
+        onDutyListPopulate?.Dispose();
 
         System.NativeController.DetachNode(infoTextNode, () => {
             infoTextNode?.Dispose();
@@ -90,123 +85,87 @@ public unsafe class CollectableController : IDisposable {
         });
     }
 
-    private static readonly FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor MarkColor
-        = new Vector4(1.0f, 0.83f, 0.29f, 1.0f).ToByteColor();
-
-    /// <summary>
-    ///     Walks the duty list every frame and makes the gold-star marks match what the list
-    ///     data says they should be.
-    ///
-    ///     This is a reconciler, not an event handler: it is idempotent, so running it every
-    ///     frame is harmless, and it converges no matter how the list got into its current
-    ///     state - first open, expanding a category, changing zone, or rows being recycled by
-    ///     scrolling. That is why there is no populate hook and no forced re-populate.
-    ///
-    ///     Cost: the outer loop is one null check per item (a few hundred at most, and only
-    ///     while the window is open). Everything expensive is behind `Renderer is null`, which
-    ///     only the rows actually bound to a visible slot get past - roughly 15-25 of them.
-    ///     Those do one dictionary lookup plus a byte compare, and only touch the UI when the
-    ///     row is not already in the state it should be in.
-    /// </summary>
-    private void ReconcileDutyListMarks(AddonContentsFinder* addon) {
+    private void OnContentsFinderSetup(AddonEvent type, AddonArgs args) {
         if (dutyCollectables is null) return;
 
-        var list = addon->DutyList;
-        if (list is null) return;
+        // 解鎖狀態在開窗時重抓一次(同場學到新收藏品的過期程度可接受)。
+        missingCache.Clear();
+        debugDumpRemaining = 40;
 
-        var marking = System.CollectableConfig is { Enabled: true, MarkDutyList: true };
-        ref var items = ref list->Items;
+        var addon = args.GetAddon<AddonContentsFinder>();
+        var populateMethod = addon->DutyList->GetItemRendererByNodeId(6)->Populator.Populate;
 
-        handledRenderers.Clear();
+        onDutyListPopulate = Service.Hooker.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod, OnPopulateHook);
+        onDutyListPopulate?.Enable();
 
-        for (var index = 0; index < items.Count; index++) {
-            var item = items[index].Value;
-            if (item is null) continue;
-
-            // Null renderer means this row is not currently bound to a visual slot.
-            var renderer = item->Renderer;
-            if (renderer is null) continue;
-
-            // One write per renderer per frame. Rows get recycled as the list scrolls, and if
-            // an off-screen item were ever left holding a stale Renderer pointer, two items
-            // would otherwise fight over the same row's text. Items are in list order, so the
-            // first claimant is the row actually being shown.
-            if (!handledRenderers.Add((nint) renderer)) continue;
-
-            if (renderer->RowTemplateNodeCount <= LevelNodeIndex) continue;
-
-            var nodeList = renderer->RowTemplateNodeList;
-            if (nodeList is null) continue;
-
-            var nameNode = (AtkTextNode*) nodeList[NameNodeIndex];
-            var levelNode = (AtkTextNode*) nodeList[LevelNodeIndex];
-            if (nameNode is null) continue;
-
-            // StringValues[0] is the row's real name, straight from the list data - the text
-            // node is only a rendering of it and may already carry our own star prefix.
-            if (item->StringValues.Count is 0) continue;
-            var rawName = item->StringValues[0];
-            if (!rawName.HasValue) continue;
-
-            ApplyRowMark(nameNode, levelNode, rawName, marking && ShouldMarkRow(rawName));
-        }
+        // 首開時列表在 setup 期間就 populate 完、早於本 hook 掛上——強制它用
+        // 目前的陣列資料重跑一次 populate,金星標示第一次開窗就會套上,
+        // 不用開關兩次。
+        HookSafety.ExecuteSafe(() => {
+            var stage = AtkStage.Instance();
+            addon->AtkUnitBase.OnRequestedUpdate(stage->GetNumberArrayData(), stage->GetStringArrayData());
+        }, Service.Log);
     }
 
-    private bool ShouldMarkRow(CStringPointer rawName) {
-        var span = rawName.AsSpan();
-        var key = (nint) rawName.Value;
-
-        if (rowMarkCache.TryGetValue(key, out var cached) && span.SequenceEqual(cached.Raw)) {
-            return cached.Mark;
-        }
-
-        // 原始位元組可能含 payload(鎖頭圖示等),Utf8String.ToString() 會把 payload
-        // 混進字串害比對失敗——用 SeString 解析取純文字再比對。
-        var dutyName = SeString.Parse(span).TextValue.Trim();
-        nameToCfc ??= BuildNameMap();
-
-        var mark = nameToCfc.TryGetValue(dutyName, out var cfcId) && HasMissing(cfcId);
-        rowMarkCache[key] = (span.ToArray(), mark);
-        return mark;
+    private void OnContentsFinderFinalize(AddonEvent type, AddonArgs args) {
+        onDutyListPopulate?.Dispose();
+        onDutyListPopulate = null;
+        markedIndexes.Clear();
     }
 
-    /// <summary>
-    ///     Brings one row to the desired state. Strictly idempotent: a row that already has the
-    ///     star is left alone (so stars never stack), and a row that should not have one is
-    ///     rebuilt from the raw name.
-    /// </summary>
-    private static void ApplyRowMark(AtkTextNode* nameNode, AtkTextNode* levelNode, CStringPointer rawName, bool shouldMark) {
-        var hasStar = nameNode->NodeText.AsSpan().StartsWith(StarPrefix);
-        if (shouldMark == hasStar) {
-            // Text is already right; only the colour can still be out of date.
-            if (shouldMark && !SameColor(nameNode->TextColor, MarkColor)) nameNode->TextColor = MarkColor;
-            return;
+    private void OnPopulateHook(AtkUnitBase* unitBase, AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList) => HookSafety.ExecuteSafe(() => {
+        var index = listItemInfo->ListItem->Renderer->OwnerNode->NodeId;
+        var dutyNameTextNode = (AtkTextNode*) nodeList[3];
+        var levelTextNode = (AtkTextNode*) nodeList[4];
+
+        var shouldMark = false;
+        var matched = false;
+        var dutyName = string.Empty;
+        byte[]? rawName = null;
+        if (System.CollectableConfig is { Enabled: true, MarkDutyList: true }) {
+            // 原始位元組可能含 payload(鎖頭圖示等),Utf8String.ToString() 會把
+            // payload 混進字串害比對失敗——用 SeString 解析取純文字再比對。
+            var rawSpan = listItemInfo->ListItem->StringValues[0].AsSpan();
+            rawName = rawSpan.ToArray();
+            dutyName = SeString.Parse(rawSpan).TextValue.Trim();
+            nameToCfc ??= BuildNameMap();
+            if (nameToCfc.TryGetValue(dutyName, out var cfcId)) {
+                matched = true;
+                shouldMark = HasMissing(cfcId);
+            }
         }
 
-        var raw = rawName.AsSpan();
+        if (debugDumpRemaining > 0) {
+            debugDumpRemaining--;
+            var rawHex = rawName is null ? "" : Convert.ToHexString(rawName, 0, Math.Min(rawName.Length, 12));
+            Service.Log.Debug($"[Collectable] row={index} name='{dutyName}' matched={matched} mark={shouldMark} raw12={rawHex}");
+        }
+
+        // 先讓原生 populate 填好整列(它每次都會重寫文字),再疊我們的標示——
+        // 圖示前綴才不會在列被回收重用時累積或殘留。
+        onDutyListPopulate!.Original(unitBase, listItemInfo, nodeList);
 
         if (shouldMark) {
+            dutyNameTextNode->TextColor = MarkColor;
+
             // 金星 + 原始位元組 + null 終止符(原生 SetText 讀到 null 為止)。
-            var buffer = new byte[StarPrefix.Length + raw.Length + 1];
-            StarPrefix.CopyTo(buffer, 0);
-            raw.CopyTo(buffer.AsSpan(StarPrefix.Length));
-            buffer[^1] = 0;
+            var buf = new byte[StarPrefix.Length + rawName!.Length + 1];
+            StarPrefix.CopyTo(buf, 0);
+            rawName.CopyTo(buf, StarPrefix.Length);
+            dutyNameTextNode->SetText(buf);
 
-            nameNode->SetText(buffer);
-            nameNode->TextColor = MarkColor;
+            if (!markedIndexes.Contains(index)) {
+                markedIndexes.Add(index);
+            }
         }
-        else {
-            var buffer = new byte[raw.Length + 1];
-            raw.CopyTo(buffer);
-            buffer[^1] = 0;
-
-            nameNode->SetText(buffer);
-            if (levelNode is not null) nameNode->TextColor = levelNode->TextColor;
+        else if (markedIndexes.Contains(index)) {
+            dutyNameTextNode->TextColor = levelTextNode->TextColor;
+            markedIndexes.Remove(index);
         }
-    }
+    }, Service.Log);
 
-    private static bool SameColor(FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor left, FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor right)
-        => left.R == right.R && left.G == right.G && left.B == right.B && left.A == right.A;
+    private static FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor MarkColor
+        => new Vector4(1.0f, 0.83f, 0.29f, 1.0f).ToByteColor();
 
     private Dictionary<string, uint> BuildNameMap() {
         var map = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
@@ -229,7 +188,6 @@ public unsafe class CollectableController : IDisposable {
     /// <summary>設定變更後呼叫:類型開關會影響「有無未取得」的判定與底部摘要。</summary>
     public void InvalidateCache() {
         missingCache.Clear();
-        rowMarkCache.Clear();
         hasLastSelection = false;
     }
 
@@ -290,12 +248,6 @@ public unsafe class CollectableController : IDisposable {
     }
 
     private void AttachNodes(AddonContentsFinder* addon) {
-        // Unlock state is re-read whenever the window opens; learning a collectable while the
-        // window is already open is an acceptable staleness window. Row decisions go with it,
-        // since they are derived from it.
-        missingCache.Clear();
-        rowMarkCache.Clear();
-
         if (dutyCollectables is null) return;
 
         // Placed in the free space at the bottom of the window, beside the "Open DailyDuty"
@@ -321,9 +273,6 @@ public unsafe class CollectableController : IDisposable {
     }
 
     private void DetachNodes(AddonContentsFinder* addon) {
-        // Those string pointers belong to the addon we are about to lose.
-        rowMarkCache.Clear();
-
         System.NativeController.DetachNode(infoTextNode, () => {
             infoTextNode?.Dispose();
             infoTextNode = null;
@@ -331,10 +280,6 @@ public unsafe class CollectableController : IDisposable {
     }
 
     private void OnContentsFinderUpdate(AddonContentsFinder* addon) {
-        // Runs before the summary-node early-outs: the row marks must keep converging even
-        // when the bottom summary has nothing to say.
-        ReconcileDutyListMarks(addon);
-
         if (infoTextNode is null || dutyCollectables is null) return;
 
         if (!System.CollectableConfig.Enabled) {
