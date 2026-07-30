@@ -964,4 +964,31 @@ Limited to once per 5 mins</value>
     <data name="HuntAssistWrongZone" xml:space="preserve">
         <value>Could not reach the board's zone - the hunt board was flagged on your map instead.</value>
     </data>
+    <data name="HuntAssistGoToTarget" xml:space="preserve">
+        <value>Go to Target Zone</value>
+    </data>
+    <data name="HuntAssistStatusTeleportingZone" xml:space="preserve">
+        <value>Teleporting to the mark's zone...</value>
+    </data>
+    <data name="HuntAssistStatusArrivedZone" xml:space="preserve">
+        <value>Arrived in the mark's zone.</value>
+    </data>
+    <data name="HuntAssistAlreadyInZone" xml:space="preserve">
+        <value>You are already in the mark's zone.</value>
+    </data>
+    <data name="HuntAssistNoAetheryte" xml:space="preserve">
+        <value>That zone has no aetheryte - it was opened on your map instead.</value>
+    </data>
+    <data name="HuntAssistTargetTooltip" xml:space="preserve">
+        <value>Teleports to the aetheryte that makes the following patrol shortest.</value>
+    </data>
+    <data name="HuntAssistRankB" xml:space="preserve">
+        <value>B Rank</value>
+    </data>
+    <data name="HuntAssistRankA" xml:space="preserve">
+        <value>A Rank</value>
+    </data>
+    <data name="HuntAssistRankS" xml:space="preserve">
+        <value>S Rank</value>
+    </data>
 </root>

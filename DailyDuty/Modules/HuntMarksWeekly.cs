@@ -94,6 +94,14 @@ public class HuntMarksWeekly : HuntMarksBase {
 					obtained ? Strings.HuntAssistBillObtained : Strings.HuntAssistBillAvailable);
 			}
 
+			// Once the bill is in hand the board is no longer interesting - what matters is
+			// where the mark lives. Resolve it lazily so we do not touch the sheets for bills
+			// that have not been accepted.
+			var targetInfo = complete || !obtained ? null : HuntTargets.GetCurrentTarget(config.RowId);
+			if (targetInfo is not null) {
+				ImGui.TextColored(KnownColor.Gray.Vector(), $"{targetInfo.Name} - {targetInfo.ZoneName}");
+			}
+
 			ImGui.TableNextColumn();
 			if (boards.Count is 0) {
 				ImGui.TextColored(KnownColor.Orange.Vector(), Strings.HuntAssistNoBoardData);
@@ -101,6 +109,7 @@ public class HuntMarksWeekly : HuntMarksBase {
 			}
 
 			using var disabled = ImRaii.Disabled(controller.IsRunning);
+
 			foreach (var board in boards) {
 				var label = board.ZoneName.Length > 0 ? board.ZoneName : Strings.HuntAssistGoToBoard;
 
@@ -111,6 +120,26 @@ public class HuntMarksWeekly : HuntMarksBase {
 				if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
 					ImGui.SetTooltip(Strings.HuntAssistGoToBoard);
 				}
+			}
+
+			if (targetInfo is null) continue;
+
+			if (ImGui.Button($"{Strings.HuntAssistGoToTarget}##hunt_target_{config.RowId}")) {
+				controller.GoToTargetZone(targetInfo, config.RowId);
+			}
+
+			if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
+				var rankLabel = targetInfo.Rank switch {
+					HuntSpawnPoints.MarkRank.A => Strings.HuntAssistRankA,
+					HuntSpawnPoints.MarkRank.S => Strings.HuntAssistRankS,
+					_ => Strings.HuntAssistRankB,
+				};
+
+				var tooltip = $"{targetInfo.Name} ({rankLabel})\n{targetInfo.ZoneName}";
+				if (targetInfo.AetheryteName.Length > 0) tooltip += $" - {targetInfo.AetheryteName}";
+				if (targetInfo.AetheryteChosenFromRoute) tooltip += $"\n{Strings.HuntAssistTargetTooltip}";
+
+				ImGui.SetTooltip(tooltip);
 			}
 		}
 	}

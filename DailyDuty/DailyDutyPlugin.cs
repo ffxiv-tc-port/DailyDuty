@@ -99,6 +99,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     
     private static void OnLogout(int type, int code) {
         System.HuntAssistController.Cancel();
+        HuntTargets.InvalidateCache();
         System.OverlayController.Disable();
         System.ContentsFinderController.Disable();
         System.ModuleController.UnloadModules();

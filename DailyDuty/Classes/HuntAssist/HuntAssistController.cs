@@ -13,6 +13,7 @@ namespace DailyDuty.Classes.HuntAssist;
 public enum HuntAssistStep {
 	Idle,
 	Teleporting,
+	TeleportingToZone,
 	AethernetHop,
 	WaitingForAethernet,
 	Walking,
@@ -56,12 +57,13 @@ public sealed class HuntAssistController {
 
 	public string StatusText { get; private set; } = string.Empty;
 
-	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking;
+	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking;
 
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
 
 	private HuntBoardLocation? target;
+	private HuntTargetInfo? zoneTarget;
 	private readonly Stopwatch stepClock = new();
 	private bool teleportIssued;
 	private bool moveIssued;
@@ -98,6 +100,63 @@ public sealed class HuntAssistController {
 		return true;
 	}
 
+	/// <summary>
+	/// Teleports to the zone the currently-held bill's mark lives in. The aetheryte is not
+	/// simply the nearest one - <see cref="HuntTargets"/> picks whichever makes the following
+	/// patrol shortest, so this step already sets up the next one.
+	/// </summary>
+	public bool GoToTargetZone(HuntTargetInfo targetInfo, uint orderTypeRowId) {
+		if (IsRunning) {
+			StatusText = Strings.HuntAssistAlreadyRunning;
+			return false;
+		}
+
+		if (!Service.ClientState.IsLoggedIn || Service.ClientState.LocalPlayer is null) return false;
+
+		if (Service.Condition.IsBoundByDuty()) {
+			Fail(Strings.HuntAssistStoppedInDuty);
+			return false;
+		}
+
+		if (targetInfo.AetheryteId is 0) {
+			// Nothing to teleport to (some zones have no aetheryte at all) - flag it instead.
+			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, Vector3.Zero, false);
+			StatusText = Strings.HuntAssistNoAetheryte;
+			PrintMessage(StatusText);
+			return false;
+		}
+
+		if (Service.ClientState.TerritoryType == targetInfo.TerritoryId) {
+			StatusText = Strings.HuntAssistAlreadyInZone;
+			PrintMessage(StatusText);
+			return false;
+		}
+
+		if (Service.Condition[ConditionFlag.InCombat]) {
+			Fail(Strings.HuntAssistStoppedInCombat);
+			return false;
+		}
+
+		var started = Lifestream.IsInstalled
+			? Lifestream.Teleport(targetInfo.AetheryteId)
+			: TeleportWithGameFunction(targetInfo.AetheryteId);
+
+		if (!started) {
+			Fail(Strings.HuntAssistTeleportFailed);
+			return false;
+		}
+
+		zoneTarget = targetInfo;
+		target = null;
+		ActiveOrderTypeRowId = orderTypeRowId;
+		teleportIssued = true;
+		moveIssued = false;
+		Step = HuntAssistStep.TeleportingToZone;
+		StatusText = Strings.HuntAssistStatusTeleportingZone;
+		stepClock.Restart();
+		return true;
+	}
+
 	/// <summary>Stops everything this controller started. Safe to call at any time.</summary>
 	public void Cancel() {
 		if (!IsRunning) return;
@@ -107,6 +166,7 @@ public sealed class HuntAssistController {
 		StatusText = Strings.HuntAssistStatusCancelled;
 		stepClock.Reset();
 		target = null;
+		zoneTarget = null;
 		ActiveOrderTypeRowId = 0;
 	}
 
@@ -122,6 +182,11 @@ public sealed class HuntAssistController {
 		if (Service.Condition.IsBoundByDuty()) {
 			StopMovement();
 			Fail(Strings.HuntAssistStoppedInDuty);
+			return;
+		}
+
+		if (Step is HuntAssistStep.TeleportingToZone) {
+			UpdateTeleportToZone();
 			return;
 		}
 
@@ -323,6 +388,22 @@ public sealed class HuntAssistController {
 		Finish(Strings.HuntAssistStatusStopped);
 	}
 
+	private void UpdateTeleportToZone() {
+		if (zoneTarget is not { } targetInfo) {
+			Cancel();
+			return;
+		}
+
+		if (Service.ClientState.TerritoryType == targetInfo.TerritoryId && !Service.Condition[ConditionFlag.BetweenAreas]) {
+			Finish(Strings.HuntAssistStatusArrivedZone);
+			return;
+		}
+
+		if (stepClock.Elapsed > TeleportTimeout) {
+			Fail(Strings.HuntAssistStoppedTimeout);
+		}
+	}
+
 	private void EnterStep(HuntAssistStep step, string status) {
 		Step = step;
 		StatusText = status;
@@ -334,6 +415,7 @@ public sealed class HuntAssistController {
 		StatusText = status;
 		stepClock.Reset();
 		target = null;
+		zoneTarget = null;
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}
@@ -343,6 +425,7 @@ public sealed class HuntAssistController {
 		StatusText = status;
 		stepClock.Reset();
 		target = null;
+		zoneTarget = null;
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}
@@ -364,14 +447,17 @@ public sealed class HuntAssistController {
 		}
 	}
 
-	/// <summary>Degradation path when vnavmesh is unavailable: flag it on the map instead.</summary>
-	private static unsafe void PlaceMapFlag(HuntBoardLocation board) {
+	private static void PlaceMapFlag(HuntBoardLocation board)
+		=> PlaceMapFlag(board.TerritoryId, board.MapId, board.Position, true);
+
+	/// <summary>Degradation path when we cannot walk there: show it on the map instead.</summary>
+	private static unsafe void PlaceMapFlag(uint territoryId, uint mapId, Vector3 position, bool withFlag) {
 		try {
 			var agentMap = AgentMap.Instance();
 			if (agentMap is null) return;
 
-			agentMap->SetFlagMapMarker(board.TerritoryId, board.MapId, board.Position);
-			agentMap->OpenMap(board.MapId, board.TerritoryId);
+			if (withFlag) agentMap->SetFlagMapMarker(territoryId, mapId, position);
+			agentMap->OpenMap(mapId, territoryId);
 		}
 		catch (Exception ex) {
 			Service.Log.Error(ex, "[HuntAssist] Failed to place map flag");

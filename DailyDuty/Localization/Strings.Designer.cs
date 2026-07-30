@@ -2894,5 +2894,87 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntAssistWrongZone", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Go to Target Zone.
+        /// </summary>
+        internal static string HuntAssistGoToTarget {
+            get {
+                return ResourceManager.GetString("HuntAssistGoToTarget", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Teleporting to the mark's zone....
+        /// </summary>
+        internal static string HuntAssistStatusTeleportingZone {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusTeleportingZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Arrived in the mark's zone..
+        /// </summary>
+        internal static string HuntAssistStatusArrivedZone {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusArrivedZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to You are already in the mark's zone..
+        /// </summary>
+        internal static string HuntAssistAlreadyInZone {
+            get {
+                return ResourceManager.GetString("HuntAssistAlreadyInZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to That zone has no aetheryte - it was opened on your map instead..
+        /// </summary>
+        internal static string HuntAssistNoAetheryte {
+            get {
+                return ResourceManager.GetString("HuntAssistNoAetheryte", resourceCulture);
+            }
+        }
+
+
+        /// <summary>
+        ///   Looks up a localized string similar to Teleports to the aetheryte that makes the following patrol shortest..
+        /// </summary>
+        internal static string HuntAssistTargetTooltip {
+            get {
+                return ResourceManager.GetString("HuntAssistTargetTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to B Rank.
+        /// </summary>
+        internal static string HuntAssistRankB {
+            get {
+                return ResourceManager.GetString("HuntAssistRankB", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A Rank.
+        /// </summary>
+        internal static string HuntAssistRankA {
+            get {
+                return ResourceManager.GetString("HuntAssistRankA", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to S Rank.
+        /// </summary>
+        internal static string HuntAssistRankS {
+            get {
+                return ResourceManager.GetString("HuntAssistRankS", resourceCulture);
+            }
+        }
     }
 }

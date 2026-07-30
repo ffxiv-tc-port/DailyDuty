@@ -31,5 +31,6 @@
 
     <ItemGroup>
       <EmbeddedResource Include="Resources\DutyCollectables.json" />
+      <EmbeddedResource Include="Resources\HuntSpawnPoints.json" />
     </ItemGroup>
 </Project>

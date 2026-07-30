@@ -964,4 +964,31 @@
     <data name="HuntAssistWrongZone" xml:space="preserve">
         <value>無法進入佈告板所在區域,已改為在地圖上標記討伐佈告板。</value>
     </data>
+    <data name="HuntAssistGoToTarget" xml:space="preserve">
+        <value>前往目標地圖</value>
+    </data>
+    <data name="HuntAssistStatusTeleportingZone" xml:space="preserve">
+        <value>正在傳送到目標所在地圖……</value>
+    </data>
+    <data name="HuntAssistStatusArrivedZone" xml:space="preserve">
+        <value>已抵達目標所在地圖。</value>
+    </data>
+    <data name="HuntAssistAlreadyInZone" xml:space="preserve">
+        <value>你已經在目標所在地圖了。</value>
+    </data>
+    <data name="HuntAssistNoAetheryte" xml:space="preserve">
+        <value>該地圖沒有可傳送的乙太之光,已改為開啟地圖。</value>
+    </data>
+    <data name="HuntAssistTargetTooltip" xml:space="preserve">
+        <value>傳送到能讓後續巡邏路徑最短的乙太之光。</value>
+    </data>
+    <data name="HuntAssistRankB" xml:space="preserve">
+        <value>B級</value>
+    </data>
+    <data name="HuntAssistRankA" xml:space="preserve">
+        <value>A級</value>
+    </data>
+    <data name="HuntAssistRankS" xml:space="preserve">
+        <value>S級</value>
+    </data>
 </root>
