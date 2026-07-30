@@ -121,10 +121,10 @@
         <value>假面狂歡</value>
     </data>
     <data name="RaidsAlliance" xml:space="preserve">
-        <value>大型任務</value>
+        <value>團隊任務</value>
     </data>
     <data name="RaidsNormal" xml:space="preserve">
-        <value>團隊任務</value>
+        <value>大型任務</value>
     </data>
     <data name="TribalQuests" xml:space="preserve">
         <value>部族任務</value>
