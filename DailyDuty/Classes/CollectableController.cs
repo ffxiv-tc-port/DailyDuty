@@ -51,8 +51,13 @@ public unsafe class CollectableController : IDisposable {
     private Hook<AtkComponentListItemPopulator.PopulateDelegate>? onDutyListPopulate;
     private readonly List<uint> markedIndexes = [];
     private readonly Dictionary<uint, bool> missingCache = [];
-    private readonly Dictionary<uint, byte[]> markedNameCache = [];
     private Dictionary<string, uint>? nameToCfc;
+    private int debugDumpRemaining;
+
+    // 金星圖示的 SeString payload,標示時接在該列「原始位元組」前面,
+    // 保留原名裡可能存在的其他 payload。
+    private static readonly byte[] StarPrefix =
+        new SeStringBuilder().AddIcon(BitmapFontIcon.GoldStar).Encode();
 
     public CollectableController() {
         dutyCollectables = LoadEmbeddedData();
@@ -85,6 +90,7 @@ public unsafe class CollectableController : IDisposable {
 
         // 解鎖狀態在開窗時重抓一次(同場學到新收藏品的過期程度可接受)。
         missingCache.Clear();
+        debugDumpRemaining = 40;
 
         var addon = args.GetAddon<AddonContentsFinder>();
         var populateMethod = addon->DutyList->GetItemRendererByNodeId(6)->Populator.Populate;
@@ -105,15 +111,26 @@ public unsafe class CollectableController : IDisposable {
         var levelTextNode = (AtkTextNode*) nodeList[4];
 
         var shouldMark = false;
-        var markCfc = 0u;
+        var matched = false;
         var dutyName = string.Empty;
+        byte[]? rawName = null;
         if (System.CollectableConfig is { Enabled: true, MarkDutyList: true }) {
-            dutyName = listItemInfo->ListItem->StringValues[0].ToString();
+            // 原始位元組可能含 payload(鎖頭圖示等),Utf8String.ToString() 會把
+            // payload 混進字串害比對失敗——用 SeString 解析取純文字再比對。
+            var rawSpan = listItemInfo->ListItem->StringValues[0].AsSpan();
+            rawName = rawSpan.ToArray();
+            dutyName = SeString.Parse(rawSpan).TextValue.Trim();
             nameToCfc ??= BuildNameMap();
             if (nameToCfc.TryGetValue(dutyName, out var cfcId)) {
+                matched = true;
                 shouldMark = HasMissing(cfcId);
-                markCfc = cfcId;
             }
+        }
+
+        if (debugDumpRemaining > 0) {
+            debugDumpRemaining--;
+            var rawHex = rawName is null ? "" : Convert.ToHexString(rawName, 0, Math.Min(rawName.Length, 12));
+            Service.Log.Debug($"[Collectable] row={index} name='{dutyName}' matched={matched} mark={shouldMark} raw12={rawHex}");
         }
 
         // 先讓原生 populate 填好整列(它每次都會重寫文字),再疊我們的標示——
@@ -123,18 +140,11 @@ public unsafe class CollectableController : IDisposable {
         if (shouldMark) {
             dutyNameTextNode->TextColor = MarkColor;
 
-            if (!markedNameCache.TryGetValue(markCfc, out var seBytes)) {
-                var encoded = new SeStringBuilder()
-                    .AddIcon(BitmapFontIcon.GoldStar)
-                    .AddText(dutyName)
-                    .Encode();
-                // CS 的 SetText(ReadOnlySpan<byte>) 直接把指標交給原生端,原生端
-                // 讀到 null 為止——Encode() 不含終止符,必須自己補,否則讀過界。
-                seBytes = new byte[encoded.Length + 1];
-                encoded.CopyTo(seBytes, 0);
-                markedNameCache[markCfc] = seBytes;
-            }
-            dutyNameTextNode->SetText(seBytes);
+            // 金星 + 原始位元組 + null 終止符(原生 SetText 讀到 null 為止)。
+            var buf = new byte[StarPrefix.Length + rawName!.Length + 1];
+            StarPrefix.CopyTo(buf, 0);
+            rawName.CopyTo(buf, StarPrefix.Length);
+            dutyNameTextNode->SetText(buf);
 
             if (!markedIndexes.Contains(index)) {
                 markedIndexes.Add(index);
