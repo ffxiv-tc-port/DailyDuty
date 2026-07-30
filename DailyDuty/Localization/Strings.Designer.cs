@@ -3048,5 +3048,14 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntAssistPatrolWrongZone", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open.
+        /// </summary>
+        internal static string OpenModuleLink {
+            get {
+                return ResourceManager.GetString("OpenModuleLink", resourceCulture);
+            }
+        }
     }
 }

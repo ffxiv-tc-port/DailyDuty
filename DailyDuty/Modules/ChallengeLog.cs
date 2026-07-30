@@ -179,7 +179,7 @@ public unsafe class ChallengeLog : BaseModules.Modules.WeeklyTask<ModuleTaskData
             if (!matchingTaskData.Complete) {
                 var taskInfo = Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(warningId);
                 
-                StatusMessage.PrintTaggedMessage(string.Format(Strings.TaskStillIncomplete, taskInfo.Name.ExtractText()), "ChallengeLog");
+                StatusMessage.PrintTaggedMessage(string.Format(Strings.TaskStillIncomplete, taskInfo.Name.ExtractText()), ModuleName.ChallengeLog);
                 anyWarningGenerated = true;
             }
         }

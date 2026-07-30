@@ -1015,4 +1015,7 @@ Limited to once per 5 mins</value>
     <data name="HuntAssistPatrolWrongZone" xml:space="preserve">
         <value>You must be in the mark's zone to patrol.</value>
     </data>
+    <data name="OpenModuleLink" xml:space="preserve">
+        <value>Open</value>
+    </data>
 </root>

@@ -55,6 +55,21 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
         });
     }
 
+    /// <summary>
+    /// Opens the window on a specific module. Driven by the chat link payloads, so a reminder
+    /// in chat can take the player straight to the module that produced it.
+    /// </summary>
+    public void OpenToModule(ModuleName moduleName) {
+        var module = System.ModuleController.Modules.FirstOrDefault(item => item.ModuleName == moduleName);
+
+        if (module is not null) {
+            SelectItem(module);
+            FocusSelectionListTab();
+        }
+
+        UnCollapseOrShow();
+    }
+
     protected override void DrawListOption(Module option) {
         ImGui.Text(option.ModuleName.GetDescription());
         

@@ -1015,4 +1015,7 @@
     <data name="HuntAssistPatrolWrongZone" xml:space="preserve">
         <value>必須先到目標所在地圖才能巡邏。</value>
     </data>
+    <data name="OpenModuleLink" xml:space="preserve">
+        <value>開啟</value>
+    </data>
 </root>

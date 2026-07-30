@@ -27,17 +27,30 @@ public enum PayloadId : uint {
 }
 
 public unsafe class PayloadController : IDisposable {
+    /// <summary>
+    /// Command id base for the per-module "open this module" links. Kept well clear of the
+    /// <see cref="PayloadId"/> values, which start at 0 - the two ranges share one namespace.
+    /// </summary>
+    private const uint ModulePayloadBase = 0x1000;
+
     private readonly Dictionary<PayloadId, DalamudLinkPayload> payloads = new();
-    
+    private readonly Dictionary<ModuleName, DalamudLinkPayload> modulePayloads = new();
+
     public PayloadController() {
         foreach (var payload in Enum.GetValues<PayloadId>()) {
             payloads.Add(payload, RegisterPayload(payload));
         }
+
+        RegisterModulePayloads();
     }
-    
+
     public void Dispose() {
         foreach (var registeredPayload in payloads) {
             Service.Chat.RemoveChatLinkHandler((uint)registeredPayload.Key);
+        }
+
+        foreach (var registeredPayload in modulePayloads) {
+            Service.Chat.RemoveChatLinkHandler(ModulePayloadBase + (uint)registeredPayload.Key);
         }
     }
 
@@ -45,8 +58,48 @@ public unsafe class PayloadController : IDisposable {
         if (payloads.TryGetValue(id, out var value)) {
             return value;
         }
-        
+
         throw new Exception("Tried to get payload that isn't registered.");
+    }
+
+    /// <summary>
+    /// Link payload that opens the configuration window on <paramref name="moduleName"/>.
+    /// Returns null when that module has no registered handler - callers must fall back to
+    /// plain text rather than skipping the message.
+    /// </summary>
+    public DalamudLinkPayload? GetModulePayload(ModuleName moduleName)
+        => modulePayloads.GetValueOrDefault(moduleName);
+
+    /// <summary>
+    /// One chat link handler per module, so any module's chat reminder can offer a link
+    /// straight to its settings. Registration failures are logged and skipped - a module
+    /// without a payload still gets its reminder, just without the link.
+    /// </summary>
+    private void RegisterModulePayloads() {
+        foreach (var moduleName in Enum.GetValues<ModuleName>()) {
+            if (moduleName is ModuleName.Unknown or ModuleName.TestModule) continue;
+
+            try {
+                var payload = Service.Chat.AddChatLinkHandler(ModulePayloadBase + (uint)moduleName, (_, _) => OpenModule(moduleName));
+                modulePayloads.Add(moduleName, payload);
+            }
+            catch (Exception ex) {
+                Service.Log.Warning(ex, $"[PayloadController] Could not register the module link for {moduleName}, its reminders will be plain text.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads System.ConfigurationWindow at click time rather than capturing it: the payload
+    /// controller is constructed before the window exists.
+    /// </summary>
+    private static void OpenModule(ModuleName moduleName) {
+        try {
+            System.ConfigurationWindow?.OpenToModule(moduleName);
+        }
+        catch (Exception ex) {
+            Service.Log.Error(ex, $"[PayloadController] Failed to open the window for {moduleName}");
+        }
     }
 
     private static DalamudLinkPayload RegisterPayload(PayloadId id) 
