@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using DailyDuty.Localization;
+using DailyDuty.Models;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -20,6 +21,7 @@ public enum HuntAssistStep {
 	AethernetHop,
 	WaitingForAethernet,
 	Walking,
+	MountingForPatrol,
 	Patrolling,
 	Finished,
 	Stopped,
@@ -53,8 +55,11 @@ public sealed class HuntAssistController {
 	/// <summary>Only hop the aethernet when it saves at least this much walking.</summary>
 	private const float AethernetWorthwhileMargin = 30.0f;
 
-	/// <summary>Spawn points are approximate, so "near enough" is generous.</summary>
-	private const float PatrolArrivalRadius = 12.0f;
+	/// <summary>How long to keep trying to mount before giving up and walking.</summary>
+	private static readonly TimeSpan MountTimeout = TimeSpan.FromSeconds(12);
+
+	/// <summary>Gap between mount/take-off attempts, so we do not spam the action every frame.</summary>
+	private static readonly TimeSpan MountRetryInterval = TimeSpan.FromSeconds(1.5);
 
 	private static readonly TimeSpan WaypointTimeout = TimeSpan.FromSeconds(120);
 
@@ -69,7 +74,7 @@ public sealed class HuntAssistController {
 
 	public string StatusText { get; private set; } = string.Empty;
 
-	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.Patrolling;
+	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling;
 
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
@@ -77,8 +82,12 @@ public sealed class HuntAssistController {
 	private HuntBoardLocation? target;
 	private HuntTargetInfo? zoneTarget;
 	private HuntTargetInfo? patrolTarget;
-	private List<Vector3> patrolRoute = [];
-	private int patrolIndex;
+	private readonly List<Vector3> patrolRemaining = [];
+	private int patrolTotal;
+	private Vector3? patrolWaypoint;
+	private bool patrolFlying;
+	private readonly Stopwatch mountClock = new();
+	private readonly Stopwatch mountRetryClock = new();
 	private Vector3 moveStartPosition;
 	private readonly Stopwatch stepClock = new();
 	private bool teleportIssued;
@@ -213,46 +222,88 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
-		patrolRoute = BuildGreedyRoute(player.Position, spawnPoints);
-		patrolIndex = 0;
+		patrolRemaining.Clear();
+		patrolRemaining.AddRange(spawnPoints);
+		patrolTotal = patrolRemaining.Count;
+		patrolWaypoint = null;
 		patrolTarget = targetInfo;
 		target = null;
 		zoneTarget = null;
 		ActiveOrderTypeRowId = orderTypeRowId;
 		moveIssued = false;
-		Step = HuntAssistStep.Patrolling;
-		StatusText = $"{Strings.HuntAssistStatusPatrolling} (1/{patrolRoute.Count})";
+
+		// Anything already inside the detection radius is checked before we take a step.
+		ConsumeCoveredPoints(player.Position);
+
+		patrolFlying = System.HuntAssistConfig.UseFlying && HuntFlight.IsFlyingAvailable();
+
+		if (patrolFlying && !HuntFlight.IsFlying) {
+			Step = HuntAssistStep.MountingForPatrol;
+			StatusText = Strings.HuntAssistStatusMounting;
+			mountClock.Restart();
+			mountRetryClock.Reset();
+		}
+		else {
+			Step = HuntAssistStep.Patrolling;
+			StatusText = PatrolStatusText;
+		}
+
 		stepClock.Restart();
 		return true;
 	}
 
-	/// <summary>Nearest-neighbour ordering. Not optimal, but instant and close enough here.</summary>
-	private static List<Vector3> BuildGreedyRoute(Vector3 start, IReadOnlyList<Vector3> points) {
-		var remaining = new List<Vector3>(points);
-		var ordered = new List<Vector3>(points.Count);
-		var current = start;
+	private string PatrolStatusText
+		=> $"{Strings.HuntAssistStatusPatrolling} ({patrolTotal - patrolRemaining.Count}/{patrolTotal})";
 
-		while (remaining.Count > 0) {
-			var bestIndex = 0;
-			var bestDistance = float.MaxValue;
+	/// <summary>
+	/// Marks every remaining spawn point the player can currently see as checked.
+	///
+	/// This is what makes the patrol "covering" rather than "visiting": one pass can sweep up
+	/// several points at once, and a point never has to be flown to exactly - being within
+	/// detection range of it is the whole test.
+	/// </summary>
+	private void ConsumeCoveredPoints(Vector3 playerPosition) {
+		var radius = Math.Clamp(
+			System.HuntAssistConfig.DetectionRadius,
+			HuntAssistConfig.MinimumDetectionRadius,
+			HuntAssistConfig.MaximumDetectionRadius);
 
-			for (var index = 0; index < remaining.Count; index++) {
-				var distance = Vector2.DistanceSquared(
-					new Vector2(current.X, current.Z),
-					new Vector2(remaining[index].X, remaining[index].Z));
+		var radiusSquared = radius * radius;
+		var playerXZ = new Vector2(playerPosition.X, playerPosition.Z);
 
-				if (distance >= bestDistance) continue;
+		for (var index = patrolRemaining.Count - 1; index >= 0; index--) {
+			// Horizontal distance only. Spawn points carry no height at all (their Y is 0, not
+			// the terrain height), so a 3D comparison would measure against a coordinate that
+			// does not exist and never match. The conservative default radius is what absorbs
+			// the altitude gained while flying.
+			var point = patrolRemaining[index];
+			if (Vector2.DistanceSquared(playerXZ, new Vector2(point.X, point.Z)) > radiusSquared) continue;
 
-				bestDistance = distance;
-				bestIndex = index;
-			}
-
-			current = remaining[bestIndex];
-			ordered.Add(current);
-			remaining.RemoveAt(bestIndex);
+			patrolRemaining.RemoveAt(index);
 		}
 
-		return ordered;
+		if (patrolWaypoint is { } waypoint && !patrolRemaining.Contains(waypoint)) {
+			patrolWaypoint = null;
+			moveIssued = false;
+		}
+	}
+
+	/// <summary>Nearest remaining point to the player. Null when everything is covered.</summary>
+	private Vector3? NextWaypoint(Vector3 playerPosition) {
+		Vector3? best = null;
+		var bestDistance = float.MaxValue;
+		var playerXZ = new Vector2(playerPosition.X, playerPosition.Z);
+
+		foreach (var point in patrolRemaining) {
+			// Horizontal only, for the same reason as ConsumeCoveredPoints.
+			var distance = Vector2.DistanceSquared(playerXZ, new Vector2(point.X, point.Z));
+			if (distance >= bestDistance) continue;
+
+			bestDistance = distance;
+			best = point;
+		}
+
+		return best;
 	}
 
 	/// <summary>Stops everything this controller started. Safe to call at any time.</summary>
@@ -266,8 +317,12 @@ public sealed class HuntAssistController {
 		target = null;
 		zoneTarget = null;
 		patrolTarget = null;
-		patrolRoute = [];
-		patrolIndex = 0;
+		patrolRemaining.Clear();
+		patrolTotal = 0;
+		patrolWaypoint = null;
+		patrolFlying = false;
+		mountClock.Reset();
+		mountRetryClock.Reset();
 		ActiveOrderTypeRowId = 0;
 	}
 
@@ -288,6 +343,11 @@ public sealed class HuntAssistController {
 
 		if (Step is HuntAssistStep.TeleportingToZone) {
 			UpdateTeleportToZone();
+			return;
+		}
+
+		if (Step is HuntAssistStep.MountingForPatrol) {
+			UpdateMountingForPatrol();
 			return;
 		}
 
@@ -510,6 +570,49 @@ public sealed class HuntAssistController {
 		}
 	}
 
+	/// <summary>
+	/// Gets the character airborne before the patrol starts. Entirely optional - every exit
+	/// from here continues the patrol, on foot if need be.
+	/// </summary>
+	private void UpdateMountingForPatrol() {
+		if (patrolTarget is null) {
+			Cancel();
+			return;
+		}
+
+		if (HuntFlight.IsFlying) {
+			BeginPatrolStep();
+			return;
+		}
+
+		// Never fight the game for a mount: combat, a broken lookup or simply running out of
+		// patience all mean "walk instead".
+		if (Service.Condition[ConditionFlag.InCombat] || mountClock.Elapsed > MountTimeout) {
+			patrolFlying = false;
+			BeginPatrolStep();
+			return;
+		}
+
+		if (mountRetryClock.IsRunning && mountRetryClock.Elapsed < MountRetryInterval) return;
+
+		if (HuntFlight.IsMounted) {
+			HuntFlight.TryTakeOff();
+		}
+		else {
+			HuntFlight.TryMount();
+		}
+
+		mountRetryClock.Restart();
+	}
+
+	private void BeginPatrolStep() {
+		Step = HuntAssistStep.Patrolling;
+		StatusText = PatrolStatusText;
+		moveIssued = false;
+		patrolWaypoint = null;
+		stepClock.Restart();
+	}
+
 	private void UpdatePatrol(Vector3 playerPosition) {
 		if (patrolTarget is not { } targetInfo) {
 			Cancel();
@@ -537,15 +640,36 @@ public sealed class HuntAssistController {
 			return;
 		}
 
-		if (patrolIndex >= patrolRoute.Count) {
+		// Sweep up everything now within detection range, including points we were not even
+		// heading for. This is what lets one flight leg clear several spawn points.
+		var remainingBefore = patrolRemaining.Count;
+		ConsumeCoveredPoints(playerPosition);
+		if (patrolRemaining.Count != remainingBefore) StatusText = PatrolStatusText;
+
+		if (patrolRemaining.Count is 0) {
 			StopMovement();
 			Finish(Strings.HuntAssistPatrolComplete);
 			return;
 		}
 
-		var waypoint = patrolRoute[patrolIndex];
-
 		if (!moveIssued) {
+			// Between legs too, not just at the start: if we should be flying but have landed
+			// (a forced dismount, a low ceiling, the player hopping off), get airborne again
+			// before the next hop. Giving up in there clears patrolFlying, so this cannot loop.
+			if (patrolFlying && !HuntFlight.IsFlying) {
+				Step = HuntAssistStep.MountingForPatrol;
+				StatusText = Strings.HuntAssistStatusMounting;
+				mountClock.Restart();
+				mountRetryClock.Reset();
+				return;
+			}
+
+			if (NextWaypoint(playerPosition) is not { } waypoint) {
+				StopMovement();
+				Finish(Strings.HuntAssistPatrolComplete);
+				return;
+			}
+
 			// Spawn points carry no height, so seed the query with the player's own Y - they
 			// are standing in this zone, which is a far better guess than 0.
 			var probe = new Vector3(waypoint.X, playerPosition.Y, waypoint.Z);
@@ -553,41 +677,37 @@ public sealed class HuntAssistController {
 			                  ?? Navmesh.PointOnFloor(probe, 20.0f);
 
 			// A spawn point we cannot path to is skipped, not fatal.
-			if (destination is null || !Navmesh.MoveTo(destination.Value)) {
-				patrolIndex++;
+			if (destination is null || !Navmesh.MoveTo(destination.Value, patrolFlying && HuntFlight.IsFlying)) {
+				patrolRemaining.Remove(waypoint);
 				return;
 			}
 
+			patrolWaypoint = waypoint;
 			moveIssued = true;
 			moveStartPosition = playerPosition;
 			stepClock.Restart();
-			StatusText = $"{Strings.HuntAssistStatusPatrolling} ({patrolIndex + 1}/{patrolRoute.Count})";
-			return;
-		}
-
-		if (Vector2.Distance(new Vector2(playerPosition.X, playerPosition.Z), new Vector2(waypoint.X, waypoint.Z)) <= PatrolArrivalRadius) {
-			moveIssued = false;
-			patrolIndex++;
 			return;
 		}
 
 		if (stepClock.Elapsed > WaypointTimeout) {
+			if (patrolWaypoint is { } stale) patrolRemaining.Remove(stale);
+			patrolWaypoint = null;
 			moveIssued = false;
-			patrolIndex++;
 			return;
 		}
 
 		if (stepClock.Elapsed < MoveStartGrace) return;
 		if (Navmesh.PathfindInProgress || Navmesh.IsPathRunning) return;
 
-		// vnavmesh went idle without us arriving. Two very different causes, told apart by
-		// whether the character actually went anywhere:
+		// vnavmesh went idle without the point being covered. Two very different causes, told
+		// apart by whether the character actually went anywhere:
 		//  * barely moved -> no path to that spawn point, skip it and carry on,
 		//  * moved -> the player took the controls back, so stop rather than fight them for
 		//    the character. Clicking patrol again re-plans from wherever they now are.
 		if (Vector3.Distance(playerPosition, moveStartPosition) < UnreachableMoveThreshold) {
+			if (patrolWaypoint is { } unreachable) patrolRemaining.Remove(unreachable);
+			patrolWaypoint = null;
 			moveIssued = false;
-			patrolIndex++;
 			return;
 		}
 
@@ -622,8 +742,12 @@ public sealed class HuntAssistController {
 		target = null;
 		zoneTarget = null;
 		patrolTarget = null;
-		patrolRoute = [];
-		patrolIndex = 0;
+		patrolRemaining.Clear();
+		patrolTotal = 0;
+		patrolWaypoint = null;
+		patrolFlying = false;
+		mountClock.Reset();
+		mountRetryClock.Reset();
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}
@@ -635,8 +759,12 @@ public sealed class HuntAssistController {
 		target = null;
 		zoneTarget = null;
 		patrolTarget = null;
-		patrolRoute = [];
-		patrolIndex = 0;
+		patrolRemaining.Clear();
+		patrolTotal = 0;
+		patrolWaypoint = null;
+		patrolFlying = false;
+		mountClock.Reset();
+		mountRetryClock.Reset();
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}

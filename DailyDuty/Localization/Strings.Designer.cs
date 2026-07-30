@@ -3057,5 +3057,50 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("OpenModuleLink", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mounting up....
+        /// </summary>
+        internal static string HuntAssistStatusMounting {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusMounting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Use flying mounts when available.
+        /// </summary>
+        internal static string HuntAssistUseFlying {
+            get {
+                return ResourceManager.GetString("HuntAssistUseFlying", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Detection radius (yalms).
+        /// </summary>
+        internal static string HuntAssistDetectionRadius {
+            get {
+                return ResourceManager.GetString("HuntAssistDetectionRadius", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A spawn point counts as checked once you are this close - the patrol never has to reach the exact spot. The game only keeps marks in range for about 100 yalms, so that is the ceiling; the default is deliberately conservative..
+        /// </summary>
+        internal static string HuntAssistDetectionRadiusHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistDetectionRadiusHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrol Settings.
+        /// </summary>
+        internal static string HuntAssistPatrolSettings {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolSettings", resourceCulture);
+            }
+        }
     }
 }

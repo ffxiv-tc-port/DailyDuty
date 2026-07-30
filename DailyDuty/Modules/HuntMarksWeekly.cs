@@ -5,9 +5,11 @@ using System.Numerics;
 using DailyDuty.Classes;
 using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Localization;
+using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -150,5 +152,33 @@ public class HuntMarksWeekly : HuntMarksBase {
 				ImGui.SetTooltip(Strings.HuntAssistPatrolTooltip);
 			}
 		}
+
+		table.Dispose();
+
+		DrawPatrolSettings();
+	}
+
+	private static void DrawPatrolSettings() {
+		var config = System.HuntAssistConfig;
+		var configChanged = false;
+
+		ImGuiTweaks.Header(Strings.HuntAssistPatrolSettings);
+		using var indent = ImRaii.PushIndent();
+
+		configChanged |= ImGui.Checkbox(Strings.HuntAssistUseFlying, ref config.UseFlying);
+
+		ImGui.TextUnformatted(Strings.HuntAssistDetectionRadius);
+		ImGuiComponents.HelpMarker(Strings.HuntAssistDetectionRadiusHelp);
+
+		var radius = config.DetectionRadius;
+		ImGuiTweaks.SetFullWidth();
+		if (ImGui.SliderFloat("##DetectionRadius", ref radius, HuntAssistConfig.MinimumDetectionRadius, HuntAssistConfig.MaximumDetectionRadius, "%.0f")) {
+			config.DetectionRadius = radius;
+		}
+
+		// SliderFloat reports true every frame while dragging - only persist once it settles.
+		if (ImGui.IsItemDeactivatedAfterEdit()) configChanged = true;
+
+		if (configChanged) config.Save();
 	}
 }

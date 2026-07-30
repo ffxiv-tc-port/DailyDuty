@@ -28,6 +28,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         System.ContentsFinderController = new AddonController<AddonContentsFinder>("ContentsFinder");
         System.CollectableConfig = new CollectableConfig();
         System.CollectableController = new CollectableController();
+        System.HuntAssistConfig = new HuntAssistConfig();
         System.HuntAssistController = new HuntAssistController();
 
         System.ModuleController = new ModuleController();
@@ -92,6 +93,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     private static void OnLogin() {
         System.SystemConfig = SystemConfig.Load();
         System.CollectableConfig = CollectableConfig.Load();
+        System.HuntAssistConfig = HuntAssistConfig.Load();
         System.ModuleController.LoadModules();
         System.ContentsFinderController.Enable();
         System.OverlayController.Enable();

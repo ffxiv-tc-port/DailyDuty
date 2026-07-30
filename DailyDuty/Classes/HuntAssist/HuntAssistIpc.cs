@@ -74,9 +74,13 @@ public sealed class NavmeshIpc {
 	public Vector3? NearestPoint(Vector3 position, float halfExtentXZ = 5.0f, float halfExtentY = 5.0f)
 		=> !IsInstalled ? null : IpcGuard.Safe(() => queryNearestPoint.InvokeFunc(position, halfExtentXZ, halfExtentY), null, "Query.Mesh.NearestPoint");
 
-	/// <summary>Queues an asynchronous pathfind-and-walk. Returns false when it could not be started.</summary>
-	public bool MoveTo(Vector3 destination)
-		=> IsInstalled && IpcGuard.Safe(() => pathfindAndMoveTo.InvokeFunc(destination, false), false, "SimpleMove.PathfindAndMoveTo");
+	/// <summary>
+	/// Queues an asynchronous pathfind-and-move. <paramref name="fly"/> asks vnavmesh for a
+	/// flying path - its IPC signature really is (Vector3 dest, bool fly) -> bool, checked
+	/// against vnavmesh's own IPCProvider. Returns false when it could not be started.
+	/// </summary>
+	public bool MoveTo(Vector3 destination, bool fly = false)
+		=> IsInstalled && IpcGuard.Safe(() => pathfindAndMoveTo.InvokeFunc(destination, fly), false, "SimpleMove.PathfindAndMoveTo");
 
 	/// <summary>True while a pathfind request is still being computed (before walking starts).</summary>
 	public bool PathfindInProgress

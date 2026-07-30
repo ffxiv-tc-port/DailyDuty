@@ -1018,4 +1018,19 @@
     <data name="OpenModuleLink" xml:space="preserve">
         <value>開啟</value>
     </data>
+    <data name="HuntAssistStatusMounting" xml:space="preserve">
+        <value>正在召喚坐騎……</value>
+    </data>
+    <data name="HuntAssistUseFlying" xml:space="preserve">
+        <value>可飛行時自動騎乘並走飛行路徑</value>
+    </data>
+    <data name="HuntAssistDetectionRadius" xml:space="preserve">
+        <value>偵測半徑(碼)</value>
+    </data>
+    <data name="HuntAssistDetectionRadiusHelp" xml:space="preserve">
+        <value>與重生點的水平距離在此範圍內就算已檢查,不必真的走到座標上。遊戲大約只在 100 碼內才會載入標的,因此以此為上限;預設值刻意保守,因為它同時要吸收飛行時拉開的高度差。</value>
+    </data>
+    <data name="HuntAssistPatrolSettings" xml:space="preserve">
+        <value>巡邏設定</value>
+    </data>
 </root>

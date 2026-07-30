@@ -1018,4 +1018,19 @@ Limited to once per 5 mins</value>
     <data name="OpenModuleLink" xml:space="preserve">
         <value>Open</value>
     </data>
+    <data name="HuntAssistStatusMounting" xml:space="preserve">
+        <value>Mounting up...</value>
+    </data>
+    <data name="HuntAssistUseFlying" xml:space="preserve">
+        <value>Use flying mounts when available</value>
+    </data>
+    <data name="HuntAssistDetectionRadius" xml:space="preserve">
+        <value>Detection radius (yalms)</value>
+    </data>
+    <data name="HuntAssistDetectionRadiusHelp" xml:space="preserve">
+        <value>Horizontal distance at which a spawn point counts as checked - the patrol never has to reach the exact spot. The game only keeps marks loaded within about 100 yalms, so that is the ceiling; the default is deliberately conservative because it also has to absorb the altitude gained while flying.</value>
+    </data>
+    <data name="HuntAssistPatrolSettings" xml:space="preserve">
+        <value>Patrol Settings</value>
+    </data>
 </root>

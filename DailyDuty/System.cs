@@ -30,4 +30,5 @@ public static class System {
 	public static CollectableConfig CollectableConfig { get; set; }
 	public static CollectableController CollectableController { get; set; }
 	public static HuntAssistController HuntAssistController { get; set; }
+	public static HuntAssistConfig HuntAssistConfig { get; set; }
 }
