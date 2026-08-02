@@ -64,6 +64,12 @@ public static class Time {
             // Cloud
             7 => NextDayOfWeek(DayOfWeek.Sunday, 2),
 
+            // 台灣（陸行鳥 DataCenter=151，WorldDCGroupType.Region=8）
+            // ⚠️ NextDayOfWeek 收的時數是 UTC（它用 DateTime.UtcNow），不是當地時間。
+            // 台服「仙人仙彩」開獎為當地週六 21:00（使用者實機確認），台灣 UTC+8 → UTC 週六 13:00。
+            // 與上面日服那筆互相印證：日服同樣是當地週六 21:00、UTC+9，表裡寫的就是 12；台服晚一小時＝13。
+            8 => NextDayOfWeek(DayOfWeek.Saturday, 13),
+
             // Unknown Region
             _ => throw new DatacenterException(),
         };
