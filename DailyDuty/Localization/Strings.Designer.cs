@@ -3120,5 +3120,32 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntAssistPatrolSettings", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Waiting for vnavmesh to finish building this zone....
+        /// </summary>
+        internal static string HuntAssistStatusNavmeshBuilding {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusNavmeshBuilding", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to vnavmesh has not finished building this zone - the patrol was stopped. Try again once it is ready..
+        /// </summary>
+        internal static string HuntAssistPatrolNavmeshTimeout {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolNavmeshTimeout", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Bill accepted, but its mark could not be identified..
+        /// </summary>
+        internal static string HuntAssistNoTargetData {
+            get {
+                return ResourceManager.GetString("HuntAssistNoTargetData", resourceCulture);
+            }
+        }
     }
 }

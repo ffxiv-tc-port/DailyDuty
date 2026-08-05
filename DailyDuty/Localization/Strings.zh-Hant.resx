@@ -1039,4 +1039,13 @@
     <data name="HuntAssistSpawnDataNotReady" xml:space="preserve">
         <value>重生點資料尚未就緒,請稍候再試一次。</value>
     </data>
+    <data name="HuntAssistStatusNavmeshBuilding" xml:space="preserve">
+        <value>正在等待 vnavmesh 建立本地圖的導航網格……</value>
+    </data>
+    <data name="HuntAssistPatrolNavmeshTimeout" xml:space="preserve">
+        <value>vnavmesh 尚未建好本地圖的導航網格,巡邏已停止;等它建好後再試一次。</value>
+    </data>
+    <data name="HuntAssistNoTargetData" xml:space="preserve">
+        <value>已接取委託單,但無法判斷目標標的。</value>
+    </data>
 </root>

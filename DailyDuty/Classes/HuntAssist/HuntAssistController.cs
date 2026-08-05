@@ -92,6 +92,9 @@ public sealed class HuntAssistController {
 	private bool patrolFlying;
 	private readonly Stopwatch mountClock = new();
 	private readonly Stopwatch mountRetryClock = new();
+
+	/// <summary>Runs only while we are waiting on the navmesh; see <see cref="NavmeshReadyOrWaiting"/>.</summary>
+	private readonly Stopwatch navmeshClock = new();
 	private Vector3 moveStartPosition;
 	private readonly Stopwatch stepClock = new();
 	private bool teleportIssued;
@@ -231,6 +234,7 @@ public sealed class HuntAssistController {
 		ActiveOrderTypeRowId = orderTypeRowId;
 		moveIssued = false;
 		patrolFlying = false;
+		navmeshClock.Reset();
 
 		Step = HuntAssistStep.PreparingPatrol;
 		StatusText = Strings.HuntAssistStatusPreparing;
@@ -239,11 +243,12 @@ public sealed class HuntAssistController {
 	}
 
 	/// <summary>
-	/// Waits until the spawn points can actually be placed, then starts the run.
+	/// Waits until the spawn points can actually be placed and the navmesh can answer for this
+	/// zone, then starts the run.
 	///
 	/// The distinction this step exists to protect: zero points is never "finished". Either the
 	/// data is not ready (retry, then say so), or the zone genuinely has none (say that
-	/// instead) - neither is a completed patrol.
+	/// instead) - neither is a completed patrol. The mesh is held to exactly the same rule.
 	/// </summary>
 	private void UpdatePreparingPatrol() {
 		if (patrolTarget is not { } targetInfo) {
@@ -260,6 +265,11 @@ public sealed class HuntAssistController {
 			Fail(Strings.HuntAssistNoSpawnData);
 			return;
 		}
+
+		// Checked after the spawn data on purpose: this wait can be much longer than
+		// SpawnDataTimeout, and that timeout runs off stepClock, so gating here first would let
+		// a slow mesh build expire the *spawn data* deadline and blame the wrong thing.
+		if (!NavmeshReadyOrWaiting()) return;
 
 		patrolRemaining.Clear();
 		patrolRemaining.AddRange(spawnPoints);
@@ -352,6 +362,7 @@ public sealed class HuntAssistController {
 		patrolFlying = false;
 		mountClock.Reset();
 		mountRetryClock.Reset();
+		navmeshClock.Reset();
 		ActiveOrderTypeRowId = 0;
 	}
 
@@ -644,7 +655,41 @@ public sealed class HuntAssistController {
 		StatusText = PatrolStatusText;
 		moveIssued = false;
 		patrolWaypoint = null;
+		navmeshClock.Reset();
 		stepClock.Restart();
+	}
+
+	/// <summary>
+	/// Gate in front of every navmesh query the patrol makes.
+	///
+	/// It exists because a mesh that is still building answers every query with null, and null
+	/// at the call site is indistinguishable from "that spawn point is unreachable" - which is
+	/// handled by dropping the point. One point per frame, so an entire route empties itself in
+	/// well under a second and the run then reports a *completed* patrol the character never
+	/// walked. Waiting is the only answer that is not a lie, and the timeout turns the wait into
+	/// an error rather than into a success.
+	///
+	/// The same reasoning is why this is checked every leg and not once at the start: vnavmesh
+	/// can go back to not-ready mid-run (it reloads the mesh on a zone change or a rebuild).
+	/// </summary>
+	/// <returns>
+	/// True when queries can be trusted. False means "wait" - or, once the timeout is up, that
+	/// the run has just been failed, in which case the caller must simply return.
+	/// </returns>
+	private bool NavmeshReadyOrWaiting() {
+		if (Navmesh.IsReady) return true;
+
+		if (!navmeshClock.IsRunning) {
+			navmeshClock.Restart();
+			StatusText = Strings.HuntAssistStatusNavmeshBuilding;
+		}
+
+		if (navmeshClock.Elapsed > NavmeshBuildTimeout) {
+			StopMovement();
+			Fail(Strings.HuntAssistPatrolNavmeshTimeout);
+		}
+
+		return false;
 	}
 
 	private void UpdatePatrol(Vector3 playerPosition) {
@@ -701,6 +746,16 @@ public sealed class HuntAssistController {
 				return;
 			}
 
+			// Nothing below here may run against a mesh that cannot answer: the two queries and
+			// the MoveTo all report failure the same way an unreachable point does, and that
+			// path removes the point. Wait instead - see NavmeshReadyOrWaiting.
+			if (!NavmeshReadyOrWaiting()) return;
+
+			if (navmeshClock.IsRunning) {
+				navmeshClock.Reset();
+				StatusText = PatrolStatusText;
+			}
+
 			if (NextWaypoint(playerPosition) is not { } waypoint) {
 				StopMovement();
 				Finish(patrolTotal > 0 ? Strings.HuntAssistPatrolComplete : Strings.HuntAssistSpawnDataNotReady);
@@ -713,7 +768,9 @@ public sealed class HuntAssistController {
 			var destination = Navmesh.NearestPoint(probe, 20.0f, 500.0f)
 			                  ?? Navmesh.PointOnFloor(probe, 20.0f);
 
-			// A spawn point we cannot path to is skipped, not fatal.
+			// A spawn point we cannot path to is skipped, not fatal. This is only a safe reading
+			// of the failure because the mesh was confirmed ready just above - otherwise every
+			// point looks like this one.
 			if (destination is null || !Navmesh.MoveTo(destination.Value, patrolFlying && HuntFlight.IsFlying)) {
 				patrolRemaining.Remove(waypoint);
 				return;
@@ -785,6 +842,7 @@ public sealed class HuntAssistController {
 		patrolFlying = false;
 		mountClock.Reset();
 		mountRetryClock.Reset();
+		navmeshClock.Reset();
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}
@@ -802,6 +860,7 @@ public sealed class HuntAssistController {
 		patrolFlying = false;
 		mountClock.Reset();
 		mountRetryClock.Reset();
+		navmeshClock.Reset();
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
 	}

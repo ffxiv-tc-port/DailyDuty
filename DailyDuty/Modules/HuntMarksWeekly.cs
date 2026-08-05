@@ -104,44 +104,71 @@ public class HuntMarksWeekly : HuntMarksBase {
 				ImGui.TextColored(KnownColor.Gray.Vector(), $"{targetInfo.Name} - {targetInfo.ZoneName}");
 			}
 
+			// Once the bill is in hand the board has nothing left to give, so the shortcut to it
+			// stops being an option rather than staying on screen as one that always fails.
+			// Read off the game's own MobHunt state, not our weekly tracking, so a stale
+			// Complete flag can never take the button away.
+			var showBoardButtons = !obtained;
+
 			ImGui.TableNextColumn();
-			if (boards.Count is 0) {
+
+			// Missing board data is only worth saying while the board is still the next step.
+			if (showBoardButtons && boards.Count is 0) {
 				ImGui.TextColored(KnownColor.Orange.Vector(), Strings.HuntAssistNoBoardData);
 				continue;
 			}
 
 			using var disabled = ImRaii.Disabled(controller.IsRunning);
 
-			foreach (var board in boards) {
-				var label = board.ZoneName.Length > 0 ? board.ZoneName : Strings.HuntAssistGoToBoard;
+			if (showBoardButtons) {
+				foreach (var board in boards) {
+					var label = board.ZoneName.Length > 0 ? board.ZoneName : Strings.HuntAssistGoToBoard;
 
-				if (ImGui.Button($"{label}##hunt_board_{board.EObjectId}")) {
-					controller.GoToHuntBoard(board, config.RowId);
+					if (ImGui.Button($"{label}##hunt_board_{board.EObjectId}")) {
+						controller.GoToHuntBoard(board, config.RowId);
+					}
+
+					if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
+						ImGui.SetTooltip(Strings.HuntAssistGoToBoard);
+					}
+				}
+			}
+
+			if (targetInfo is null) {
+				// The bill is held but we could not work out what it wants, and the board button
+				// is gone - without this the cell would just be blank, which reads as "nothing
+				// to do here" rather than "we do not know".
+				if (!complete && obtained) {
+					ImGui.TextColored(KnownColor.Orange.Vector(), Strings.HuntAssistNoTargetData);
+				}
+
+				continue;
+			}
+
+			// These two are complementary, and always exactly one of them applies: the trip to
+			// the zone only means anything from outside it, the patrol only from inside it.
+			// Drawing both and refusing on click told the user nothing they could not have been
+			// shown up front.
+			if (Service.ClientState.TerritoryType != targetInfo.TerritoryId) {
+				if (ImGui.Button($"{Strings.HuntAssistGoToTarget}##hunt_target_{config.RowId}")) {
+					controller.GoToTargetZone(targetInfo, config.RowId);
 				}
 
 				if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
-					ImGui.SetTooltip(Strings.HuntAssistGoToBoard);
+					var rankLabel = targetInfo.Rank switch {
+						HuntSpawnPoints.MarkRank.A => Strings.HuntAssistRankA,
+						HuntSpawnPoints.MarkRank.S => Strings.HuntAssistRankS,
+						_ => Strings.HuntAssistRankB,
+					};
+
+					var tooltip = $"{targetInfo.Name} ({rankLabel})\n{targetInfo.ZoneName}";
+					if (targetInfo.AetheryteName.Length > 0) tooltip += $" - {targetInfo.AetheryteName}";
+					if (targetInfo.AetheryteChosenFromRoute) tooltip += $"\n{Strings.HuntAssistTargetTooltip}";
+
+					ImGui.SetTooltip(tooltip);
 				}
-			}
 
-			if (targetInfo is null) continue;
-
-			if (ImGui.Button($"{Strings.HuntAssistGoToTarget}##hunt_target_{config.RowId}")) {
-				controller.GoToTargetZone(targetInfo, config.RowId);
-			}
-
-			if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
-				var rankLabel = targetInfo.Rank switch {
-					HuntSpawnPoints.MarkRank.A => Strings.HuntAssistRankA,
-					HuntSpawnPoints.MarkRank.S => Strings.HuntAssistRankS,
-					_ => Strings.HuntAssistRankB,
-				};
-
-				var tooltip = $"{targetInfo.Name} ({rankLabel})\n{targetInfo.ZoneName}";
-				if (targetInfo.AetheryteName.Length > 0) tooltip += $" - {targetInfo.AetheryteName}";
-				if (targetInfo.AetheryteChosenFromRoute) tooltip += $"\n{Strings.HuntAssistTargetTooltip}";
-
-				ImGui.SetTooltip(tooltip);
+				continue;
 			}
 
 			if (ImGui.Button($"{Strings.HuntAssistPatrol}##hunt_patrol_{config.RowId}")) {

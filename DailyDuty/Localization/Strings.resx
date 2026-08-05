@@ -1039,4 +1039,13 @@ Limited to once per 5 mins</value>
     <data name="HuntAssistSpawnDataNotReady" xml:space="preserve">
         <value>Spawn point data is not ready yet - try again in a moment.</value>
     </data>
+    <data name="HuntAssistStatusNavmeshBuilding" xml:space="preserve">
+        <value>Waiting for vnavmesh to finish building this zone...</value>
+    </data>
+    <data name="HuntAssistPatrolNavmeshTimeout" xml:space="preserve">
+        <value>vnavmesh has not finished building this zone - the patrol was stopped. Try again once it is ready.</value>
+    </data>
+    <data name="HuntAssistNoTargetData" xml:space="preserve">
+        <value>Bill accepted, but its mark could not be identified.</value>
+    </data>
 </root>
