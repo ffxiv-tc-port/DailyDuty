@@ -104,11 +104,14 @@ public class HuntMarksWeekly : HuntMarksBase {
 				ImGui.TextColored(KnownColor.Gray.Vector(), $"{targetInfo.Name} - {targetInfo.ZoneName}");
 			}
 
-			// Once the bill is in hand the board has nothing left to give, so the shortcut to it
-			// stops being an option rather than staying on screen as one that always fails.
-			// Read off the game's own MobHunt state, not our weekly tracking, so a stale
-			// Complete flag can never take the button away.
-			var showBoardButtons = !obtained;
+			// Buttons are only drawn while they are actually actionable. Once the bill is in hand
+			// the board has nothing left to give, and once the week's mark is done neither does it -
+			// a shortcut that always fails is worse than no shortcut, and a greyed-out one still
+			// costs a row of screen space to say nothing.
+			// `complete` is our weekly tracking and `obtained` is the game's own MobHunt state:
+			// after the kill is turned in the bill is no longer held, so `obtained` alone would let
+			// the board buttons come back for the rest of the week.
+			var showBoardButtons = !obtained && !complete;
 
 			ImGui.TableNextColumn();
 
