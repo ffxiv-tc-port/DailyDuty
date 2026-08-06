@@ -4,7 +4,9 @@ namespace DailyDuty.Models;
 
 public class CollectableConfig {
     public bool Enabled = true;
-    public bool MarkDutyList = true;
+
+    // ⚠️ 舊欄位 MarkDutyList(在原生任務列表逐列畫金星)已於 v7.20.0.25 移除。
+    // 使用者設定檔裡殘留的那個鍵會被 Newtonsoft 忽略,不需要遷移。
 
     public bool ShowMounts = true;
     public bool ShowMinions = true;

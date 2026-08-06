@@ -53,6 +53,11 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
             Delegate = _ => UnCollapseOrToggle(),
             ActivationPath = "/",
         });
+
+        System.CommandManager.RegisterCommand(new CommandHandler {
+            Delegate = _ => System.WindowManager.OpenOrCreateUnique<CollectableWindow>(WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn),
+            ActivationPath = "/collectables",
+        });
     }
 
     /// <summary>
@@ -656,7 +661,14 @@ public class CollectableConfigTab : ITabItem {
         ImGuiTweaks.Header(Strings.CollectableHintsConfig);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.Enable, ref System.CollectableConfig.Enabled);
-            configChanged |= ImGui.Checkbox(Strings.CollectableMarkDutyList, ref System.CollectableConfig.MarkDutyList);
+
+            ImGuiHelpers.ScaledDummy(5.0f);
+
+            // 原生任務列表逐列標示已放棄(三個版本實機都畫不出來),改由獨立視窗承擔
+            // 「哪些副本還有沒拿到的東西」這件事。
+            if (ImGui.Button(Strings.CollectableOpenWindow, new Vector2(ImGui.GetContentRegionAvail().X, 23.0f * ImGuiHelpers.GlobalScale))) {
+                System.WindowManager.OpenOrCreateUnique<CollectableWindow>(WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
+            }
 
             ImGuiHelpers.ScaledDummy(5.0f);
 

@@ -874,8 +874,56 @@
     <data name="CollectableHintTooltip" xml:space="preserve">
         <value>（滑鼠停留檢視明細）</value>
     </data>
-    <data name="CollectableMarkDutyList" xml:space="preserve">
-        <value>在任務列表以金色標示有未取得收藏品的副本</value>
+    <data name="CollectableHintAllHeader" xml:space="preserve">
+        <value>本副本收藏品:</value>
+    </data>
+    <data name="CollectableHintAllObtained" xml:space="preserve">
+        <value>（已全部取得）</value>
+    </data>
+    <data name="CollectableStateMissing" xml:space="preserve">
+        <value>未取得</value>
+    </data>
+    <data name="CollectableStateAcquired" xml:space="preserve">
+        <value>已取得</value>
+    </data>
+    <data name="CollectableStateUnknown" xml:space="preserve">
+        <value>無法判定</value>
+    </data>
+    <data name="CollectableOpenWindow" xml:space="preserve">
+        <value>開啟副本收藏品清單</value>
+    </data>
+    <data name="CollectableWindowTitle" xml:space="preserve">
+        <value>副本收藏品</value>
+    </data>
+    <data name="CollectableWindowHelp" xml:space="preserve">
+        <value>列出每個副本會掉落的收藏品,以及你有沒有取得。</value>
+    </data>
+    <data name="CollectableWindowNoData" xml:space="preserve">
+        <value>收藏品資料載入失敗。</value>
+    </data>
+    <data name="CollectableWindowNotLoggedIn" xml:space="preserve">
+        <value>登入後才能查詢收藏品的取得狀況。</value>
+    </data>
+    <data name="CollectableWindowSearchHint" xml:space="preserve">
+        <value>搜尋副本…</value>
+    </data>
+    <data name="CollectableWindowOnlyIncomplete" xml:space="preserve">
+        <value>只顯示還有沒取得的</value>
+    </data>
+    <data name="CollectableWindowTypeFilterHelp" xml:space="preserve">
+        <value>要列出哪些類型,沿用「收藏品提示」分頁的類型勾選。</value>
+    </data>
+    <data name="CollectableWindowSummary" xml:space="preserve">
+        <value>{0} / {1} 個副本還有沒取得的收藏品（內建資料共收錄 {2} 個副本）</value>
+    </data>
+    <data name="CollectableWindowSummaryTooltip" xml:space="preserve">
+        <value>內建資料是社群掉落表與本客戶端道具表的交集。沒出現在這份清單裡的副本,代表資料沒收錄,不代表它不會掉收藏品。</value>
+    </data>
+    <data name="CollectableWindowNoMatch" xml:space="preserve">
+        <value>沒有符合目前條件的副本。</value>
+    </data>
+    <data name="CollectableWindowUnknownTooltip" xml:space="preserve">
+        <value>「?N」表示有 N 件道具查不到解鎖狀態,既不算已取得也不算未取得。</value>
     </data>
     <data name="CollectableTypeMount" xml:space="preserve">
         <value>坐騎</value>

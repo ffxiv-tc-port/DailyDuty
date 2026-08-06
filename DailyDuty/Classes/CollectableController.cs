@@ -6,19 +6,13 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 using DailyDuty.Localization;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Hooking;
+using DailyDuty.Models;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.Exd;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiLib.Classes;
-using KamiLib.Extensions;
-using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
 using Lumina.Excel.Sheets;
 using Newtonsoft.Json;
@@ -26,9 +20,22 @@ using Newtonsoft.Json;
 namespace DailyDuty.Classes;
 
 /// <summary>
-///     Shows a hint in the Duty Finder (ContentsFinder) window listing collectables
-///     (mounts, minions, orchestrion rolls, Triple Triad cards, etc.) that drop from the
-///     currently selected duty but have not yet been obtained by this character.
+///     副本收藏品(坐騎、寵物、樂譜、幻卡……)資料的單一來源。
+///
+///     提供兩個顯示端:
+///     ① 任務搜尋器底部的單行提示 + 停留 tooltip(原生 <see cref="TextNode" />)。
+///     ② 獨立視窗 <c>CollectableWindow</c>,一次看完所有副本。
+///
+///     ────────────────────────────────────────────────────────────────────────────
+///     🔴 v7.20.0.11 ~ v7.20.0.20 曾嘗試在**原生任務列表**逐列畫金星(hook 列樣板的
+///        populate、並主動請遊戲重跑排版)。實機從頭到尾畫不出來,而且那條路一路上
+///        踩過一次 AccessViolation 崩潰(v7.20.0.16)。使用者裁定放棄該作法,整段
+///        已於本版移除:不再 hook 任何原生函式,也不再對 ContentsFinder 送任何
+///        重整請求。要找回舊實作請看 git 歷史(commit c20413c6 之前)。
+///
+///     現在本檔對原生層只做兩件事:掛一個自己的 TextNode、讀 AgentContentsFinder
+///     的「目前選取的副本」純量。**不 hook、不寫回原生節點、不跨幀保存原生指標。**
+///     ────────────────────────────────────────────────────────────────────────────
 /// </summary>
 public unsafe class CollectableController : IDisposable {
     private const string EmbeddedResourceName = "DailyDuty.Resources.DutyCollectables.json";
@@ -47,104 +54,24 @@ public unsafe class CollectableController : IDisposable {
     private ContentsId.ContentsType lastContentType;
     private uint lastContentId;
 
-    // ────────────────────────────────────────────────────────────────────────────────
-    // 任務列表逐行金星標示
-    //
-    // 🔴 v7.20.0.16 曾改成「每幀走 AtkComponentTreeList.Items 對帳」,實機崩潰
-    //    (AccessViolationException,鑑識報告:_logs/forensics-20260731-collectable-mark-crash.md)。
-    //    死因是 `Items[i]->Renderer->RowTemplateNodeList[3]` 讀出 0x9004ebbee4e4915e
-    //    ——一個 non-canonical 值,代表 renderer 那塊記憶體已經被回收重用。
-    //    null 檢查、界檢查、try/catch 三層全部通過/無效:AVE 在 .NET Core 是
-    //    corrupted-state exception,任何 managed catch 都攔不到,行程當場終止。
-    //
-    // 因此本檔的紅線:**只解參考遊戲在當下親手交給我們、而且它自己下一步就要用的指標。**
-    // 那個時機只有一個——populate detour。除此之外一律只讀純量(int/bool),
-    // 而且**不跨幀保存任何原生指標**。
-    // ────────────────────────────────────────────────────────────────────────────────
+    /// <summary>全副本總表的重算節流。解鎖狀態會在遊戲中變動,所以不能永久快取。</summary>
+    private const double SummaryCacheSeconds = 2.0;
 
-    // ContentsFinder 的副本列樣板 renderer 節點 id(與 DutyRoulette 模組相同)。
-    private const uint DutyRowRendererNodeId = 6;
-
-    // 列樣板的節點索引:3 = 副本名稱,4 = 等級(原生 populate 填的就是這兩個)。
-    private const int NameNodeIndex = 3;
-    private const int LevelNodeIndex = 4;
-
-    // 診斷輸出走 Information,不是 Debug。
-    // ⚠️ 實測(2026-07-31 01:20 之後的 dalamud.log):使用者目前的 Dalamud 記錄等級把
-    //    DBG/VRB 全濾掉了(該小時 DBG = 0 筆,前一小時是 2997 筆)。
-    //    v7.20.0.19 的 [Collectable] Debug 行因此一行都沒進 log ——
-    //    這也是為什麼上一輪完全拿不到實據。診斷要有用就不能寫在 Debug。
-    private const int InfoDumpLimit = 6;
-
-    // 強制重跑 populate 後的冷卻幀數:避免「重跑 → 列數又變 → 再重跑」互相追逐。
-    private const int ForcedUpdateCooldownFrames = 15;
-
-    // 開窗後不管訊號有沒有動,都無條件重整這麼多次。
-    // 上一版完全倚賴「偵測到 ListLength / LayoutRefreshPending 變化」才觸發,
-    // 實測等於沒作用 —— 首開時這兩個訊號很可能從頭到尾不動。
-    private const int SettleForceCount = 3;
-
-    // 強制重整之後隔多少幀回報「populate 到底有沒有重跑」。
-    private const int ForceReportFrames = 20;
-
-    // 單次開窗的重整次數硬上限。設 LayoutRefreshPending 有可能讓遊戲再發一次
-    // PostRefresh,進而又排一次重整——這個上限保證它一定會停,不會變成永久刷新迴圈。
-    private const int MaxForcesPerOpen = 20;
-
-    private Hook<AtkComponentListItemPopulator.PopulateDelegate>? onDutyListPopulate;
-    private readonly Dictionary<uint, bool> missingCache = [];
-    private Dictionary<string, uint>? nameToCfc;
-    private int infoDumpRemaining;
-
-    // 開窗時從 renderer 讀一次的樣板欄位數。之後 detour 只看這個 int,不再碰 renderer。
-    // 0 = 沒讀到 → 整個標示功能停用(fail-closed,絕不猜)。
-    private int templateNodeCount;
-
-    // 收斂狀態機(全部是純量,沒有任何原生指標)。
-    private bool repopulatePending;
-    private bool inForcedUpdate;
-    private int forcedUpdateCooldown;
-    private int settleForcesRemaining;
-    private int forcesRemainingThisOpen;
-    private int lastListLength = int.MinValue;
-    private bool lastLayoutRefreshPending;
-
-    // 診斷計數器(全部是純量)。
-    private bool sawPostUpdate;
-    private int forceReportCountdown;
-    private int detourCallCount;
-    private int detourMarkCount;
-
-    // 金星圖示的 SeString payload,標示時接在該列「原始位元組」前面,
-    // 保留原名裡可能存在的其他 payload。
-    private static readonly byte[] StarPrefix =
-        new SeStringBuilder().AddIcon(BitmapFontIcon.GoldStar).Encode();
-
-    private static readonly FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor MarkColor
-        = new Vector4(1.0f, 0.83f, 0.29f, 1.0f).ToByteColor();
+    private List<DutyCollectableInfo>? summaryCache;
+    private DateTime summaryCacheTime = DateTime.MinValue;
 
     public CollectableController() {
         dutyCollectables = LoadEmbeddedData();
 
-        Service.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "ContentsFinder", OnContentsFinderSetup);
-        Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "ContentsFinder", OnContentsFinderFinalize);
-
         System.ContentsFinderController.OnAttach += AttachNodes;
         System.ContentsFinderController.OnDetach += DetachNodes;
-        System.ContentsFinderController.OnRefresh += OnContentsFinderRefresh;
         System.ContentsFinderController.OnUpdate += OnContentsFinderUpdate;
     }
 
     public void Dispose() {
-        Service.AddonLifecycle.UnregisterListener(OnContentsFinderSetup, OnContentsFinderFinalize);
-
         System.ContentsFinderController.OnAttach -= AttachNodes;
         System.ContentsFinderController.OnDetach -= DetachNodes;
-        System.ContentsFinderController.OnRefresh -= OnContentsFinderRefresh;
         System.ContentsFinderController.OnUpdate -= OnContentsFinderUpdate;
-
-        onDutyListPopulate?.Dispose();
-        onDutyListPopulate = null;
 
         System.NativeController.DetachNode(infoTextNode, () => {
             infoTextNode?.Dispose();
@@ -152,378 +79,146 @@ public unsafe class CollectableController : IDisposable {
         });
     }
 
-    #region 指標合理性
+    /// <summary>有沒有成功載入內嵌的副本收藏品資料。false = 整個功能沒有資料可用。</summary>
+    public bool HasData => dutyCollectables is not null;
 
-    // user-mode x64 的合法範圍。上界這一條才是關鍵:v7.20.0.16 崩潰時讀到的
-    // 0x9004ebbee4e4915e 是 non-canonical,只有上界檔得住;`< 0x10000` 只擋得掉
-    // 明顯的 null 附近偏移。兩者都只是純算術比較,不解參考、不做投機探測。
-    private const ulong MinPlausiblePointer = 0x10000UL;
-    private const ulong MaxPlausiblePointer = 0x00007FFFFFFFFFFFUL;
+    /// <summary>內嵌資料涵蓋幾個副本。用來讓使用者知道「查無此副本」是資料沒收錄,不是這個副本沒東西掉。</summary>
+    public int KnownDutyCount => dutyCollectables?.Count ?? 0;
 
-    private static bool IsPlausible(void* pointer) {
-        var value = (ulong) (nuint) pointer;
-        return value is >= MinPlausiblePointer and <= MaxPlausiblePointer;
-    }
+    #region 對外查詢
 
     /// <summary>
-    ///     把列樣板節點轉成 <see cref="AtkTextNode" />,但先確認它真的是文字節點。
-    ///     萬一 hook 被掛到了別的列樣板(例如分類標題列),索引 3/4 就不是名稱/等級,
-    ///     這道型別檢查會讓我們安靜放棄,而不是把非文字節點當 AtkTextNode 解參考。
+    ///     取得所有已收錄副本的完整收藏品清單(含已取得的項目)。
+    ///     ⚠️ 只能在遊戲主執行緒呼叫:內部會讀 <see cref="UIState" /> 的解鎖狀態。
     /// </summary>
-    private static AtkTextNode* AsTextNode(AtkResNode* node) {
-        if (!IsPlausible(node)) return null;
-        if (node->Type != NodeType.Text) return null;
+    public IReadOnlyList<DutyCollectableInfo> GetDutyCollectables() {
+        if (summaryCache is not null && (DateTime.UtcNow - summaryCacheTime).TotalSeconds < SummaryCacheSeconds) {
+            return summaryCache;
+        }
 
-        return (AtkTextNode*) node;
+        summaryCache = BuildAllDutyInfo();
+        summaryCacheTime = DateTime.UtcNow;
+        return summaryCache;
     }
 
-    private static bool SameColor(FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor left, FFXIVClientStructs.FFXIV.Client.Graphics.ByteColor right)
-        => left.R == right.R && left.G == right.G && left.B == right.B && left.A == right.A;
-
-    #endregion
-
-    #region 開窗 / 關窗
-
-    private void OnContentsFinderSetup(AddonEvent type, AddonArgs args) => HookSafety.ExecuteSafe(() => {
-        ResetListState();
-
-        if (dutyCollectables is null) return;
-
-        // 解鎖狀態在開窗時重抓一次(同場學到新收藏品的過期程度可接受)。
-        missingCache.Clear();
-        infoDumpRemaining = InfoDumpLimit;
-
-        var addon = args.GetAddon<AddonContentsFinder>();
-        if (!IsPlausible(addon)) return;
-
-        var dutyList = addon->DutyList;
-        if (!IsPlausible(dutyList)) return;
-
-        var renderer = dutyList->GetItemRendererByNodeId(DutyRowRendererNodeId);
-        if (!IsPlausible(renderer)) {
-            Service.Log.Warning($"[Collectable] PostSetup:找不到列樣板 renderer(node id {DutyRowRendererNodeId}),列表標示停用。");
-            return;
-        }
-
-        // 這是本檔唯一一次讀 renderer,而且是在 addon 剛 setup、由 Dalamud 交給我們的當下。
-        // 讀到的欄位數之後只以 int 形式使用,不保存 renderer 指標。
-        var nodeCount = renderer->RowTemplateNodeCount;
-        if (nodeCount <= LevelNodeIndex) {
-            Service.Log.Warning($"[Collectable] PostSetup:列樣板只有 {nodeCount} 個節點(需要 > {LevelNodeIndex}),列表標示停用。");
-            return;
-        }
-
-        var populateMethod = (nint) renderer->Populator.Populate;
-        if ((ulong) populateMethod < MinPlausiblePointer) {
-            Service.Log.Warning("[Collectable] PostSetup:列樣板 populate 函式位址無效,列表標示停用。");
-            return;
-        }
-
-        templateNodeCount = nodeCount;
-
-        onDutyListPopulate = Service.Hooker.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod, OnPopulateHook);
-        onDutyListPopulate?.Enable();
-
-        // 首開時列在 hook 掛上之前就已經 populate 完了。
-        // ⚠️ 不去「自己補畫」那些列——那正是 v7.20.0.16 的崩潰來源。
-        // 改成請遊戲自己重跑一次 populate,標示會經由 hook 補上。
-        // 這件事延後到 PostUpdate 做:PostSetup 當下 addon 的資料還不一定就緒。
-        repopulatePending = true;
-        settleForcesRemaining = SettleForceCount;
-        forcesRemainingThisOpen = MaxForcesPerOpen;
-
-        Service.Log.Information($"[Collectable] PostSetup:hook 已掛上(populate=0x{populateMethod:X}, 樣板節點 {nodeCount} 個),排定 {SettleForceCount} 次重整。");
-    }, Service.Log);
-
-    private void OnContentsFinderFinalize(AddonEvent type, AddonArgs args) => HookSafety.ExecuteSafe(() => {
-        Service.Log.Information($"[Collectable] PreFinalize:釋放 hook(本次開窗 PostUpdate 有跑={sawPostUpdate})。");
-        ResetListState();
-    }, Service.Log);
-
-    private void ResetListState() {
-        onDutyListPopulate?.Dispose();
-        onDutyListPopulate = null;
-
-        templateNodeCount = 0;
-        repopulatePending = false;
-        inForcedUpdate = false;
-        forcedUpdateCooldown = 0;
-        settleForcesRemaining = 0;
-        forcesRemainingThisOpen = 0;
-        lastListLength = int.MinValue;
-        lastLayoutRefreshPending = false;
-
-        sawPostUpdate = false;
-        forceReportCountdown = 0;
-        detourCallCount = 0;
-        detourMarkCount = 0;
-    }
-
-    #endregion
-
-    #region populate detour —— 唯一會碰到列節點的地方
-
-    /// <summary>
-    ///     遊戲正在填某一列的內容,並且把該列的節點陣列與資料項直接交給我們。
-    ///     這是整個功能裡唯一一個「原生指標由遊戲當場提供、而且它自己下一步就要用同一組指標」
-    ///     的時機,所以也是唯一允許碰列節點的地方。
-    /// </summary>
-    private void OnPopulateHook(AtkUnitBase* unitBase, AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList) {
-        var hook = onDutyListPopulate;
-        if (hook is null) return;
-
-        // 原生 populate 一律先跑完:就算我們底下整段失敗,列的內容也是完整的。
-        try {
-            hook.Original(unitBase, listItemInfo, nodeList);
-        }
-        catch (Exception exception) {
-            Service.Log.Error(exception, "[CollectableController] 原生 populate 呼叫失敗。");
-            return;
-        }
-
-        // 這裡刻意用 try/catch 而不是 HookSafety.ExecuteSafe:主體要用到指標區域變數。
-        // 語意等價(HookSafety 本身就是 try/catch + log)。
-        // ⚠️ 這一層只擋得住 managed 例外(Lumina 查表、索引、解析);對指標錯誤無效,
-        //    指標安全完全靠上面的來源限制與下面的逐項檢查。
-        try {
-            ApplyMarkToPopulatedRow(listItemInfo, nodeList);
-        }
-        catch (Exception exception) {
-            Service.Log.Error(exception, "[CollectableController] 套用列表標示時發生例外。");
-        }
-    }
-
-    private void ApplyMarkToPopulatedRow(AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList) {
-        detourCallCount++;
-
-        if (dutyCollectables is null) return;
-
-        // 開窗時沒能確認樣板欄位數 → 整列不碰(fail-closed)。
-        if (templateNodeCount <= LevelNodeIndex) return;
-
-        if (!IsPlausible(listItemInfo) || !IsPlausible(nodeList)) return;
-
-        var item = listItemInfo->ListItem;
-        if (!IsPlausible(item)) return;
-
-        var nameNode = AsTextNode(nodeList[NameNodeIndex]);
-        if (nameNode is null) return;
-
-        var levelNode = AsTextNode(nodeList[LevelNodeIndex]);
-
-        // StringValues[0] 是這一列的名稱本體(原生 populate 也是拿它填文字節點)。
-        if (item->StringValues.LongCount <= 0) return;
-
-        var rawName = item->StringValues[0];
-        if (!rawName.HasValue || !IsPlausible(rawName.Value)) return;
-
-        var marking = System.CollectableConfig is { Enabled: true, MarkDutyList: true };
-
-        var shouldMark = false;
-        var dutyName = string.Empty;
-        var matched = false;
-
-        if (marking) {
-            // 原始位元組可能含 payload(鎖頭圖示等),Utf8String.ToString() 會把 payload
-            // 混進字串害比對失敗——用 SeString 解析取純文字再比對。
-            dutyName = SeString.Parse(rawName.AsSpan()).TextValue.Trim();
-            nameToCfc ??= BuildNameMap();
-
-            if (nameToCfc.TryGetValue(dutyName, out var cfcId)) {
-                matched = true;
-                shouldMark = HasMissing(cfcId);
-            }
-        }
-
-        if (infoDumpRemaining > 0) {
-            infoDumpRemaining--;
-            Service.Log.Information($"[Collectable] populate: name='{dutyName}' matched={matched} mark={shouldMark} marking={marking}");
-        }
-
-        if (shouldMark) detourMarkCount++;
-
-        if (shouldMark) {
-            // 金星 + 原始位元組 + null 終止符(原生 SetText 讀到 null 為止)。
-            var raw = rawName.AsSpan();
-            var buffer = new byte[StarPrefix.Length + raw.Length + 1];
-            StarPrefix.CopyTo(buffer, 0);
-            raw.CopyTo(buffer.AsSpan(StarPrefix.Length));
-            buffer[^1] = 0;
-
-            nameNode->SetText(buffer);
-            nameNode->TextColor = MarkColor;
-            return;
-        }
-
-        // 原生 populate 會重寫文字(星號因此自然消失)但**不會**重設顏色。
-        // 列被回收給別的副本、或使用者關掉了這個功能時,金色會殘留。
-        //
-        // 判斷「這一列是不是我們染的」直接看節點現在的顏色,不維護任何索引表——
-        // 舊版用 renderer 的 NodeId 當 key,列被回收重用時會錯位。節點自己就是狀態。
-        // 只碰金色的列,也就不會踩到 DutyRoulette 模組染的輪盤列。
-        if (levelNode is not null && SameColor(nameNode->TextColor, MarkColor)) {
-            nameNode->TextColor = levelNode->TextColor;
-        }
-    }
-
-    #endregion
-
-    #region 收斂 —— 只讀純量,請遊戲自己重跑 populate
-
-    /// <summary>
-    ///     金星只在 populate 時套上,所以任何「沒有重跑 populate」的路徑都會留下沒星號的列:
-    ///     首開(列早於 hook 掛上就填好了)、展開/收合分類、換區後重開。
-    ///
-    ///     🔴 v7.20.0.19 的教訓:上一版**只在偵測到 ListLength / LayoutRefreshPending 變化時**
-    ///        才重整,實測完全沒生效——首開時這兩個訊號很可能從頭到尾不動。
-    ///        所以現在改成「開窗後無條件重整 <see cref="SettleForceCount" /> 次」為主,
-    ///        訊號變化只當額外觸發。**不再倚賴任何偵測假設。**
-    ///
-    ///     🔑 偵測與觸發**只讀寫純量欄位**(int / bool),不解參考 Items 裡的任何元素,
-    ///        也不保存任何原生指標——addon 指標由 AddonLifecycle 當幀交付,用完即棄。
-    /// </summary>
-    private void ConvergeDutyListMarks(AddonContentsFinder* addon) {
-        if (dutyCollectables is null) return;
-        if (inForcedUpdate) return;
-        if (!IsPlausible(addon)) return;
-
-        var dutyList = addon->DutyList;
-        if (!IsPlausible(dutyList)) return;
-
-        // ListLength = 目前可見的列數。展開/收合分類、切換副本類型、資料重載都會改到它。
-        var listLength = dutyList->AtkComponentList.ListLength;
-
-        // 遊戲要重排樹狀清單時會把這個旗標設起來(展開/收合)。
-        var layoutRefreshPending = dutyList->LayoutRefreshPending;
-
-        if (!sawPostUpdate) {
-            sawPostUpdate = true;
-            Service.Log.Information($"[Collectable] PostUpdate 首次觸發:hook={(onDutyListPopulate is not null ? "在" : "無")} ListLength={listLength} LayoutRefreshPending={layoutRefreshPending} settle={settleForcesRemaining}");
-        }
-
-        if (forcedUpdateCooldown > 0) forcedUpdateCooldown--;
-
-        // 診斷:上一次強制重整之後,populate 到底有沒有真的重跑?
-        if (forceReportCountdown > 0 && --forceReportCountdown == 0) {
-            Service.Log.Information($"[Collectable] 重整後 {ForceReportFrames} 幀:populate 跑了 {detourCallCount} 次、標示 {detourMarkCount} 列,ListLength={listLength}");
-        }
-
-        if (listLength != lastListLength) {
-            if (lastListLength != int.MinValue) {
-                Service.Log.Information($"[Collectable] ListLength {lastListLength} → {listLength},排定重整。");
-            }
-            lastListLength = listLength;
-            repopulatePending = true;
-        }
-
-        // 只在 false → true 的邊緣觸發,萬一它長期為 true 也不會每幀重跑。
-        if (layoutRefreshPending && !lastLayoutRefreshPending) repopulatePending = true;
-        lastLayoutRefreshPending = layoutRefreshPending;
-
-        if (onDutyListPopulate is null) return;
-        if (forcedUpdateCooldown > 0) return;
-        if (!repopulatePending && settleForcesRemaining <= 0) return;
-
-        if (forcesRemainingThisOpen <= 0) {
-            if (repopulatePending || settleForcesRemaining > 0) {
-                repopulatePending = false;
-                settleForcesRemaining = 0;
-                Service.Log.Information("[Collectable] 本次開窗的重整次數已達上限,停止重整。");
-            }
-            return;
-        }
-
-        repopulatePending = false;
-        forcesRemainingThisOpen--;
-        if (settleForcesRemaining > 0) settleForcesRemaining--;
-        forcedUpdateCooldown = ForcedUpdateCooldownFrames;
-
-        ForceRepopulate(addon, dutyList, listLength);
-    }
-
-    /// <summary>
-    ///     請遊戲自己把可見列重跑一次 populate,標示會經由 hook 補上。
-    ///     我們不碰任何列節點,也不走 Items。
-    /// </summary>
-    private void ForceRepopulate(AddonContentsFinder* addon, AtkComponentTreeList* dutyList, int listLength) {
-        inForcedUpdate = true;
-        detourCallCount = 0;
-        detourMarkCount = 0;
-        forceReportCountdown = ForceReportFrames;
-
-        try {
-            // ① 樹狀清單自己的「請重新排版」旗標(FFXIVClientStructs 對 ExpandGroupExclusively
-            //    的註解就是叫呼叫端接著把它設為 true)。重排會把可見列重新綁到 renderer,
-            //    連帶重跑 populate。**純量寫入,不走任何指標鏈。**
-            dutyList->LayoutRefreshPending = true;
-
-            // 別讓自己的寫入觸發自己的邊緣偵測。
-            lastLayoutRefreshPending = true;
-
-            // ② 另外請 addon 重跑一次自己的更新。
-            //    ⚠️ ContentsFinder 的副本清單是走 AtkValue 灌進 AtkComponentTreeList 的
-            //    (CS 對 AddonContentsFinder.DutyList 的註解:"Does not contain a pointer to
-            //    the rendered list"),所以它不見得吃這條——v7.20.0.11 用的就是這一招,
-            //    而實測首開一直沒修好。留著當第二保險,沒作用也只是沒動作。
-            var stage = AtkStage.Instance();
-            if (IsPlausible(stage)) {
-                addon->AtkUnitBase.OnRequestedUpdate(stage->GetNumberArrayData(), stage->GetStringArrayData());
-            }
-
-            Service.Log.Information($"[Collectable] 觸發列表重整(ListLength={listLength},settle 剩 {settleForcesRemaining})。");
-        }
-        catch (Exception exception) {
-            Service.Log.Error(exception, "[Collectable] 請求列表重整失敗。");
-        }
-        finally {
-            inForcedUpdate = false;
-        }
-    }
-
-    private void OnContentsFinderRefresh(AddonContentsFinder* addon) {
-        // PostRefresh / PostRequestedUpdate:資料換過了,下一幀補一次 populate。
-        // 我們自己觸發的那次不算,否則會互相追逐。
-        if (inForcedUpdate) return;
-
-        repopulatePending = true;
-    }
-
-    #endregion
-
-    private Dictionary<string, uint> BuildNameMap() {
-        var map = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
-        if (dutyCollectables is null) return map;
-
-        var sheet = Service.DataManager.GetExcelSheet<ContentFinderCondition>();
-        foreach (var cfcId in dutyCollectables.Keys) {
-            var row = sheet.GetRowOrDefault(cfcId);
-            if (row is null) continue;
-
-            var name = row.Value.Name.ExtractText();
-            if (!string.IsNullOrEmpty(name)) {
-                map.TryAdd(name, cfcId);
-            }
-        }
-
-        return map;
-    }
-
-    /// <summary>設定變更後呼叫:類型開關會影響「有無未取得」的判定與底部摘要。</summary>
+    /// <summary>設定變更後呼叫:類型開關會影響清單內容與底部摘要。</summary>
     public void InvalidateCache() {
-        missingCache.Clear();
+        summaryCache = null;
+        summaryCacheTime = DateTime.MinValue;
         hasLastSelection = false;
-
-        // 列表標示也要立刻跟著變(包含把功能關掉時把金色收回去)。
-        repopulatePending = true;
     }
 
-    private bool HasMissing(uint cfcId) {
-        if (missingCache.TryGetValue(cfcId, out var cached)) return cached;
-        if (dutyCollectables is null || !dutyCollectables.TryGetValue(cfcId, out var entries)) return false;
+    #endregion
 
-        var missing = entries.Any(entry => ShouldShowType(entry.Type) && !IsAcquired(entry));
-        missingCache[cfcId] = missing;
-        return missing;
+    #region 資料組裝
+
+    private List<DutyCollectableInfo> BuildAllDutyInfo() {
+        var result = new List<DutyCollectableInfo>();
+        if (dutyCollectables is null) return result;
+
+        foreach (var cfcId in dutyCollectables.Keys) {
+            if (BuildDutyInfo(cfcId) is { } info) {
+                result.Add(info);
+            }
+        }
+
+        // 等級 → CFC id。CFC id 大致就是實裝順序,同等級的副本因此仍然照資料片排。
+        result.Sort((left, right) => left.Level != right.Level
+            ? left.Level.CompareTo(right.Level)
+            : left.CfcId.CompareTo(right.CfcId));
+
+        return result;
+    }
+
+    /// <summary>
+    ///     組出單一副本的**完整**清單。回 null 代表這個副本沒有(啟用類型中的)任何收藏品。
+    /// </summary>
+    private DutyCollectableInfo? BuildDutyInfo(uint cfcId) {
+        if (dutyCollectables is null || !dutyCollectables.TryGetValue(cfcId, out var entries)) return null;
+
+        var cfcRow = Service.DataManager.GetExcelSheet<ContentFinderCondition>().GetRowOrDefault(cfcId);
+        if (cfcRow is null) return null;
+
+        var dutyName = cfcRow.Value.Name.ExtractText();
+        if (string.IsNullOrEmpty(dutyName)) return null;
+
+        var itemSheet = Service.DataManager.GetExcelSheet<Item>();
+        var items = new List<CollectableItemInfo>();
+        var seenNames = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var entry in entries) {
+            if (!ShouldShowType(entry.Type)) continue;
+
+            var itemRow = itemSheet.GetRowOrDefault(entry.ItemId);
+            if (itemRow is null) continue;
+
+            var name = itemRow.Value.Name.ExtractText();
+            if (string.IsNullOrEmpty(name)) continue;
+
+            // 同名項目只留一筆(掉落表可能從多張表收進同一件東西)。
+            if (!seenNames.Add(name)) continue;
+
+            items.Add(new CollectableItemInfo(entry.ItemId, entry.Type, name, GetState(entry)));
+        }
+
+        if (items.Count is 0) return null;
+
+        // 未取得 → 無法判定 → 已取得;同狀態內照類型排。使用者最常找的是第一段。
+        items.Sort((left, right) => {
+            var leftOrder = StateSortOrder(left.State);
+            var rightOrder = StateSortOrder(right.State);
+
+            if (leftOrder != rightOrder) return leftOrder.CompareTo(rightOrder);
+            if (left.Type != right.Type) return left.Type.CompareTo(right.Type);
+
+            return string.Compare(left.Name, right.Name, StringComparison.CurrentCulture);
+        });
+
+        return new DutyCollectableInfo {
+            CfcId = cfcId,
+            DutyName = dutyName,
+            Level = cfcRow.Value.ClassJobLevelRequired,
+            Items = items,
+        };
+    }
+
+    private static int StateSortOrder(CollectableState state) => state switch {
+        CollectableState.Missing => 0,
+        CollectableState.Unknown => 1,
+        _ => 2,
+    };
+
+    /// <summary>
+    ///     查不到資料時回 <see cref="CollectableState.Unknown" />,**不會**猜成已取得或未取得。
+    ///     舊版把「查不到」當成已取得,結果是使用者永遠不會知道那一筆沒被算到。
+    /// </summary>
+    private static CollectableState GetState(CollectableEntry entry) {
+        if (entry.Type is 4) {
+            if (entry.RelatedItemIds.Length is 0) return CollectableState.Unknown;
+
+            var acquired = true;
+
+            foreach (var relatedId in entry.RelatedItemIds) {
+                switch (GetItemState(relatedId)) {
+                    case CollectableState.Unknown: return CollectableState.Unknown;
+                    case CollectableState.Missing: acquired = false; break;
+                }
+            }
+
+            return acquired ? CollectableState.Acquired : CollectableState.Missing;
+        }
+
+        return GetItemState(entry.ItemId);
+    }
+
+    private static CollectableState GetItemState(uint itemId) {
+        var uiState = UIState.Instance();
+        if (uiState is null) return CollectableState.Unknown;
+
+        var itemRow = ExdModule.GetItemRowById(itemId);
+        if (itemRow is null) return CollectableState.Unknown;
+
+        return uiState->IsItemActionUnlocked(itemRow) == 1 ? CollectableState.Acquired : CollectableState.Missing;
     }
 
     private static Dictionary<uint, List<CollectableEntry>>? LoadEmbeddedData() {
@@ -565,6 +260,7 @@ public unsafe class CollectableController : IDisposable {
                 result[cfcId] = parsedEntries;
             }
 
+            Service.Log.Information($"[Collectable] 已載入 {result.Count} 個副本的收藏品資料。");
             return result;
         }
         catch (Exception e) {
@@ -572,6 +268,10 @@ public unsafe class CollectableController : IDisposable {
             return null;
         }
     }
+
+    #endregion
+
+    #region 任務搜尋器底部提示
 
     private void AttachNodes(AddonContentsFinder* addon) {
         if (dutyCollectables is null) return;
@@ -606,9 +306,6 @@ public unsafe class CollectableController : IDisposable {
     }
 
     private void OnContentsFinderUpdate(AddonContentsFinder* addon) {
-        // 先跑收斂:底部摘要沒話說的時候,列表標示也還是要繼續補上。
-        ConvergeDutyListMarks(addon);
-
         if (infoTextNode is null || dutyCollectables is null) return;
 
         if (!System.CollectableConfig.Enabled) {
@@ -628,86 +325,110 @@ public unsafe class CollectableController : IDisposable {
         lastContentType = selectedDuty.ContentType;
         lastContentId = selectedDuty.Id;
 
-        if (selectedDuty.ContentType != ContentsId.ContentsType.Regular || !dutyCollectables.TryGetValue(selectedDuty.Id, out var entries)) {
+        if (selectedDuty.ContentType != ContentsId.ContentsType.Regular) {
             infoTextNode.IsVisible = false;
             return;
         }
 
-        RefreshDisplay(entries);
+        RefreshDisplay(BuildDutyInfo(selectedDuty.Id));
     }
 
-    private void RefreshDisplay(List<CollectableEntry> entries) {
+    /// <summary>
+    ///     底部提示。有未取得時的那一行**與舊版逐字相同**(使用者明說這行做得好)。
+    ///     新增的是「全部取得時不再整段消失」——改成告訴使用者這個副本會出哪些收藏品,
+    ///     以及 tooltip 裡連已取得的項目一起列出來。
+    /// </summary>
+    private void RefreshDisplay(DutyCollectableInfo? info) {
         if (infoTextNode is null) return;
 
-        var itemSheet = Service.DataManager.GetExcelSheet<Item>();
-        var missingByType = new SortedDictionary<byte, List<string>>();
-
-        foreach (var entry in entries) {
-            if (!ShouldShowType(entry.Type)) continue;
-            if (IsAcquired(entry)) continue;
-
-            var itemRow = itemSheet.GetRowOrDefault(entry.ItemId);
-            if (itemRow is null) continue;
-
-            var name = itemRow.Value.Name.ExtractText();
-            if (string.IsNullOrEmpty(name)) continue;
-
-            if (!missingByType.TryGetValue(entry.Type, out var names)) {
-                names = [];
-                missingByType[entry.Type] = names;
-            }
-
-            if (!names.Contains(name)) {
-                names.Add(name);
-            }
-        }
-
-        if (missingByType.Count == 0) {
+        if (info is null) {
             infoTextNode.IsVisible = false;
             return;
         }
 
-        // 節點本體:一行數量摘要;完整名單放 tooltip(見 AttachNodes 的說明)。
+        // 摘要用的類型計數只算「未取得」(舊行為);全部取得時改算全部,才有東西可講。
+        var countedState = info.MissingCount > 0 ? CollectableState.Missing : (CollectableState?) null;
+
         var summary = new StringBuilder();
-        summary.Append(Strings.CollectableHintHeader);
-        var detail = new StringBuilder();
+        summary.Append(info.MissingCount > 0 ? Strings.CollectableHintHeader : Strings.CollectableHintAllHeader);
+
         var first = true;
-        foreach (var (type, names) in missingByType) {
+        foreach (var (type, count) in CountByType(info, countedState)) {
             if (!first) summary.Append('、');
             first = false;
             summary.Append(GetTypeName(type));
             summary.Append('×');
-            summary.Append(names.Count);
-
-            if (detail.Length != 0) detail.Append('\n');
-            detail.Append(GetTypeName(type));
-            detail.Append(':');
-            detail.Append(string.Join('、', names));
+            summary.Append(count);
         }
+
+        if (info.MissingCount is 0) {
+            summary.Append(Strings.CollectableHintAllObtained);
+        }
+
         summary.Append(' ');
         summary.Append(Strings.CollectableHintTooltip);
 
         infoTextNode.Text = summary.ToString();
-        infoTextNode.Tooltip = detail.ToString();
+        infoTextNode.Tooltip = BuildDetailText(info);
         infoTextNode.IsVisible = true;
     }
 
-    private static bool IsAcquired(CollectableEntry entry) {
-        if (entry.Type == 4) {
-            return entry.RelatedItemIds.Length != 0 && entry.RelatedItemIds.All(IsItemUnlocked);
+    /// <summary>類型 → 件數。<paramref name="state" /> 為 null 表示不分狀態全算。</summary>
+    private static SortedDictionary<byte, int> CountByType(DutyCollectableInfo info, CollectableState? state) {
+        var counts = new SortedDictionary<byte, int>();
+
+        foreach (var item in info.Items) {
+            if (state is { } wanted && item.State != wanted) continue;
+
+            counts.TryGetValue(item.Type, out var current);
+            counts[item.Type] = current + 1;
         }
 
-        return IsItemUnlocked(entry.ItemId);
+        return counts;
     }
 
-    private static bool IsItemUnlocked(uint itemId) {
-        var itemRow = ExdModule.GetItemRowById(itemId);
-        if (itemRow is null) return true; // No data to show anything is missing, don't claim it's missing.
+    /// <summary>
+    ///     tooltip 明細:未取得的排前面,已取得的也列出來(使用者明確要求要看得到已收藏的),
+    ///     查不到狀態的獨立成「無法判定」一段——不知道要看得見,不能混進另外兩段。
+    /// </summary>
+    private static string BuildDetailText(DutyCollectableInfo info) {
+        var detail = new StringBuilder();
 
-        return UIState.Instance()->IsItemActionUnlocked(itemRow) == 1;
+        AppendStateSection(detail, info, CollectableState.Missing, Strings.CollectableStateMissing);
+        AppendStateSection(detail, info, CollectableState.Unknown, Strings.CollectableStateUnknown);
+        AppendStateSection(detail, info, CollectableState.Acquired, Strings.CollectableStateAcquired);
+
+        return detail.ToString();
     }
 
-    private static bool ShouldShowType(byte type) => type switch {
+    private static void AppendStateSection(StringBuilder detail, DutyCollectableInfo info, CollectableState state, string stateLabel) {
+        var byType = new SortedDictionary<byte, List<string>>();
+
+        foreach (var item in info.Items) {
+            if (item.State != state) continue;
+
+            if (!byType.TryGetValue(item.Type, out var names)) {
+                names = [];
+                byType[item.Type] = names;
+            }
+
+            names.Add(item.Name);
+        }
+
+        foreach (var (type, names) in byType) {
+            if (detail.Length != 0) detail.Append('\n');
+
+            detail.Append(stateLabel);
+            detail.Append(' ');
+            detail.Append(GetTypeName(type));
+            detail.Append('：');
+            detail.Append(string.Join('、', names));
+        }
+    }
+
+    #endregion
+
+    public static bool ShouldShowType(byte type) => type switch {
         1 => System.CollectableConfig.ShowMounts,
         2 => System.CollectableConfig.ShowMinions,
         3 => System.CollectableConfig.ShowOrchestrionRolls,
@@ -718,7 +439,7 @@ public unsafe class CollectableController : IDisposable {
         _ => false,
     };
 
-    private static string GetTypeName(byte type) => type switch {
+    public static string GetTypeName(byte type) => type switch {
         1 => Strings.CollectableTypeMount,
         2 => Strings.CollectableTypeMinion,
         3 => Strings.CollectableTypeOrchestrionRoll,

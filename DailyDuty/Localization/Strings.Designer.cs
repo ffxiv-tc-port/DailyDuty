@@ -2617,20 +2617,164 @@ namespace DailyDuty.Localization {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Highlight duties with unobtained collectables in the duty list.
-        /// </summary>
-        internal static string CollectableMarkDutyList {
-            get {
-                return ResourceManager.GetString("CollectableMarkDutyList", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Looks up a localized string similar to Collectables from this duty you haven't obtained yet (DailyDuty).
         /// </summary>
         internal static string CollectableHintTooltip {
             get {
                 return ResourceManager.GetString("CollectableHintTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectables from this duty:.
+        /// </summary>
+        internal static string CollectableHintAllHeader {
+            get {
+                return ResourceManager.GetString("CollectableHintAllHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to (all obtained).
+        /// </summary>
+        internal static string CollectableHintAllObtained {
+            get {
+                return ResourceManager.GetString("CollectableHintAllObtained", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Missing.
+        /// </summary>
+        internal static string CollectableStateMissing {
+            get {
+                return ResourceManager.GetString("CollectableStateMissing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Obtained.
+        /// </summary>
+        internal static string CollectableStateAcquired {
+            get {
+                return ResourceManager.GetString("CollectableStateAcquired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown.
+        /// </summary>
+        internal static string CollectableStateUnknown {
+            get {
+                return ResourceManager.GetString("CollectableStateUnknown", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open Duty Collectable List.
+        /// </summary>
+        internal static string CollectableOpenWindow {
+            get {
+                return ResourceManager.GetString("CollectableOpenWindow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Duty Collectables.
+        /// </summary>
+        internal static string CollectableWindowTitle {
+            get {
+                return ResourceManager.GetString("CollectableWindowTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Lists the collectables each duty can drop, and whether you already have them.
+        /// </summary>
+        internal static string CollectableWindowHelp {
+            get {
+                return ResourceManager.GetString("CollectableWindowHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectable data could not be loaded.
+        /// </summary>
+        internal static string CollectableWindowNoData {
+            get {
+                return ResourceManager.GetString("CollectableWindowNoData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Log in to check collectable progress.
+        /// </summary>
+        internal static string CollectableWindowNotLoggedIn {
+            get {
+                return ResourceManager.GetString("CollectableWindowNotLoggedIn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Search duties....
+        /// </summary>
+        internal static string CollectableWindowSearchHint {
+            get {
+                return ResourceManager.GetString("CollectableWindowSearchHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Only duties with items left.
+        /// </summary>
+        internal static string CollectableWindowOnlyIncomplete {
+            get {
+                return ResourceManager.GetString("CollectableWindowOnlyIncomplete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Which collectable types are listed follows the type checkboxes in the Collectable Hints settings.
+        /// </summary>
+        internal static string CollectableWindowTypeFilterHelp {
+            get {
+                return ResourceManager.GetString("CollectableWindowTypeFilterHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} of {1} listed duties still have collectables to get ({2} duties in the bundled data).
+        /// </summary>
+        internal static string CollectableWindowSummary {
+            get {
+                return ResourceManager.GetString("CollectableWindowSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The bundled data is a community drop table intersected with this client's item sheet.
+        /// </summary>
+        internal static string CollectableWindowSummaryTooltip {
+            get {
+                return ResourceManager.GetString("CollectableWindowSummaryTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No duties match the current filter.
+        /// </summary>
+        internal static string CollectableWindowNoMatch {
+            get {
+                return ResourceManager.GetString("CollectableWindowNoMatch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to &quot;?N&quot; means N items whose unlock state this client cannot report.
+        /// </summary>
+        internal static string CollectableWindowUnknownTooltip {
+            get {
+                return ResourceManager.GetString("CollectableWindowUnknownTooltip", resourceCulture);
             }
         }
 

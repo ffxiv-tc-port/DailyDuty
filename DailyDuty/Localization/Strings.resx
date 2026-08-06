@@ -874,8 +874,56 @@ Limited to once per 5 mins</value>
     <data name="CollectableHintTooltip" xml:space="preserve">
         <value>(hover for details)</value>
     </data>
-    <data name="CollectableMarkDutyList" xml:space="preserve">
-        <value>Highlight duties with unobtained collectables in the duty list</value>
+    <data name="CollectableHintAllHeader" xml:space="preserve">
+        <value>Collectables from this duty:</value>
+    </data>
+    <data name="CollectableHintAllObtained" xml:space="preserve">
+        <value>(all obtained)</value>
+    </data>
+    <data name="CollectableStateMissing" xml:space="preserve">
+        <value>Missing</value>
+    </data>
+    <data name="CollectableStateAcquired" xml:space="preserve">
+        <value>Obtained</value>
+    </data>
+    <data name="CollectableStateUnknown" xml:space="preserve">
+        <value>Unknown</value>
+    </data>
+    <data name="CollectableOpenWindow" xml:space="preserve">
+        <value>Open Duty Collectable List</value>
+    </data>
+    <data name="CollectableWindowTitle" xml:space="preserve">
+        <value>Duty Collectables</value>
+    </data>
+    <data name="CollectableWindowHelp" xml:space="preserve">
+        <value>Lists the collectables each duty can drop, and whether you already have them.</value>
+    </data>
+    <data name="CollectableWindowNoData" xml:space="preserve">
+        <value>Collectable data could not be loaded.</value>
+    </data>
+    <data name="CollectableWindowNotLoggedIn" xml:space="preserve">
+        <value>Log in to check collectable progress.</value>
+    </data>
+    <data name="CollectableWindowSearchHint" xml:space="preserve">
+        <value>Search duties...</value>
+    </data>
+    <data name="CollectableWindowOnlyIncomplete" xml:space="preserve">
+        <value>Only duties with items left</value>
+    </data>
+    <data name="CollectableWindowTypeFilterHelp" xml:space="preserve">
+        <value>Which collectable types are listed follows the type checkboxes in the Collectable Hints settings.</value>
+    </data>
+    <data name="CollectableWindowSummary" xml:space="preserve">
+        <value>{0} of {1} listed duties still have collectables to get ({2} duties in the bundled data)</value>
+    </data>
+    <data name="CollectableWindowSummaryTooltip" xml:space="preserve">
+        <value>The bundled data is a community drop table intersected with this client's item sheet. A duty missing from this list is a gap in that data, not proof that it drops nothing.</value>
+    </data>
+    <data name="CollectableWindowNoMatch" xml:space="preserve">
+        <value>No duties match the current filter.</value>
+    </data>
+    <data name="CollectableWindowUnknownTooltip" xml:space="preserve">
+        <value>"?N" means N items whose unlock state this client cannot report. They are counted as neither obtained nor missing.</value>
     </data>
     <data name="CollectableTypeMount" xml:space="preserve">
         <value>Mounts</value>
