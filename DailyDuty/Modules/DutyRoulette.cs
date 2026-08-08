@@ -181,7 +181,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             infoTextNode.IsVisible = modifiedIndexes.Count is not 0;
         }
     
-        onDutyListPopulate!.Original(unitBase, listItemInfo, nodeList);
+        onDutyListPopulate!.OriginalDisposeSafe(unitBase, listItemInfo, nodeList);
     }, Service.Log);
 
     private void TryResetEntry(uint index, AtkTextNode* nameNode, AtkTextNode* levelNode) {

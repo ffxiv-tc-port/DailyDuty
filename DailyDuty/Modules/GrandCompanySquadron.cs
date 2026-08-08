@@ -111,7 +111,7 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	}
             
 	private AtkValue* OnReceiveEvent(AgentGcArmyExpedition* thisPtr, AtkValue* returnValue, AtkValue* args, uint argCount, ulong sender) {
-		var result = onReceiveEventHook!.Original(thisPtr, returnValue, args, argCount, sender);
+		var result = onReceiveEventHook!.OriginalDisposeSafe(thisPtr, returnValue, args, argCount, sender);
                 
 		HookSafety.ExecuteSafe(() => {
 			if (sender == 1 && args[0].Int == 0) {

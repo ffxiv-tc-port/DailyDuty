@@ -111,7 +111,7 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
 	}
     
 	private AtkValue* OnReceiveEvent(AgentInterface* agent, AtkValue* returnValue, AtkValue* args, uint argCount, ulong sender) {
-		var result = onReceiveEventHook!.Original(agent, returnValue, args, argCount, sender);
+		var result = onReceiveEventHook!.OriginalDisposeSafe(agent, returnValue, args, argCount, sender);
         
 		HookSafety.ExecuteSafe(() => {
 			var data = args->Int;
