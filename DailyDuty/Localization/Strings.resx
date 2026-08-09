@@ -1096,4 +1096,16 @@ Limited to once per 5 mins</value>
     <data name="HuntAssistNoTargetData" xml:space="preserve">
         <value>Bill accepted, but its mark could not be identified.</value>
     </data>
+  <data name="Top Left">
+        <value>Top Left</value>
+  </data>
+  <data name="Top Right">
+        <value>Top Right</value>
+  </data>
+  <data name="Bottom Left">
+        <value>Bottom Left</value>
+  </data>
+  <data name="Bottom Right">
+        <value>Bottom Right</value>
+  </data>
 </root>

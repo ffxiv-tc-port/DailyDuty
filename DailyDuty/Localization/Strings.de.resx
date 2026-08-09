@@ -665,4 +665,16 @@ Auf einmal pro 5 Minuten limitiert</value>
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>Window Dragging Enabled</value>
     </data>
+  <data name="Top Left">
+    <value>Oben links</value>
+  </data>
+  <data name="Top Right">
+    <value>Oben rechts</value>
+  </data>
+  <data name="Bottom Left">
+    <value>Unten links</value>
+  </data>
+  <data name="Bottom Right">
+    <value>Unten rechts</value>
+  </data>
 </root>

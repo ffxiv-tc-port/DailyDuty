@@ -296,7 +296,7 @@ public class TodoConfigTab : ITabItem {
         ImGui.TableNextColumn();
         var orientation = listNode.LayoutOrientation;
         ImGuiTweaks.SetFullWidth();
-        if (ComboHelper.EnumCombo("##Orientation", ref orientation)) {
+        if (ImGuiTweaks.EnumCombo("##Orientation", ref orientation)) {
             listNode.LayoutOrientation = orientation;
         }
 
@@ -306,7 +306,7 @@ public class TodoConfigTab : ITabItem {
         ImGui.TableNextColumn();
         var anchor = listNode.LayoutAnchor;
         ImGuiTweaks.SetFullWidth();
-        if (ComboHelper.EnumCombo("##Anchor", ref anchor)) {
+        if (ImGuiTweaks.EnumCombo("##Anchor", ref anchor)) {
             listNode.LayoutAnchor = anchor;
 
             dailyCategory.TaskListNode.LayoutAnchor = anchor;
@@ -421,7 +421,7 @@ public class TodoConfigTab : ITabItem {
         ImGui.TableNextColumn();
         var alignment = listNode.LayoutOrientation;
         ImGuiTweaks.SetFullWidth();
-        if (ComboHelper.EnumCombo("##Alignment", ref alignment)) {
+        if (ImGuiTweaks.EnumCombo("##Alignment", ref alignment)) {
             listNode.LayoutOrientation = alignment;
         }
 

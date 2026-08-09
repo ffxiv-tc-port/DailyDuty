@@ -1096,4 +1096,16 @@
     <data name="HuntAssistNoTargetData" xml:space="preserve">
         <value>已接取委託單,但無法判斷目標標的。</value>
     </data>
+  <data name="Top Left">
+        <value>左上</value>
+  </data>
+  <data name="Top Right">
+        <value>右上</value>
+  </data>
+  <data name="Bottom Left">
+        <value>左下</value>
+  </data>
+  <data name="Bottom Right">
+        <value>右下</value>
+  </data>
 </root>

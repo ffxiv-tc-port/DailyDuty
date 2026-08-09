@@ -664,4 +664,16 @@
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>Window Dragging Enabled</value>
     </data>
+  <data name="Top Left">
+    <value>En haut à gauche</value>
+  </data>
+  <data name="Top Right">
+    <value>En haut à droite</value>
+  </data>
+  <data name="Bottom Left">
+    <value>En bas à gauche</value>
+  </data>
+  <data name="Bottom Right">
+    <value>En bas à droite</value>
+  </data>
 </root>
