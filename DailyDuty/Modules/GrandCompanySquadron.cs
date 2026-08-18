@@ -96,8 +96,14 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	public override void Update() {
 		var gcAgent = AgentGcArmyExpedition.Instance();
 		
-		if (gcAgent->IsAgentActive() && gcAgent->SelectedTab == 2) {
-			Data.MissionCompleted = TryUpdateData(Data.MissionCompleted, gcAgent->ExpeditionData->MissionInfo[0].Available == 0);
+		if (gcAgent is not null && gcAgent->IsAgentActive() && gcAgent->SelectedTab == 2) {
+			// IsAgentActive() 只代表代理人本體活著，不保證 ExpeditionData 已配置：
+			// 兩者生命週期不同步，裸讀會直接觸發無法攔截的 AccessViolation。
+			// 每次重取、顯式判空、同幀即用；為 null 時安靜跳過本幀的讀取，下一幀再試。
+			var expeditionData = gcAgent->ExpeditionData;
+			if (expeditionData is not null) {
+				Data.MissionCompleted = TryUpdateData(Data.MissionCompleted, expeditionData->MissionInfo[0].Available == 0);
+			}
 		}
 
 		if (Data.MissionCompleteTime > DateTime.UtcNow) {
