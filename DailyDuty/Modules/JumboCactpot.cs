@@ -69,8 +69,31 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
 	public override void Load() {
 		base.Load();
 
-		onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentInterface.Delegates.ReceiveEvent>(AgentModule.Instance()->GetAgentByInternalId(AgentId.LotteryWeekly)->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		onReceiveEventHook ??= CreateReceiveEventHook();
 		onReceiveEventHook?.Enable();
+	}
+
+	// 代理人模組在登入流程早期可能尚未建立，任一層取不到就放棄掛載 hook，
+	// 讓本模組維持「未掛 hook」而不是裸解參考造成崩潰；下次 Load 會再試一次。
+	private Hook<AgentInterface.Delegates.ReceiveEvent>? CreateReceiveEventHook() {
+		var agentModule = AgentModule.Instance();
+		if (agentModule is null) {
+			Service.Log.Warning("[JumboCactpot] 取不到 AgentModule，本次不掛載 ReceiveEvent hook。");
+			return null;
+		}
+
+		var agent = agentModule->GetAgentByInternalId(AgentId.LotteryWeekly);
+		if (agent is null) {
+			Service.Log.Warning("[JumboCactpot] 取不到 LotteryWeekly 代理人，本次不掛載 ReceiveEvent hook。");
+			return null;
+		}
+
+		if (agent->VirtualTable is null) {
+			Service.Log.Warning("[JumboCactpot] LotteryWeekly 代理人的虛擬表為空，本次不掛載 ReceiveEvent hook。");
+			return null;
+		}
+
+		return Service.Hooker.HookFromAddress<AgentInterface.Delegates.ReceiveEvent>(agent->VirtualTable->ReceiveEvent, OnReceiveEvent);
 	}
 
 	public override void Unload() {
