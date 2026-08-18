@@ -17,8 +17,8 @@ public class CollectableConfig {
     public bool ShowOther = true;
 
     public static CollectableConfig Load()
-        => Service.PluginInterface.LoadCharacterFile(Service.ClientState.LocalContentId, "Collectables.config.json", () => new CollectableConfig());
+        => Service.PluginInterface.LoadCharacterFile(Service.PlayerState.ContentId, "Collectables.config.json", () => new CollectableConfig());
 
     public void Save()
-        => Service.PluginInterface.SaveCharacterFile(Service.ClientState.LocalContentId, "Collectables.config.json", this);
+        => Service.PluginInterface.SaveCharacterFile(Service.PlayerState.ContentId, "Collectables.config.json", this);
 }

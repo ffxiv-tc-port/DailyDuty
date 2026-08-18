@@ -110,7 +110,7 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
-		if (!Service.ClientState.IsLoggedIn || Service.ClientState.LocalPlayer is null) return false;
+		if (!Service.ClientState.IsLoggedIn || Service.ObjectTable.LocalPlayer is null) return false;
 
 		if (Service.Condition.IsBoundByDuty()) {
 			Fail(Strings.HuntAssistStoppedInDuty);
@@ -143,7 +143,7 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
-		if (!Service.ClientState.IsLoggedIn || Service.ClientState.LocalPlayer is null) return false;
+		if (!Service.ClientState.IsLoggedIn || Service.ObjectTable.LocalPlayer is null) return false;
 
 		if (Service.Condition.IsBoundByDuty()) {
 			Fail(Strings.HuntAssistStoppedInDuty);
@@ -203,7 +203,7 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
-		if (!Service.ClientState.IsLoggedIn || Service.ClientState.LocalPlayer is not { } player) return false;
+		if (!Service.ClientState.IsLoggedIn || Service.ObjectTable.LocalPlayer is not { } player) return false;
 
 		if (Service.Condition.IsBoundByDuty()) {
 			Fail(Strings.HuntAssistStoppedInDuty);
@@ -397,11 +397,11 @@ public sealed class HuntAssistController {
 		}
 
 		if (Step is HuntAssistStep.Patrolling) {
-			if (Service.ClientState.LocalPlayer is { } patrolPlayer) UpdatePatrol(patrolPlayer.Position);
+			if (Service.ObjectTable.LocalPlayer is { } patrolPlayer) UpdatePatrol(patrolPlayer.Position);
 			return;
 		}
 
-		if (Service.ClientState.LocalPlayer is not { } player) return;
+		if (Service.ObjectTable.LocalPlayer is not { } player) return;
 		if (target is not { } board) {
 			Cancel();
 			return;
@@ -814,7 +814,7 @@ public sealed class HuntAssistController {
 
 		foreach (var gameObject in Service.ObjectTable) {
 			if (gameObject.ObjectKind is not ObjectKind.BattleNpc) continue;
-			if (gameObject.DataId != targetInfo.BNpcBaseId) continue;
+			if (gameObject.BaseId != targetInfo.BNpcBaseId) continue;
 			if (!gameObject.IsValid()) continue;
 
 			return gameObject;

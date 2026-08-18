@@ -21,8 +21,8 @@ public class HuntAssistConfig {
 	public const float MaximumDetectionRadius = 100.0f;
 
 	public static HuntAssistConfig Load()
-		=> Service.PluginInterface.LoadCharacterFile(Service.ClientState.LocalContentId, "HuntAssist.config.json", () => new HuntAssistConfig());
+		=> Service.PluginInterface.LoadCharacterFile(Service.PlayerState.ContentId, "HuntAssist.config.json", () => new HuntAssistConfig());
 
 	public void Save()
-		=> Service.PluginInterface.SaveCharacterFile(Service.ClientState.LocalContentId, "HuntAssist.config.json", this);
+		=> Service.PluginInterface.SaveCharacterFile(Service.PlayerState.ContentId, "HuntAssist.config.json", this);
 }

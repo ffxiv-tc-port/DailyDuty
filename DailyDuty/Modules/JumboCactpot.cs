@@ -97,7 +97,7 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
     
 	public void GoldSaucerUpdate(GoldSaucerEventArgs data) {
 		const int jumboCactpotBroker = 1010446;
-		if (Service.TargetManager.Target?.DataId != jumboCactpotBroker) return;
+		if (Service.TargetManager.Target?.BaseId != jumboCactpotBroker) return;
 		Data.Tickets.Clear();
 
 		for(var i = 0; i < 3; ++i) {

@@ -232,16 +232,16 @@ public abstract class Module<T, TU> : Module where T : ModuleData, new() where T
     }
 
     private T LoadData()
-        => Service.PluginInterface.LoadCharacterFile(Service.ClientState.LocalContentId, $"{ModuleName}.data.json", () => new T());
+        => Service.PluginInterface.LoadCharacterFile(Service.PlayerState.ContentId, $"{ModuleName}.data.json", () => new T());
     
     private TU LoadConfig()
-        => Service.PluginInterface.LoadCharacterFile(Service.ClientState.LocalContentId, $"{ModuleName}.config.json", () => new TU());
+        => Service.PluginInterface.LoadCharacterFile(Service.PlayerState.ContentId, $"{ModuleName}.config.json", () => new TU());
     
     public override void SaveConfig() 
-        => Service.PluginInterface.SaveCharacterFile(Service.ClientState.LocalContentId, $"{ModuleName}.config.json", Config);
+        => Service.PluginInterface.SaveCharacterFile(Service.PlayerState.ContentId, $"{ModuleName}.config.json", Config);
     
     public override void SaveData() 
-        => Service.PluginInterface.SaveCharacterFile(Service.ClientState.LocalContentId, $"{ModuleName}.data.json", Data);
+        => Service.PluginInterface.SaveCharacterFile(Service.PlayerState.ContentId, $"{ModuleName}.data.json", Data);
 
     private void UpdateOverlays() {
         System.TodoListController.Refresh();

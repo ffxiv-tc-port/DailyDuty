@@ -96,7 +96,7 @@ public unsafe class FashionReport : BaseModules.Modules.Special<FashionReportDat
     
 	public void GoldSaucerUpdate(GoldSaucerEventArgs data) {
 		const int maskedRoseId = 1025176;
-		if (Service.TargetManager.Target?.DataId != maskedRoseId) return;
+		if (Service.TargetManager.Target?.BaseId != maskedRoseId) return;
 
 		var allowances = Data.AllowancesRemaining;
 		var score = Data.HighestWeeklyScore;
