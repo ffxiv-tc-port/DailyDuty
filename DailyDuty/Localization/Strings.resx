@@ -1114,4 +1114,13 @@ Limited to once per 5 mins</value>
   <data name="CollectableWindowSummaryUnknown">
         <value>; {0} more have items this client cannot determine</value>
   </data>
+  <data name="CollectableWindowRefresh">
+        <value>Refresh</value>
+  </data>
+  <data name="CollectableWindowRefreshTooltip">
+        <value>The full table is only recalculated when you press this, when a setting changes, or when you log in again. Checking every duty is expensive and collectables are obtained rarely, so it is not recomputed while you watch.</value>
+  </data>
+  <data name="CollectableWindowDataTime">
+        <value>data read at {0}</value>
+  </data>
 </root>

@@ -3309,5 +3309,32 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("CollectableWindowSummaryUnknown", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Refresh.
+        /// </summary>
+        internal static string CollectableWindowRefresh {
+            get {
+                return ResourceManager.GetString("CollectableWindowRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The full table is only recalculated when you press this, when a setting changes, or when you log in again. Checking every duty is expensive and collectables are obtained rarely, so it is not recomputed while you watch..
+        /// </summary>
+        internal static string CollectableWindowRefreshTooltip {
+            get {
+                return ResourceManager.GetString("CollectableWindowRefreshTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to data read at {0}.
+        /// </summary>
+        internal static string CollectableWindowDataTime {
+            get {
+                return ResourceManager.GetString("CollectableWindowDataTime", resourceCulture);
+            }
+        }
     }
 }

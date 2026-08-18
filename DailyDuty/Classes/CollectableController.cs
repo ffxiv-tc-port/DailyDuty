@@ -54,11 +54,16 @@ public unsafe class CollectableController : IDisposable {
     private ContentsId.ContentsType lastContentType;
     private uint lastContentId;
 
-    /// <summary>全副本總表的重算節流。解鎖狀態會在遊戲中變動,所以不能永久快取。</summary>
-    private const double SummaryCacheSeconds = 2.0;
-
+    // 全副本總表的快取。**沒有時間到期**:整份表要逐副本查解鎖狀態,而收藏品是
+    // 極少變動的東西,照時間反覆重算純粹是白燒。改成算過就留著,由這三件事失效:
+    //   ① 使用者在總表視窗按「重新整理」 ② 收藏品類型設定變更 ③ 登入/登出(換角)。
+    // ⚠️ 舊版這裡有一個 2 秒節流常數,只有本路徑用過;任務搜尋器底部的**單副本**
+    //    路徑走的是 hasLastSelection 選取變更閘門,與時間無關,所以那個常數隨這次
+    //    改動一起變成死碼、已刪除。不要以為底部提示曾經吃過它。
     private List<DutyCollectableInfo>? summaryCache;
-    private DateTime summaryCacheTime = DateTime.MinValue;
+
+    /// <summary>快取建立時刻(當地時間)。null = 還沒算過。顯示端要讓使用者看得見資料多舊。</summary>
+    private DateTime? summaryCacheTime;
 
     public CollectableController() {
         dutyCollectables = LoadEmbeddedData();
@@ -91,20 +96,35 @@ public unsafe class CollectableController : IDisposable {
     ///     取得所有已收錄副本的完整收藏品清單(含已取得的項目)。
     ///     ⚠️ 只能在遊戲主執行緒呼叫:內部會讀 <see cref="UIState" /> 的解鎖狀態。
     /// </summary>
-    public IReadOnlyList<DutyCollectableInfo> GetDutyCollectables() {
-        if (summaryCache is not null && (DateTime.UtcNow - summaryCacheTime).TotalSeconds < SummaryCacheSeconds) {
-            return summaryCache;
-        }
+    public IReadOnlyList<DutyCollectableInfo> GetDutyCollectables()
+        => summaryCache ??= BuildStamped();
 
-        summaryCache = BuildAllDutyInfo();
-        summaryCacheTime = DateTime.UtcNow;
+    /// <summary>
+    ///     丟掉快取並當場重算。總表視窗的「重新整理」按鈕用的就是這個 ——
+    ///     使用者剛拿到東西想立刻看到更新時,唯一的手段。
+    ///     ⚠️ 與 <see cref="GetDutyCollectables" /> 一樣只能在遊戲主執行緒呼叫。
+    /// </summary>
+    public IReadOnlyList<DutyCollectableInfo> RefreshDutyCollectables() {
+        summaryCache = BuildStamped();
         return summaryCache;
     }
 
-    /// <summary>設定變更後呼叫:類型開關會影響清單內容與底部摘要。</summary>
+    /// <summary>快取建立的時刻,null 代表這一輪還沒算過。顯示端拿它畫「資料時間」。</summary>
+    public DateTime? SummaryCacheTimestamp => summaryCacheTime;
+
+    private List<DutyCollectableInfo> BuildStamped() {
+        var built = BuildAllDutyInfo();
+        summaryCacheTime = DateTime.Now;
+        return built;
+    }
+
+    /// <summary>
+    ///     設定變更、以及登入/登出時呼叫:類型開關會影響清單內容與底部摘要,
+    ///     而解鎖狀態是**逐角色**的 —— 不清掉的話 A 角的快取會拿去騙 B 角。
+    /// </summary>
     public void InvalidateCache() {
         summaryCache = null;
-        summaryCacheTime = DateTime.MinValue;
+        summaryCacheTime = null;
         hasLastSelection = false;
     }
 

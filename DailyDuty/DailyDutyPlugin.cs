@@ -93,6 +93,11 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     private static void OnLogin() {
         System.SystemConfig = SystemConfig.Load();
         System.CollectableConfig = CollectableConfig.Load();
+
+        // 收藏品解鎖狀態是逐角色的,而總表快取不再有時間到期 —— 換角後不清掉,
+        // 新角色會看到上一個角色的收藏進度。剛載入的 CollectableConfig 也會改變
+        // 清單內容(類型開關),兩個理由都要求在這裡失效。
+        System.CollectableController.InvalidateCache();
         System.HuntAssistConfig = HuntAssistConfig.Load();
         System.ModuleController.LoadModules();
         System.ContentsFinderController.Enable();
@@ -100,6 +105,9 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     }
     
     private static void OnLogout(int type, int code) {
+        // 登出就丟掉總表快取,不要讓它活過角色邊界(見 OnLogin 的說明)。
+        System.CollectableController.InvalidateCache();
+
         System.HuntAssistController.Cancel();
         HuntTargets.InvalidateCache();
         System.OverlayController.Disable();

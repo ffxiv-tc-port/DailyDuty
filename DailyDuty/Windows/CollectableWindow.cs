@@ -78,6 +78,8 @@ public class CollectableWindow : Window {
             ImGui.SetTooltip(Strings.CollectableWindowSummaryTooltip);
         }
 
+        DrawCacheStatus(controller);
+
         ImGui.Separator();
 
         using var child = ImRaii.Child("collectable_list", ImGui.GetContentRegionAvail());
@@ -90,6 +92,30 @@ public class CollectableWindow : Window {
 
         foreach (var duty in visible) {
             DrawDuty(duty);
+        }
+    }
+
+    /// <summary>
+    ///     重新整理按鈕 + 資料時間。
+    ///
+    ///     整份表算一次要逐副本查解鎖狀態,而收藏品極少變動,所以快取沒有時間到期 ——
+    ///     這顆按鈕是使用者剛拿到東西時讓畫面跟上的唯一手段。
+    ///     🔴 快取不會自己過期,所以**「這份資料多舊」必須看得見**:資料時間直接畫在
+    ///        按鈕旁邊,不是藏進 tooltip。tooltip 藏的是「為什麼不自動重算」。
+    /// </summary>
+    private static void DrawCacheStatus(CollectableController controller) {
+        if (ImGui.Button(Strings.CollectableWindowRefresh)) {
+            controller.RefreshDutyCollectables();
+        }
+
+        if (ImGui.IsItemHovered()) {
+            ImGui.SetTooltip(Strings.CollectableWindowRefreshTooltip);
+        }
+
+        if (controller.SummaryCacheTimestamp is { } stamp) {
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextColored(KnownColor.Gray.Vector(), string.Format(Strings.CollectableWindowDataTime, stamp.ToString("HH:mm")));
         }
     }
 

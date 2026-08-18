@@ -1114,4 +1114,13 @@
   <data name="CollectableWindowSummaryUnknown">
         <value>；另有 {0} 個副本含無法判定的項目</value>
   </data>
+  <data name="CollectableWindowRefresh">
+        <value>重新整理</value>
+  </data>
+  <data name="CollectableWindowRefreshTooltip">
+        <value>整份表只有在按下這個按鈕、改設定、或重新登入時才會重算。逐副本查解鎖狀態不便宜,而收藏品又很少變動,所以不會在你看著的時候一直重算。</value>
+  </data>
+  <data name="CollectableWindowDataTime">
+        <value>資料時間 {0}</value>
+  </data>
 </root>
