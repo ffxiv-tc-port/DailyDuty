@@ -880,6 +880,9 @@ Limited to once per 5 mins</value>
     <data name="CollectableHintAllObtained" xml:space="preserve">
         <value>(all obtained)</value>
     </data>
+    <data name="CollectableHintUnknownOnly" xml:space="preserve">
+        <value>({0} undetermined)</value>
+    </data>
     <data name="CollectableStateMissing" xml:space="preserve">
         <value>Missing</value>
     </data>

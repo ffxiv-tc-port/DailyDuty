@@ -361,8 +361,16 @@ public unsafe class CollectableController : IDisposable {
             summary.Append(count);
         }
 
+        // 三態。MissingCount 是 0 有**兩種**情況,不能都說成「已全部取得」:
+        //   ① 真的全部確認取得       → (已全部取得)
+        //   ② 有項目查不到解鎖狀態   → (無法判定 N 項)
+        // 舊碼只看 MissingCount,把整排「無法判定」印成「已全部取得」(實機截圖回報)。
+        // 「不知道」必須在這一行上看得見——tooltip 藏的是「為什麼」,不是「有沒有問題」。
+        // ⚠️ MissingCount > 0 的那一行完全不經過這裡,逐字維持舊行為。
         if (info.MissingCount is 0) {
-            summary.Append(Strings.CollectableHintAllObtained);
+            summary.Append(info.UnknownCount > 0
+                ? string.Format(Strings.CollectableHintUnknownOnly, info.UnknownCount)
+                : Strings.CollectableHintAllObtained);
         }
 
         summary.Append(' ');

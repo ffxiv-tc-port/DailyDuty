@@ -2644,6 +2644,15 @@ namespace DailyDuty.Localization {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to ({0} undetermined).
+        /// </summary>
+        internal static string CollectableHintUnknownOnly {
+            get {
+                return ResourceManager.GetString("CollectableHintUnknownOnly", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Missing.
         /// </summary>
         internal static string CollectableStateMissing {

@@ -880,6 +880,9 @@
     <data name="CollectableHintAllObtained" xml:space="preserve">
         <value>（已全部取得）</value>
     </data>
+    <data name="CollectableHintUnknownOnly" xml:space="preserve">
+        <value>（無法判定 {0} 項）</value>
+    </data>
     <data name="CollectableStateMissing" xml:space="preserve">
         <value>未取得</value>
     </data>
