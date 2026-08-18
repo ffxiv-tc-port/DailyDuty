@@ -1111,4 +1111,7 @@
   <data name="Bottom Right">
         <value>右下</value>
   </data>
+  <data name="CollectableWindowSummaryUnknown">
+        <value>；另有 {0} 個副本含無法判定的項目</value>
+  </data>
 </root>

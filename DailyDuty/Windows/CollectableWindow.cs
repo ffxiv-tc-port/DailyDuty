@@ -59,7 +59,20 @@ public class CollectableWindow : Window {
 
         // 「有幾個副本還沒收齊」是使用者最常掃的一個數字,放在列表上方而不是藏在別處。
         var incompleteCount = duties.Count(duty => duty.MissingCount > 0);
-        ImGui.TextColored(KnownColor.Gray.Vector(), string.Format(Strings.CollectableWindowSummary, incompleteCount, duties.Count, controller.KnownDutyCount));
+
+        // ⚠️ 清單的可見條件是 MissingCount > 0 **或** UnknownCount > 0,但上面這個計數只看前者。
+        // 只有「無法判定」的副本因此會出現在清單裡、卻不被算進摘要行 —— 摘要行會在清單明明
+        // 有東西時說「0 個副本還有沒取得的收藏品」,跟底部提示行原本那個毛病是同一個形狀:
+        // 把「不知道」靜靜吃掉。這裡把它獨立數出來,讓「不知道」在摘要行上就看得見。
+        var unknownOnlyCount = duties.Count(duty => duty is { MissingCount: 0, UnknownCount: > 0 });
+
+        var summaryText = string.Format(Strings.CollectableWindowSummary, incompleteCount, duties.Count, controller.KnownDutyCount);
+
+        if (unknownOnlyCount > 0) {
+            summaryText += string.Format(Strings.CollectableWindowSummaryUnknown, unknownOnlyCount);
+        }
+
+        ImGui.TextColored(KnownColor.Gray.Vector(), summaryText);
 
         if (ImGui.IsItemHovered()) {
             ImGui.SetTooltip(Strings.CollectableWindowSummaryTooltip);

@@ -1111,4 +1111,7 @@ Limited to once per 5 mins</value>
   <data name="Bottom Right">
         <value>Bottom Right</value>
   </data>
+  <data name="CollectableWindowSummaryUnknown">
+        <value>; {0} more have items this client cannot determine</value>
+  </data>
 </root>

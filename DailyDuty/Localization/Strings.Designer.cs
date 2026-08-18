@@ -3300,5 +3300,14 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntAssistNoTargetData", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ; {0} more have items this client cannot determine.
+        /// </summary>
+        internal static string CollectableWindowSummaryUnknown {
+            get {
+                return ResourceManager.GetString("CollectableWindowSummaryUnknown", resourceCulture);
+            }
+        }
     }
 }
