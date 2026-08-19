@@ -48,7 +48,18 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 
 		Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "GcArmyExpeditionResult", GcArmyExpeditionResultPreFinalize);
                 
-		onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentGcArmyExpedition.Delegates.ReceiveEvent>(AgentGcArmyExpedition.Instance()->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		// AgentGcArmyExpedition.Instance() 走 CS 的 [Agent] 產生器(agentModule == null ? null : ...),
+		// AgentModule 還沒配起來時是合法地回 null;裸接 ->VirtualTable 等於從位址 0 讀 vtable 指標,
+		// 是 try/catch 與 HookSafety 都攔不到的 AccessViolation。同檔 Update() 已經是判空寫法。
+		// 這裡跳過不是永久放棄:Load() 每次登入都會跑,而 hook 是 ??= 掛的,下次登入會自動重試。
+		var gcAgent = AgentGcArmyExpedition.Instance();
+		if (gcAgent is null || gcAgent->VirtualTable is null) {
+			Service.Log.Information("[GrandCompanySquadron] AgentGcArmyExpedition 尚未就緒，本次跳過 ReceiveEvent hook 掛載；下次登入會自動重試。");
+		}
+		else {
+			onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentGcArmyExpedition.Delegates.ReceiveEvent>(gcAgent->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		}
+
 		onReceiveEventHook?.Enable();
 	}
 
