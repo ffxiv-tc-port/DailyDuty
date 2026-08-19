@@ -54,13 +54,21 @@ public unsafe class MaskedCarnivale : BaseModules.Modules.WeeklyTask<ModuleTaskD
 		luminaTaskUpdater.UpdateData(Data.TaskData);
 	}
 
+	// AgentAozContentBriefing.Instance() 由 [Agent(AgentId.AozContentBriefing)] 產生，展開後是
+	// AgentModule.Instance() == null ? null : (AgentAozContentBriefing*)agentModule->GetAgentByInternalId(...)
+	// ——兩層都合法回 null（登入前／登出後是常態）。
+	// 原本這段對它呼叫了 2 + 3 次，每次都重走一遍 Framework → UIModule → AgentModule → 代理人陣列：
+	// 判空的那次與實際解參考的那幾次是**不同的解析結果**，守衛涵蓋不到使用點（§61 假守衛第 4 形）。
+	// 收成一個區域變數後，守衛與使用點指的是同一個指標；行為不變（中間沒有任何讓出點，
+	// 代理人指標在同一次 Update 內不會變動），且每輪少走 4 次三層鏈。
 	public override void Update() {
-		if (AgentAozContentBriefing.Instance() is not null && AgentAozContentBriefing.Instance()->IsAgentActive()) {
+		var agent = AgentAozContentBriefing.Instance();
+		if (agent is not null && agent->IsAgentActive()) {
 			foreach (var task in Data.TaskData) {
 				var status = task.RowId switch {
-					12449 => AgentAozContentBriefing.Instance()->IsWeeklyChallengeComplete(AozWeeklyChallenge.Novice),
-					12448 => AgentAozContentBriefing.Instance()->IsWeeklyChallengeComplete(AozWeeklyChallenge.Moderate),
-					12447 => AgentAozContentBriefing.Instance()->IsWeeklyChallengeComplete(AozWeeklyChallenge.Advanced),
+					12449 => agent->IsWeeklyChallengeComplete(AozWeeklyChallenge.Novice),
+					12448 => agent->IsWeeklyChallengeComplete(AozWeeklyChallenge.Moderate),
+					12447 => agent->IsWeeklyChallengeComplete(AozWeeklyChallenge.Advanced),
 					_ => throw new ArgumentOutOfRangeException(),
 				};
 
