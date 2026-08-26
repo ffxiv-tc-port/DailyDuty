@@ -115,7 +115,7 @@ public class ChallengeLogConfig : ModuleTaskConfig<ContentsNote> {
             
             ImGui.SameLine();
             
-            ImGui.Text(task.Name.ExtractText());
+            ImGui.Text(task.Name.ToString());
         }
 
         if (enabledWarnings.Count == 0) {
@@ -179,7 +179,7 @@ public unsafe class ChallengeLog : BaseModules.Modules.WeeklyTask<ModuleTaskData
             if (!matchingTaskData.Complete) {
                 var taskInfo = Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(warningId);
                 
-                StatusMessage.PrintTaggedMessage(string.Format(Strings.TaskStillIncomplete, taskInfo.Name.ExtractText()), ModuleName.ChallengeLog);
+                StatusMessage.PrintTaggedMessage(string.Format(Strings.TaskStillIncomplete, taskInfo.Name.ToString()), ModuleName.ChallengeLog);
                 anyWarningGenerated = true;
             }
         }

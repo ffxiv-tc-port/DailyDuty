@@ -39,8 +39,8 @@ public class LuminaTaskConfig<T> {
         // EventItem 的 RowRef 也可能指向不存在的列，.Value 一樣會擲例外，改用 ValueNullable。
         if (itemInfo.EventItem.ValueNullable is not { } eventItemRow) return $"?{row}";
 
-        var eventItem = eventItemRow.Name.ExtractText();
-        if(eventItem == string.Empty) eventItem = eventItemRow.Singular.ExtractText();
+        var eventItem = eventItemRow.Name.ToString();
+        if(eventItem == string.Empty) eventItem = eventItemRow.Singular.ToString();
 
         return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(eventItem);
     }
