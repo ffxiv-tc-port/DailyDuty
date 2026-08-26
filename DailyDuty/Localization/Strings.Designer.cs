@@ -2003,5 +2003,1338 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("WondrousTailsClickableLink", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No additional options for this module.
+        /// </summary>
+        internal static string NoAdditionalOptions {
+            get {
+                return ResourceManager.GetString("NoAdditionalOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Module.
+        /// </summary>
+        internal static string Module {
+            get {
+                return ResourceManager.GetString("Module", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Notifications.
+        /// </summary>
+        internal static string Notifications {
+            get {
+                return ResourceManager.GetString("Notifications", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo.
+        /// </summary>
+        internal static string Todo {
+            get {
+                return ResourceManager.GetString("Todo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Style Configuration.
+        /// </summary>
+        internal static string StyleConfiguration {
+            get {
+                return ResourceManager.GetString("StyleConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Advanced Mode.
+        /// </summary>
+        internal static string AdvancedMode {
+            get {
+                return ResourceManager.GetString("AdvancedMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Simple Mode.
+        /// </summary>
+        internal static string SimpleMode {
+            get {
+                return ResourceManager.GetString("SimpleMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Label.
+        /// </summary>
+        internal static string Label {
+            get {
+                return ResourceManager.GetString("Label", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Modules.
+        /// </summary>
+        internal static string Modules {
+            get {
+                return ResourceManager.GetString("Modules", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Open Configuration Manager.
+        /// </summary>
+        internal static string OpenConfigurationManager {
+            get {
+                return ResourceManager.GetString("OpenConfigurationManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo List.
+        /// </summary>
+        internal static string TodoList {
+            get {
+                return ResourceManager.GetString("TodoList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo List Config.
+        /// </summary>
+        internal static string TodoListConfig {
+            get {
+                return ResourceManager.GetString("TodoListConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Allow Moving.
+        /// </summary>
+        internal static string AllowMoving {
+            get {
+                return ResourceManager.GetString("AllowMoving", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Allow Resizing.
+        /// </summary>
+        internal static string AllowResizing {
+            get {
+                return ResourceManager.GetString("AllowResizing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Functional Options.
+        /// </summary>
+        internal static string FunctionalOptions {
+            get {
+                return ResourceManager.GetString("FunctionalOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Todo List Style.
+        /// </summary>
+        internal static string TodoListStyle {
+            get {
+                return ResourceManager.GetString("TodoListStyle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Daily Tasks.
+        /// </summary>
+        internal static string DailyTasks {
+            get {
+                return ResourceManager.GetString("DailyTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Weekly Tasks.
+        /// </summary>
+        internal static string WeeklyTasks {
+            get {
+                return ResourceManager.GetString("WeeklyTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Special Tasks.
+        /// </summary>
+        internal static string SpecialTasks {
+            get {
+                return ResourceManager.GetString("SpecialTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Size.
+        /// </summary>
+        internal static string Size {
+            get {
+                return ResourceManager.GetString("Size", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to List Orientation.
+        /// </summary>
+        internal static string ListOrientation {
+            get {
+                return ResourceManager.GetString("ListOrientation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Anchor Corner.
+        /// </summary>
+        internal static string AnchorCorner {
+            get {
+                return ResourceManager.GetString("AnchorCorner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Category Vertical Spacing.
+        /// </summary>
+        internal static string CategoryVerticalSpacing {
+            get {
+                return ResourceManager.GetString("CategoryVerticalSpacing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Category Horizontal Spacing.
+        /// </summary>
+        internal static string CategoryHorizontalSpacing {
+            get {
+                return ResourceManager.GetString("CategoryHorizontalSpacing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Background.
+        /// </summary>
+        internal static string ShowBackground {
+            get {
+                return ResourceManager.GetString("ShowBackground", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Border.
+        /// </summary>
+        internal static string ShowBorder {
+            get {
+                return ResourceManager.GetString("ShowBorder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Alignment.
+        /// </summary>
+        internal static string Alignment {
+            get {
+                return ResourceManager.GetString("Alignment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Header.
+        /// </summary>
+        internal static string ShowHeader {
+            get {
+                return ResourceManager.GetString("ShowHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Timers.
+        /// </summary>
+        internal static string Timers {
+            get {
+                return ResourceManager.GetString("Timers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Timers Config.
+        /// </summary>
+        internal static string TimersConfig {
+            get {
+                return ResourceManager.GetString("TimersConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Daily Timer Enable.
+        /// </summary>
+        internal static string DailyTimerEnable {
+            get {
+                return ResourceManager.GetString("DailyTimerEnable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Weekly Timer Enable.
+        /// </summary>
+        internal static string WeeklyTimerEnable {
+            get {
+                return ResourceManager.GetString("WeeklyTimerEnable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hide Seconds.
+        /// </summary>
+        internal static string HideSeconds {
+            get {
+                return ResourceManager.GetString("HideSeconds", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Daily Timer.
+        /// </summary>
+        internal static string DailyTimer {
+            get {
+                return ResourceManager.GetString("DailyTimer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Weekly Timer.
+        /// </summary>
+        internal static string WeeklyTimer {
+            get {
+                return ResourceManager.GetString("WeeklyTimer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bar Color.
+        /// </summary>
+        internal static string BarColor {
+            get {
+                return ResourceManager.GetString("BarColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Label Color.
+        /// </summary>
+        internal static string LabelColor {
+            get {
+                return ResourceManager.GetString("LabelColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Timer Color.
+        /// </summary>
+        internal static string TimerColor {
+            get {
+                return ResourceManager.GetString("TimerColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Label.
+        /// </summary>
+        internal static string ShowLabel {
+            get {
+                return ResourceManager.GetString("ShowLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Timer.
+        /// </summary>
+        internal static string ShowTimer {
+            get {
+                return ResourceManager.GetString("ShowTimer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Entry Tracking.
+        /// </summary>
+        internal static string EntryTracking {
+            get {
+                return ResourceManager.GetString("EntryTracking", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Duty Finder Warning.
+        /// </summary>
+        internal static string DutyFinderWarning {
+            get {
+                return ResourceManager.GetString("DutyFinderWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add Tasks.
+        /// </summary>
+        internal static string AddTasks {
+            get {
+                return ResourceManager.GetString("AddTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No tasks are currently tracked.
+        /// </summary>
+        internal static string NoTasksTracked {
+            get {
+                return ResourceManager.GetString("NoTasksTracked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Clear All.
+        /// </summary>
+        internal static string ClearAll {
+            get {
+                return ResourceManager.GetString("ClearAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enable Duty Finder Warnings.
+        /// </summary>
+        internal static string EnableDutyFinderWarnings {
+            get {
+                return ResourceManager.GetString("EnableDutyFinderWarnings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Post a warning to chat upon opening duty finder when any of the following challenges are incomplete.
+        /// </summary>
+        internal static string DutyFinderWarningHelp {
+            get {
+                return ResourceManager.GetString("DutyFinderWarningHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add Warning.
+        /// </summary>
+        internal static string AddWarning {
+            get {
+                return ResourceManager.GetString("AddWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No warnings are currently active.
+        /// </summary>
+        internal static string NoWarningsActive {
+            get {
+                return ResourceManager.GetString("NoWarningsActive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} is still incomplete!.
+        /// </summary>
+        internal static string TaskStillIncomplete {
+            get {
+                return ResourceManager.GetString("TaskStillIncomplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show 'Open DailyDuty' button.
+        /// </summary>
+        internal static string ShowOpenDailyDutyButton {
+            get {
+                return ResourceManager.GetString("ShowOpenDailyDutyButton", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Daily Reset Timer in Duty Finder.
+        /// </summary>
+        internal static string ShowDailyResetTimerInDutyFinder {
+            get {
+                return ResourceManager.GetString("ShowDailyResetTimerInDutyFinder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Color Duty Finder.
+        /// </summary>
+        internal static string ColorDutyFinder {
+            get {
+                return ResourceManager.GetString("ColorDutyFinder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Open DailyDuty.
+        /// </summary>
+        internal static string OpenDailyDuty {
+            get {
+                return ResourceManager.GetString("OpenDailyDuty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Feature from DailyDuty Plugin.
+        /// </summary>
+        internal static string DailyDutyFeatureTooltip {
+            get {
+                return ResourceManager.GetString("DailyDutyFeatureTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [DailyDuty] Time until next daily reset.
+        /// </summary>
+        internal static string DailyResetTimerTooltip {
+            get {
+                return ResourceManager.GetString("DailyResetTimerTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Incomplete Task.
+        /// </summary>
+        internal static string IncompleteTask {
+            get {
+                return ResourceManager.GetString("IncompleteTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Complete Task.
+        /// </summary>
+        internal static string CompleteTask {
+            get {
+                return ResourceManager.GetString("CompleteTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Overlay from DailyDuty plugin.
+        /// </summary>
+        internal static string DailyDutyOverlayTooltip {
+            get {
+                return ResourceManager.GetString("DailyDutyOverlayTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Progress Bar.
+        /// </summary>
+        internal static string ProgressBar {
+            get {
+                return ResourceManager.GetString("ProgressBar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Module Name.
+        /// </summary>
+        internal static string ModuleName {
+            get {
+                return ResourceManager.GetString("ModuleName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tooltip.
+        /// </summary>
+        internal static string Tooltip {
+            get {
+                return ResourceManager.GetString("Tooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Header Text Node.
+        /// </summary>
+        internal static string HeaderTextNode {
+            get {
+                return ResourceManager.GetString("HeaderTextNode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to List Node.
+        /// </summary>
+        internal static string ListNode {
+            get {
+                return ResourceManager.GetString("ListNode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectable Hints.
+        /// </summary>
+        internal static string CollectableHints {
+            get {
+                return ResourceManager.GetString("CollectableHints", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectable Hints.
+        /// </summary>
+        internal static string CollectableHintsConfig {
+            get {
+                return ResourceManager.GetString("CollectableHintsConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show Types:.
+        /// </summary>
+        internal static string CollectableHintTypesLabel {
+            get {
+                return ResourceManager.GetString("CollectableHintTypesLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Uncollected Items:.
+        /// </summary>
+        internal static string CollectableHintHeader {
+            get {
+                return ResourceManager.GetString("CollectableHintHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectables from this duty you haven't obtained yet (DailyDuty).
+        /// </summary>
+        internal static string CollectableHintTooltip {
+            get {
+                return ResourceManager.GetString("CollectableHintTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectables from this duty:.
+        /// </summary>
+        internal static string CollectableHintAllHeader {
+            get {
+                return ResourceManager.GetString("CollectableHintAllHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to (all obtained).
+        /// </summary>
+        internal static string CollectableHintAllObtained {
+            get {
+                return ResourceManager.GetString("CollectableHintAllObtained", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ({0} undetermined).
+        /// </summary>
+        internal static string CollectableHintUnknownOnly {
+            get {
+                return ResourceManager.GetString("CollectableHintUnknownOnly", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Missing.
+        /// </summary>
+        internal static string CollectableStateMissing {
+            get {
+                return ResourceManager.GetString("CollectableStateMissing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Obtained.
+        /// </summary>
+        internal static string CollectableStateAcquired {
+            get {
+                return ResourceManager.GetString("CollectableStateAcquired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown.
+        /// </summary>
+        internal static string CollectableStateUnknown {
+            get {
+                return ResourceManager.GetString("CollectableStateUnknown", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open Duty Collectable List.
+        /// </summary>
+        internal static string CollectableOpenWindow {
+            get {
+                return ResourceManager.GetString("CollectableOpenWindow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Duty Collectables.
+        /// </summary>
+        internal static string CollectableWindowTitle {
+            get {
+                return ResourceManager.GetString("CollectableWindowTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Lists the collectables each duty can drop, and whether you already have them.
+        /// </summary>
+        internal static string CollectableWindowHelp {
+            get {
+                return ResourceManager.GetString("CollectableWindowHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collectable data could not be loaded.
+        /// </summary>
+        internal static string CollectableWindowNoData {
+            get {
+                return ResourceManager.GetString("CollectableWindowNoData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Log in to check collectable progress.
+        /// </summary>
+        internal static string CollectableWindowNotLoggedIn {
+            get {
+                return ResourceManager.GetString("CollectableWindowNotLoggedIn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Search duties....
+        /// </summary>
+        internal static string CollectableWindowSearchHint {
+            get {
+                return ResourceManager.GetString("CollectableWindowSearchHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Only duties with items left.
+        /// </summary>
+        internal static string CollectableWindowOnlyIncomplete {
+            get {
+                return ResourceManager.GetString("CollectableWindowOnlyIncomplete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Which collectable types are listed follows the type checkboxes in the Collectable Hints settings.
+        /// </summary>
+        internal static string CollectableWindowTypeFilterHelp {
+            get {
+                return ResourceManager.GetString("CollectableWindowTypeFilterHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} of {1} listed duties still have collectables to get ({2} duties in the bundled data).
+        /// </summary>
+        internal static string CollectableWindowSummary {
+            get {
+                return ResourceManager.GetString("CollectableWindowSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The bundled data is a community drop table intersected with this client's item sheet.
+        /// </summary>
+        internal static string CollectableWindowSummaryTooltip {
+            get {
+                return ResourceManager.GetString("CollectableWindowSummaryTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No duties match the current filter.
+        /// </summary>
+        internal static string CollectableWindowNoMatch {
+            get {
+                return ResourceManager.GetString("CollectableWindowNoMatch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to &quot;?N&quot; means N items whose unlock state this client cannot report.
+        /// </summary>
+        internal static string CollectableWindowUnknownTooltip {
+            get {
+                return ResourceManager.GetString("CollectableWindowUnknownTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mounts.
+        /// </summary>
+        internal static string CollectableTypeMount {
+            get {
+                return ResourceManager.GetString("CollectableTypeMount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Minions.
+        /// </summary>
+        internal static string CollectableTypeMinion {
+            get {
+                return ResourceManager.GetString("CollectableTypeMinion", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Orchestrion Rolls.
+        /// </summary>
+        internal static string CollectableTypeOrchestrionRoll {
+            get {
+                return ResourceManager.GetString("CollectableTypeOrchestrionRoll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timeworn Orchestrion Rolls.
+        /// </summary>
+        internal static string CollectableTypeTimewornOrchestrionRoll {
+            get {
+                return ResourceManager.GetString("CollectableTypeTimewornOrchestrionRoll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Triple Triad Cards.
+        /// </summary>
+        internal static string CollectableTypeTripleTriadCard {
+            get {
+                return ResourceManager.GetString("CollectableTypeTripleTriadCard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Chocobo Barding.
+        /// </summary>
+        internal static string CollectableTypeChocoboBarding {
+            get {
+                return ResourceManager.GetString("CollectableTypeChocoboBarding", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Other.
+        /// </summary>
+        internal static string CollectableTypeOther {
+            get {
+                return ResourceManager.GetString("CollectableTypeOther", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hunt Board Shortcuts.
+        /// </summary>
+        internal static string HuntAssistSectionTitle {
+            get {
+                return ResourceManager.GetString("HuntAssistSectionTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to One click performs one step. Movement stops when you enter combat or a duty, and when you take the controls back..
+        /// </summary>
+        internal static string HuntAssistHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Go to Board.
+        /// </summary>
+        internal static string HuntAssistGoToBoard {
+            get {
+                return ResourceManager.GetString("HuntAssistGoToBoard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cancel.
+        /// </summary>
+        internal static string HuntAssistCancel {
+            get {
+                return ResourceManager.GetString("HuntAssistCancel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Accepted.
+        /// </summary>
+        internal static string HuntAssistBillObtained {
+            get {
+                return ResourceManager.GetString("HuntAssistBillObtained", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not Accepted.
+        /// </summary>
+        internal static string HuntAssistBillAvailable {
+            get {
+                return ResourceManager.GetString("HuntAssistBillAvailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Another hunt assistant action is already running..
+        /// </summary>
+        internal static string HuntAssistAlreadyRunning {
+            get {
+                return ResourceManager.GetString("HuntAssistAlreadyRunning", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Teleporting to the board's city....
+        /// </summary>
+        internal static string HuntAssistStatusTeleporting {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusTeleporting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Taking the aethernet to the nearest aetheryte....
+        /// </summary>
+        internal static string HuntAssistStatusAethernet {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusAethernet", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Walking to the hunt board....
+        /// </summary>
+        internal static string HuntAssistStatusWalking {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusWalking", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Arrived at the hunt board..
+        /// </summary>
+        internal static string HuntAssistStatusArrived {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusArrived", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Movement stopped..
+        /// </summary>
+        internal static string HuntAssistStatusStopped {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusStopped", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hunt assistant cancelled..
+        /// </summary>
+        internal static string HuntAssistStatusCancelled {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusCancelled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stopped: you are in combat..
+        /// </summary>
+        internal static string HuntAssistStoppedInCombat {
+            get {
+                return ResourceManager.GetString("HuntAssistStoppedInCombat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stopped: you are in a duty..
+        /// </summary>
+        internal static string HuntAssistStoppedInDuty {
+            get {
+                return ResourceManager.GetString("HuntAssistStoppedInDuty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stopped: the action timed out..
+        /// </summary>
+        internal static string HuntAssistStoppedTimeout {
+            get {
+                return ResourceManager.GetString("HuntAssistStoppedTimeout", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Could not start the teleport..
+        /// </summary>
+        internal static string HuntAssistTeleportFailed {
+            get {
+                return ResourceManager.GetString("HuntAssistTeleportFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No hunt board data is available for this bill..
+        /// </summary>
+        internal static string HuntAssistNoBoardData {
+            get {
+                return ResourceManager.GetString("HuntAssistNoBoardData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to vnavmesh is not installed - the hunt board was flagged on your map instead..
+        /// </summary>
+        internal static string HuntAssistNavmeshMissing {
+            get {
+                return ResourceManager.GetString("HuntAssistNavmeshMissing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to vnavmesh could not path here - the hunt board was flagged on your map instead..
+        /// </summary>
+        internal static string HuntAssistNavmeshNotReady {
+            get {
+                return ResourceManager.GetString("HuntAssistNavmeshNotReady", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Lifestream is not installed - using the game's own teleport..
+        /// </summary>
+        internal static string HuntAssistLifestreamMissing {
+            get {
+                return ResourceManager.GetString("HuntAssistLifestreamMissing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Could not reach the board's zone - the hunt board was flagged on your map instead.
+        /// </summary>
+        internal static string HuntAssistWrongZone {
+            get {
+                return ResourceManager.GetString("HuntAssistWrongZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Go to Target Zone.
+        /// </summary>
+        internal static string HuntAssistGoToTarget {
+            get {
+                return ResourceManager.GetString("HuntAssistGoToTarget", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Teleporting to the mark's zone....
+        /// </summary>
+        internal static string HuntAssistStatusTeleportingZone {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusTeleportingZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Arrived in the mark's zone..
+        /// </summary>
+        internal static string HuntAssistStatusArrivedZone {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusArrivedZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to You are already in the mark's zone..
+        /// </summary>
+        internal static string HuntAssistAlreadyInZone {
+            get {
+                return ResourceManager.GetString("HuntAssistAlreadyInZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to That zone has no aetheryte - it was opened on your map instead..
+        /// </summary>
+        internal static string HuntAssistNoAetheryte {
+            get {
+                return ResourceManager.GetString("HuntAssistNoAetheryte", resourceCulture);
+            }
+        }
+
+
+        /// <summary>
+        ///   Looks up a localized string similar to Teleports to the aetheryte that makes the following patrol shortest..
+        /// </summary>
+        internal static string HuntAssistTargetTooltip {
+            get {
+                return ResourceManager.GetString("HuntAssistTargetTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to B Rank.
+        /// </summary>
+        internal static string HuntAssistRankB {
+            get {
+                return ResourceManager.GetString("HuntAssistRankB", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A Rank.
+        /// </summary>
+        internal static string HuntAssistRankA {
+            get {
+                return ResourceManager.GetString("HuntAssistRankA", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to S Rank.
+        /// </summary>
+        internal static string HuntAssistRankS {
+            get {
+                return ResourceManager.GetString("HuntAssistRankS", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrol Spawn Points.
+        /// </summary>
+        internal static string HuntAssistPatrol {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrol", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Walks the known spawn points on a short route and stops when the mark appears. It never attacks - moving yourself ends the patrol..
+        /// </summary>
+        internal static string HuntAssistPatrolTooltip {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrolling spawn points.
+        /// </summary>
+        internal static string HuntAssistStatusPatrolling {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusPatrolling", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrol finished - the mark was not found..
+        /// </summary>
+        internal static string HuntAssistPatrolComplete {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolComplete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark found:.
+        /// </summary>
+        internal static string HuntAssistTargetFound {
+            get {
+                return ResourceManager.GetString("HuntAssistTargetFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No spawn point data for this zone..
+        /// </summary>
+        internal static string HuntAssistNoSpawnData {
+            get {
+                return ResourceManager.GetString("HuntAssistNoSpawnData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrolling needs vnavmesh to be installed..
+        /// </summary>
+        internal static string HuntAssistPatrolNeedsNavmesh {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolNeedsNavmesh", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to You must be in the mark's zone to patrol..
+        /// </summary>
+        internal static string HuntAssistPatrolWrongZone {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolWrongZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Preparing patrol....
+        /// </summary>
+        internal static string HuntAssistStatusPreparing {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusPreparing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Spawn point data is not ready yet - try again in a moment..
+        /// </summary>
+        internal static string HuntAssistSpawnDataNotReady {
+            get {
+                return ResourceManager.GetString("HuntAssistSpawnDataNotReady", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open.
+        /// </summary>
+        internal static string OpenModuleLink {
+            get {
+                return ResourceManager.GetString("OpenModuleLink", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mounting up....
+        /// </summary>
+        internal static string HuntAssistStatusMounting {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusMounting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Use flying mounts when available.
+        /// </summary>
+        internal static string HuntAssistUseFlying {
+            get {
+                return ResourceManager.GetString("HuntAssistUseFlying", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Detection radius (yalms).
+        /// </summary>
+        internal static string HuntAssistDetectionRadius {
+            get {
+                return ResourceManager.GetString("HuntAssistDetectionRadius", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A spawn point counts as checked once you are this close - the patrol never has to reach the exact spot. The game only keeps marks in range for about 100 yalms, so that is the ceiling; the default is deliberately conservative..
+        /// </summary>
+        internal static string HuntAssistDetectionRadiusHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistDetectionRadiusHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Patrol Settings.
+        /// </summary>
+        internal static string HuntAssistPatrolSettings {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Waiting for vnavmesh to finish building this zone....
+        /// </summary>
+        internal static string HuntAssistStatusNavmeshBuilding {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusNavmeshBuilding", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to vnavmesh has not finished building this zone - the patrol was stopped. Try again once it is ready..
+        /// </summary>
+        internal static string HuntAssistPatrolNavmeshTimeout {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolNavmeshTimeout", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Bill accepted, but its mark could not be identified..
+        /// </summary>
+        internal static string HuntAssistNoTargetData {
+            get {
+                return ResourceManager.GetString("HuntAssistNoTargetData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ; {0} more have items this client cannot determine.
+        /// </summary>
+        internal static string CollectableWindowSummaryUnknown {
+            get {
+                return ResourceManager.GetString("CollectableWindowSummaryUnknown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Refresh.
+        /// </summary>
+        internal static string CollectableWindowRefresh {
+            get {
+                return ResourceManager.GetString("CollectableWindowRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The full table is only recalculated when you press this, when a setting changes, or when you log in again. Checking every duty is expensive and collectables are obtained rarely, so it is not recomputed while you watch..
+        /// </summary>
+        internal static string CollectableWindowRefreshTooltip {
+            get {
+                return ResourceManager.GetString("CollectableWindowRefreshTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to data read at {0}.
+        /// </summary>
+        internal static string CollectableWindowDataTime {
+            get {
+                return ResourceManager.GetString("CollectableWindowDataTime", resourceCulture);
+            }
+        }
     }
 }

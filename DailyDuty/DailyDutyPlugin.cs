@@ -1,4 +1,5 @@
 ﻿using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using Dalamud.Plugin;
 using DailyDuty.Models;
 using DailyDuty.Windows;
@@ -25,7 +26,11 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         System.LocalizationController = new LocalizationController();
         System.PayloadController = new PayloadController();
         System.ContentsFinderController = new AddonController<AddonContentsFinder>("ContentsFinder");
-        
+        System.CollectableConfig = new CollectableConfig();
+        System.CollectableController = new CollectableController();
+        System.HuntAssistConfig = new HuntAssistConfig();
+        System.HuntAssistController = new HuntAssistController();
+
         System.ModuleController = new ModuleController();
         System.TodoListController = new TodoListController();
         System.TimersController = new TimersController();
@@ -50,12 +55,16 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         Service.ClientState.Login -= OnLogin;
         Service.ClientState.Logout -= OnLogout;
         Service.ClientState.TerritoryChanged -= OnZoneChange;
-        
+
+        // Never leave vnavmesh walking the character around after we are gone.
+        System.HuntAssistController.Cancel();
+
         System.WindowManager.Dispose();
         System.LocalizationController.Dispose();
         System.PayloadController.Dispose();
         System.OverlayController.Dispose();
         System.ContentsFinderController.Dispose();
+        System.CollectableController.Dispose();
 
         System.ModuleController.Dispose();
 
@@ -78,16 +87,29 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         
         System.TodoListController.Update();
         System.TimersController.Update();
+        System.HuntAssistController.Update();
     }
     
     private static void OnLogin() {
         System.SystemConfig = SystemConfig.Load();
+        System.CollectableConfig = CollectableConfig.Load();
+
+        // 收藏品解鎖狀態是逐角色的,而總表快取不再有時間到期 —— 換角後不清掉,
+        // 新角色會看到上一個角色的收藏進度。剛載入的 CollectableConfig 也會改變
+        // 清單內容(類型開關),兩個理由都要求在這裡失效。
+        System.CollectableController.InvalidateCache();
+        System.HuntAssistConfig = HuntAssistConfig.Load();
         System.ModuleController.LoadModules();
         System.ContentsFinderController.Enable();
         System.OverlayController.Enable();
     }
     
     private static void OnLogout(int type, int code) {
+        // 登出就丟掉總表快取,不要讓它活過角色邊界(見 OnLogin 的說明)。
+        System.CollectableController.InvalidateCache();
+
+        System.HuntAssistController.Cancel();
+        HuntTargets.InvalidateCache();
         System.OverlayController.Disable();
         System.ContentsFinderController.Disable();
         System.ModuleController.UnloadModules();

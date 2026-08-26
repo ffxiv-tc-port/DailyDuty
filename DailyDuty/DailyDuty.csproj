@@ -28,4 +28,9 @@
         <LastGenOutput>Strings.Designer.cs</LastGenOutput>
       </EmbeddedResource>
     </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Resources\DutyCollectables.json" />
+      <EmbeddedResource Include="Resources\HuntSpawnPoints.json" />
+    </ItemGroup>
 </Project>

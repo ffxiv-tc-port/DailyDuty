@@ -48,7 +48,18 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 
 		Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "GcArmyExpeditionResult", GcArmyExpeditionResultPreFinalize);
                 
-		onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentGcArmyExpedition.Delegates.ReceiveEvent>(AgentGcArmyExpedition.Instance()->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		// AgentGcArmyExpedition.Instance() 走 CS 的 [Agent] 產生器(agentModule == null ? null : ...),
+		// AgentModule 還沒配起來時是合法地回 null;裸接 ->VirtualTable 等於從位址 0 讀 vtable 指標,
+		// 是 try/catch 與 HookSafety 都攔不到的 AccessViolation。同檔 Update() 已經是判空寫法。
+		// 這裡跳過不是永久放棄:Load() 每次登入都會跑,而 hook 是 ??= 掛的,下次登入會自動重試。
+		var gcAgent = AgentGcArmyExpedition.Instance();
+		if (gcAgent is null || gcAgent->VirtualTable is null) {
+			Service.Log.Information("[GrandCompanySquadron] AgentGcArmyExpedition 尚未就緒，本次跳過 ReceiveEvent hook 掛載；下次登入會自動重試。");
+		}
+		else {
+			onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentGcArmyExpedition.Delegates.ReceiveEvent>(gcAgent->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		}
+
 		onReceiveEventHook?.Enable();
 	}
 
@@ -96,8 +107,14 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	public override void Update() {
 		var gcAgent = AgentGcArmyExpedition.Instance();
 		
-		if (gcAgent->IsAgentActive() && gcAgent->SelectedTab == 2) {
-			Data.MissionCompleted = TryUpdateData(Data.MissionCompleted, gcAgent->ExpeditionData->MissionInfo[0].Available == 0);
+		if (gcAgent is not null && gcAgent->IsAgentActive() && gcAgent->SelectedTab == 2) {
+			// IsAgentActive() 只代表代理人本體活著，不保證 ExpeditionData 已配置：
+			// 兩者生命週期不同步，裸讀會直接觸發無法攔截的 AccessViolation。
+			// 每次重取、顯式判空、同幀即用；為 null 時安靜跳過本幀的讀取，下一幀再試。
+			var expeditionData = gcAgent->ExpeditionData;
+			if (expeditionData is not null) {
+				Data.MissionCompleted = TryUpdateData(Data.MissionCompleted, expeditionData->MissionInfo[0].Available == 0);
+			}
 		}
 
 		if (Data.MissionCompleteTime > DateTime.UtcNow) {
@@ -111,7 +128,7 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	}
             
 	private AtkValue* OnReceiveEvent(AgentGcArmyExpedition* thisPtr, AtkValue* returnValue, AtkValue* args, uint argCount, ulong sender) {
-		var result = onReceiveEventHook!.Original(thisPtr, returnValue, args, argCount, sender);
+		var result = onReceiveEventHook!.OriginalDisposeSafe(thisPtr, returnValue, args, argCount, sender);
                 
 		HookSafety.ExecuteSafe(() => {
 			if (sender == 1 && args[0].Int == 0) {

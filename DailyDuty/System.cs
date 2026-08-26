@@ -1,4 +1,5 @@
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Models;
 using DailyDuty.Windows;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -26,4 +27,8 @@ public static class System {
 	public static TimersConfig TimersConfig { get; set; }
 	public static AddonController<AddonContentsFinder> ContentsFinderController { get; set; }
 	public static OverlayController OverlayController { get; set; }
+	public static CollectableConfig CollectableConfig { get; set; }
+	public static CollectableController CollectableController { get; set; }
+	public static HuntAssistController HuntAssistController { get; set; }
+	public static HuntAssistConfig HuntAssistConfig { get; set; }
 }

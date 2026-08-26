@@ -70,7 +70,7 @@
         <value>狀態未知</value>
     </data>
     <data name="GilRemaining" xml:space="preserve">
-        <value>剩餘金幣</value>
+        <value>剩餘Gil</value>
     </data>
     <data name="InProgress" xml:space="preserve">
         <value>進行中</value>
@@ -82,7 +82,7 @@
         <value>多瑪飛地</value>
     </data>
     <data name="DutyRoulette" xml:space="preserve">
-        <value>通關輪盤</value>
+        <value>隨機任務</value>
     </data>
     <data name="MiniCactpot" xml:space="preserve">
         <value>仙人微彩</value>
@@ -112,7 +112,7 @@
         <value>藏寶圖</value>
     </data>
     <data name="JumboCactpot" xml:space="preserve">
-        <value>仙人彩</value>
+        <value>仙人仙彩</value>
     </data>
     <data name="Levequest" xml:space="preserve">
         <value>委託</value>
@@ -121,10 +121,10 @@
         <value>假面狂歡</value>
     </data>
     <data name="RaidsAlliance" xml:space="preserve">
-        <value>大型任務</value>
+        <value>團隊任務</value>
     </data>
     <data name="RaidsNormal" xml:space="preserve">
-        <value>團隊任務</value>
+        <value>大型任務</value>
     </data>
     <data name="TribalQuests" xml:space="preserve">
         <value>部族任務</value>
@@ -139,7 +139,7 @@
         <value>比較模式</value>
     </data>
     <data name="DomanEnclaveTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至多瑪飛地</value>
+        <value>點選通知可傳送至多瑪飛地</value>
     </data>
     <data name="WeeklyAllowance" xml:space="preserve">
         <value>每週配額</value>
@@ -169,7 +169,7 @@
         <value>預設</value>
     </data>
     <data name="ClickableLink" xml:space="preserve">
-        <value>可點擊連結</value>
+        <value>可點選連結</value>
     </data>
     <data name="Enable" xml:space="preserve">
         <value>啟用</value>
@@ -266,7 +266,7 @@
         <value>關閉</value>
     </data>
     <data name="DutyRouletteOpenDutyFinder" xml:space="preserve">
-        <value>點擊通知可開啟任務登錄視窗</value>
+        <value>點選通知可開啟任務搜尋器</value>
     </data>
     <data name="CompleteWhenTomeCapped" xml:space="preserve">
         <value>達到石板上限時視為完成</value>
@@ -293,7 +293,7 @@
         <value>完成模式</value>
     </data>
     <data name="GoldSaucerTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至金碟遊樂場</value>
+        <value>點選通知可傳送至金碟遊樂園</value>
     </data>
     <data name="HighestWeeklyScore" xml:space="preserve">
         <value>最高分數</value>
@@ -311,7 +311,7 @@
         <value>包含重演</value>
     </data>
     <data name="IdyllshireTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至田園郡</value>
+        <value>點選通知可傳送至田園郡</value>
     </data>
     <data name="FauxHollowsCompletions" xml:space="preserve">
         <value>幻巧拼圖完成次數</value>
@@ -350,7 +350,7 @@
         <value>已接受的委託</value>
     </data>
     <data name="UldahTeleport" xml:space="preserve">
-        <value>點擊通知可傳送至烏爾達哈</value>
+        <value>點選通知可傳送至烏爾達哈</value>
     </data>
     <data name="ChallengesRemaining" xml:space="preserve">
         <value>剩餘挑戰次數</value>
@@ -368,7 +368,7 @@
         <value>有可用地圖</value>
     </data>
     <data name="OpenDutyFinderToRaid" xml:space="preserve">
-        <value>點擊通知可開啟任務登錄視窗的大型任務分類</value>
+        <value>點選通知可開啟任務搜尋器的大型任務分類</value>
     </data>
     <data name="InstanceNotifications" xml:space="preserve">
         <value>副本通知</value>
@@ -377,7 +377,7 @@
         <value>進入副本時，顯示是否需要重抽或已經可完成</value>
     </data>
     <data name="WondrousTailsClickableLink" xml:space="preserve">
-        <value>點擊通知可開啟天書奇談手冊或傳送至田園郡</value>
+        <value>點選通知可開啟天書奇談手冊或傳送至田園郡</value>
     </data>
     <data name="StickerAvailableNotice" xml:space="preserve">
         <value>貼紙可領取提醒</value>
@@ -667,4 +667,460 @@
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>已啟用視窗拖曳</value>
     </data>
+    <data name="NoAdditionalOptions" xml:space="preserve">
+        <value>此模組沒有其他選項</value>
+    </data>
+    <data name="Module" xml:space="preserve">
+        <value>模組</value>
+    </data>
+    <data name="Notifications" xml:space="preserve">
+        <value>通知</value>
+    </data>
+    <data name="Todo" xml:space="preserve">
+        <value>待辦清單</value>
+    </data>
+    <data name="StyleConfiguration" xml:space="preserve">
+        <value>樣式設定</value>
+    </data>
+    <data name="AdvancedMode" xml:space="preserve">
+        <value>進階模式</value>
+    </data>
+    <data name="SimpleMode" xml:space="preserve">
+        <value>簡易模式</value>
+    </data>
+    <data name="Label" xml:space="preserve">
+        <value>標籤</value>
+    </data>
+    <data name="Modules" xml:space="preserve">
+        <value>模組清單</value>
+    </data>
+    <data name="OpenConfigurationManager" xml:space="preserve">
+        <value>開啟設定管理員</value>
+    </data>
+    <data name="TodoList" xml:space="preserve">
+        <value>待辦清單</value>
+    </data>
+    <data name="TodoListConfig" xml:space="preserve">
+        <value>待辦清單設定</value>
+    </data>
+    <data name="AllowMoving" xml:space="preserve">
+        <value>允許移動</value>
+    </data>
+    <data name="AllowResizing" xml:space="preserve">
+        <value>允許調整大小</value>
+    </data>
+    <data name="FunctionalOptions" xml:space="preserve">
+        <value>功能選項</value>
+    </data>
+    <data name="TodoListStyle" xml:space="preserve">
+        <value>待辦清單樣式</value>
+    </data>
+    <data name="DailyTasks" xml:space="preserve">
+        <value>每日任務</value>
+    </data>
+    <data name="WeeklyTasks" xml:space="preserve">
+        <value>每週任務</value>
+    </data>
+    <data name="SpecialTasks" xml:space="preserve">
+        <value>特殊任務</value>
+    </data>
+    <data name="Size" xml:space="preserve">
+        <value>大小</value>
+    </data>
+    <data name="ListOrientation" xml:space="preserve">
+        <value>清單排列方向</value>
+    </data>
+    <data name="AnchorCorner" xml:space="preserve">
+        <value>錨定角落</value>
+    </data>
+    <data name="CategoryVerticalSpacing" xml:space="preserve">
+        <value>分類垂直間距</value>
+    </data>
+    <data name="CategoryHorizontalSpacing" xml:space="preserve">
+        <value>分類水平間距</value>
+    </data>
+    <data name="ShowBackground" xml:space="preserve">
+        <value>顯示背景</value>
+    </data>
+    <data name="ShowBorder" xml:space="preserve">
+        <value>顯示外框</value>
+    </data>
+    <data name="Alignment" xml:space="preserve">
+        <value>對齊方式</value>
+    </data>
+    <data name="ShowHeader" xml:space="preserve">
+        <value>顯示標題</value>
+    </data>
+    <data name="Timers" xml:space="preserve">
+        <value>計時器</value>
+    </data>
+    <data name="TimersConfig" xml:space="preserve">
+        <value>計時器設定</value>
+    </data>
+    <data name="DailyTimerEnable" xml:space="preserve">
+        <value>啟用每日計時器</value>
+    </data>
+    <data name="WeeklyTimerEnable" xml:space="preserve">
+        <value>啟用每週計時器</value>
+    </data>
+    <data name="HideSeconds" xml:space="preserve">
+        <value>隱藏秒數</value>
+    </data>
+    <data name="DailyTimer" xml:space="preserve">
+        <value>每日計時器</value>
+    </data>
+    <data name="WeeklyTimer" xml:space="preserve">
+        <value>每週計時器</value>
+    </data>
+    <data name="BarColor" xml:space="preserve">
+        <value>進度條顏色</value>
+    </data>
+    <data name="LabelColor" xml:space="preserve">
+        <value>標籤顏色</value>
+    </data>
+    <data name="TimerColor" xml:space="preserve">
+        <value>計時器顏色</value>
+    </data>
+    <data name="ShowLabel" xml:space="preserve">
+        <value>顯示標籤</value>
+    </data>
+    <data name="ShowTimer" xml:space="preserve">
+        <value>顯示計時器</value>
+    </data>
+    <data name="EntryTracking" xml:space="preserve">
+        <value>項目追蹤</value>
+    </data>
+    <data name="DutyFinderWarning" xml:space="preserve">
+        <value>任務搜尋器提醒</value>
+    </data>
+    <data name="AddTasks" xml:space="preserve">
+        <value>新增任務</value>
+    </data>
+    <data name="NoTasksTracked" xml:space="preserve">
+        <value>目前沒有追蹤任何任務</value>
+    </data>
+    <data name="ClearAll" xml:space="preserve">
+        <value>全部清除</value>
+    </data>
+    <data name="EnableDutyFinderWarnings" xml:space="preserve">
+        <value>啟用任務搜尋器提醒</value>
+    </data>
+    <data name="DutyFinderWarningHelp" xml:space="preserve">
+        <value>開啟任務搜尋器時，若下列任一挑戰尚未完成，就在聊天視窗發出提醒</value>
+    </data>
+    <data name="AddWarning" xml:space="preserve">
+        <value>新增提醒</value>
+    </data>
+    <data name="NoWarningsActive" xml:space="preserve">
+        <value>目前沒有啟用任何提醒</value>
+    </data>
+    <data name="TaskStillIncomplete" xml:space="preserve">
+        <value>{0} 仍未完成！</value>
+    </data>
+    <data name="ShowOpenDailyDutyButton" xml:space="preserve">
+        <value>顯示「開啟 DailyDuty」按鈕</value>
+    </data>
+    <data name="ShowDailyResetTimerInDutyFinder" xml:space="preserve">
+        <value>在任務搜尋器中顯示每日重置計時</value>
+    </data>
+    <data name="ColorDutyFinder" xml:space="preserve">
+        <value>為任務搜尋器上色</value>
+    </data>
+    <data name="OpenDailyDuty" xml:space="preserve">
+        <value>開啟 DailyDuty</value>
+    </data>
+    <data name="DailyDutyFeatureTooltip" xml:space="preserve">
+        <value>由 DailyDuty 插件提供的功能</value>
+    </data>
+    <data name="DailyResetTimerTooltip" xml:space="preserve">
+        <value>[DailyDuty] 距離下次每日重置的時間</value>
+    </data>
+    <data name="IncompleteTask" xml:space="preserve">
+        <value>未完成任務</value>
+    </data>
+    <data name="CompleteTask" xml:space="preserve">
+        <value>已完成任務</value>
+    </data>
+    <data name="DailyDutyOverlayTooltip" xml:space="preserve">
+        <value>由 DailyDuty 插件提供的疊加層</value>
+    </data>
+    <data name="ProgressBar" xml:space="preserve">
+        <value>進度條</value>
+    </data>
+    <data name="ModuleName" xml:space="preserve">
+        <value>模組名稱</value>
+    </data>
+    <data name="Tooltip" xml:space="preserve">
+        <value>提示文字</value>
+    </data>
+    <data name="HeaderTextNode" xml:space="preserve">
+        <value>標題文字節點</value>
+    </data>
+    <data name="ListNode" xml:space="preserve">
+        <value>清單節點</value>
+    </data>
+    <data name="CollectableHints" xml:space="preserve">
+        <value>收藏品提示</value>
+    </data>
+    <data name="CollectableHintsConfig" xml:space="preserve">
+        <value>收藏品提示設定</value>
+    </data>
+    <data name="CollectableHintTypesLabel" xml:space="preserve">
+        <value>顯示類型:</value>
+    </data>
+    <data name="CollectableHintHeader" xml:space="preserve">
+        <value>未取得收藏品:</value>
+    </data>
+    <data name="CollectableHintTooltip" xml:space="preserve">
+        <value>（滑鼠停留檢視明細）</value>
+    </data>
+    <data name="CollectableHintAllHeader" xml:space="preserve">
+        <value>本副本收藏品:</value>
+    </data>
+    <data name="CollectableHintAllObtained" xml:space="preserve">
+        <value>（已全部取得）</value>
+    </data>
+    <data name="CollectableHintUnknownOnly" xml:space="preserve">
+        <value>（無法判定 {0} 項）</value>
+    </data>
+    <data name="CollectableStateMissing" xml:space="preserve">
+        <value>未取得</value>
+    </data>
+    <data name="CollectableStateAcquired" xml:space="preserve">
+        <value>已取得</value>
+    </data>
+    <data name="CollectableStateUnknown" xml:space="preserve">
+        <value>無法判定</value>
+    </data>
+    <data name="CollectableOpenWindow" xml:space="preserve">
+        <value>開啟副本收藏品清單</value>
+    </data>
+    <data name="CollectableWindowTitle" xml:space="preserve">
+        <value>副本收藏品</value>
+    </data>
+    <data name="CollectableWindowHelp" xml:space="preserve">
+        <value>列出每個副本會掉落的收藏品,以及你有沒有取得。</value>
+    </data>
+    <data name="CollectableWindowNoData" xml:space="preserve">
+        <value>收藏品資料載入失敗。</value>
+    </data>
+    <data name="CollectableWindowNotLoggedIn" xml:space="preserve">
+        <value>登入後才能查詢收藏品的取得狀況。</value>
+    </data>
+    <data name="CollectableWindowSearchHint" xml:space="preserve">
+        <value>搜尋副本…</value>
+    </data>
+    <data name="CollectableWindowOnlyIncomplete" xml:space="preserve">
+        <value>只顯示還有沒取得的</value>
+    </data>
+    <data name="CollectableWindowTypeFilterHelp" xml:space="preserve">
+        <value>要列出哪些類型,沿用「收藏品提示」分頁的類型勾選。</value>
+    </data>
+    <data name="CollectableWindowSummary" xml:space="preserve">
+        <value>{0} / {1} 個副本還有沒取得的收藏品（內建資料共收錄 {2} 個副本）</value>
+    </data>
+    <data name="CollectableWindowSummaryTooltip" xml:space="preserve">
+        <value>內建資料是社群掉落表與本客戶端道具表的交集。沒出現在這份清單裡的副本,代表資料沒收錄,不代表它不會掉收藏品。</value>
+    </data>
+    <data name="CollectableWindowNoMatch" xml:space="preserve">
+        <value>沒有符合目前條件的副本。</value>
+    </data>
+    <data name="CollectableWindowUnknownTooltip" xml:space="preserve">
+        <value>「?N」表示有 N 件道具查不到解鎖狀態,既不算已取得也不算未取得。</value>
+    </data>
+    <data name="CollectableTypeMount" xml:space="preserve">
+        <value>坐騎</value>
+    </data>
+    <data name="CollectableTypeMinion" xml:space="preserve">
+        <value>寵物</value>
+    </data>
+    <data name="CollectableTypeOrchestrionRoll" xml:space="preserve">
+        <value>樂譜</value>
+    </data>
+    <data name="CollectableTypeTimewornOrchestrionRoll" xml:space="preserve">
+        <value>陳舊樂譜</value>
+    </data>
+    <data name="CollectableTypeTripleTriadCard" xml:space="preserve">
+        <value>幻卡</value>
+    </data>
+    <data name="CollectableTypeChocoboBarding" xml:space="preserve">
+        <value>陸行鳥裝甲</value>
+    </data>
+    <data name="CollectableTypeOther" xml:space="preserve">
+        <value>其他</value>
+    </data>
+    <data name="HuntAssistSectionTitle" xml:space="preserve">
+        <value>討伐佈告板捷徑</value>
+    </data>
+    <data name="HuntAssistHelp" xml:space="preserve">
+        <value>每次點擊只執行一個步驟。進入戰鬥、進入副本,或你自己操作移動時都會停下。</value>
+    </data>
+    <data name="HuntAssistGoToBoard" xml:space="preserve">
+        <value>前往佈告板</value>
+    </data>
+    <data name="HuntAssistCancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="HuntAssistBillObtained" xml:space="preserve">
+        <value>已接單</value>
+    </data>
+    <data name="HuntAssistBillAvailable" xml:space="preserve">
+        <value>未接單</value>
+    </data>
+    <data name="HuntAssistAlreadyRunning" xml:space="preserve">
+        <value>已有其他討伐輔助動作進行中。</value>
+    </data>
+    <data name="HuntAssistStatusTeleporting" xml:space="preserve">
+        <value>正在傳送到佈告板所在城市……</value>
+    </data>
+    <data name="HuntAssistStatusAethernet" xml:space="preserve">
+        <value>正在傳送到最近的乙太之光……</value>
+    </data>
+    <data name="HuntAssistStatusWalking" xml:space="preserve">
+        <value>正在前往討伐佈告板……</value>
+    </data>
+    <data name="HuntAssistStatusArrived" xml:space="preserve">
+        <value>已抵達討伐佈告板。</value>
+    </data>
+    <data name="HuntAssistStatusStopped" xml:space="preserve">
+        <value>移動已停止。</value>
+    </data>
+    <data name="HuntAssistStatusCancelled" xml:space="preserve">
+        <value>已取消討伐輔助。</value>
+    </data>
+    <data name="HuntAssistStoppedInCombat" xml:space="preserve">
+        <value>已停止:目前處於戰鬥中。</value>
+    </data>
+    <data name="HuntAssistStoppedInDuty" xml:space="preserve">
+        <value>已停止:目前在副本中。</value>
+    </data>
+    <data name="HuntAssistStoppedTimeout" xml:space="preserve">
+        <value>已停止:動作逾時。</value>
+    </data>
+    <data name="HuntAssistTeleportFailed" xml:space="preserve">
+        <value>無法開始傳送。</value>
+    </data>
+    <data name="HuntAssistNoBoardData" xml:space="preserve">
+        <value>找不到這張通緝令對應的佈告板資料。</value>
+    </data>
+    <data name="HuntAssistNavmeshMissing" xml:space="preserve">
+        <value>未安裝 vnavmesh,已改為在地圖上標記討伐佈告板。</value>
+    </data>
+    <data name="HuntAssistNavmeshNotReady" xml:space="preserve">
+        <value>vnavmesh 無法規劃路徑,已改為在地圖上標記討伐佈告板。</value>
+    </data>
+    <data name="HuntAssistLifestreamMissing" xml:space="preserve">
+        <value>未安裝 Lifestream,改用遊戲內建的傳送功能。</value>
+    </data>
+    <data name="HuntAssistWrongZone" xml:space="preserve">
+        <value>無法進入佈告板所在區域,已改為在地圖上標記討伐佈告板。</value>
+    </data>
+    <data name="HuntAssistGoToTarget" xml:space="preserve">
+        <value>前往目標地圖</value>
+    </data>
+    <data name="HuntAssistStatusTeleportingZone" xml:space="preserve">
+        <value>正在傳送到目標所在地圖……</value>
+    </data>
+    <data name="HuntAssistStatusArrivedZone" xml:space="preserve">
+        <value>已抵達目標所在地圖。</value>
+    </data>
+    <data name="HuntAssistAlreadyInZone" xml:space="preserve">
+        <value>你已經在目標所在地圖了。</value>
+    </data>
+    <data name="HuntAssistNoAetheryte" xml:space="preserve">
+        <value>該地圖沒有可傳送的乙太之光,已改為開啟地圖。</value>
+    </data>
+    <data name="HuntAssistTargetTooltip" xml:space="preserve">
+        <value>傳送到能讓後續巡邏路徑最短的乙太之光。</value>
+    </data>
+    <data name="HuntAssistRankB" xml:space="preserve">
+        <value>B級</value>
+    </data>
+    <data name="HuntAssistRankA" xml:space="preserve">
+        <value>A級</value>
+    </data>
+    <data name="HuntAssistRankS" xml:space="preserve">
+        <value>S級</value>
+    </data>
+    <data name="HuntAssistPatrol" xml:space="preserve">
+        <value>巡邏重生點</value>
+    </data>
+    <data name="HuntAssistPatrolTooltip" xml:space="preserve">
+        <value>依較短路徑巡邏已知的重生點,發現目標就停下。不會自動攻擊;你自己操作移動就會結束巡邏。</value>
+    </data>
+    <data name="HuntAssistStatusPatrolling" xml:space="preserve">
+        <value>巡邏重生點中</value>
+    </data>
+    <data name="HuntAssistPatrolComplete" xml:space="preserve">
+        <value>巡邏結束:沒有發現目標。</value>
+    </data>
+    <data name="HuntAssistTargetFound" xml:space="preserve">
+        <value>發現目標:</value>
+    </data>
+    <data name="HuntAssistNoSpawnData" xml:space="preserve">
+        <value>沒有這張地圖的重生點資料。</value>
+    </data>
+    <data name="HuntAssistPatrolNeedsNavmesh" xml:space="preserve">
+        <value>巡邏功能需要安裝 vnavmesh。</value>
+    </data>
+    <data name="HuntAssistPatrolWrongZone" xml:space="preserve">
+        <value>必須先到目標所在地圖才能巡邏。</value>
+    </data>
+    <data name="OpenModuleLink" xml:space="preserve">
+        <value>開啟</value>
+    </data>
+    <data name="HuntAssistStatusMounting" xml:space="preserve">
+        <value>正在召喚坐騎……</value>
+    </data>
+    <data name="HuntAssistUseFlying" xml:space="preserve">
+        <value>可飛行時自動騎乘並走飛行路徑</value>
+    </data>
+    <data name="HuntAssistDetectionRadius" xml:space="preserve">
+        <value>偵測半徑(碼)</value>
+    </data>
+    <data name="HuntAssistDetectionRadiusHelp" xml:space="preserve">
+        <value>與重生點的水平距離在此範圍內就算已檢查,不必真的走到座標上。遊戲大約只在 100 碼內才會載入標的,因此以此為上限;預設值刻意保守,因為它同時要吸收飛行時拉開的高度差。</value>
+    </data>
+    <data name="HuntAssistPatrolSettings" xml:space="preserve">
+        <value>巡邏設定</value>
+    </data>
+    <data name="HuntAssistStatusPreparing" xml:space="preserve">
+        <value>正在準備巡邏……</value>
+    </data>
+    <data name="HuntAssistSpawnDataNotReady" xml:space="preserve">
+        <value>重生點資料尚未就緒,請稍候再試一次。</value>
+    </data>
+    <data name="HuntAssistStatusNavmeshBuilding" xml:space="preserve">
+        <value>正在等待 vnavmesh 建立本地圖的導航網格……</value>
+    </data>
+    <data name="HuntAssistPatrolNavmeshTimeout" xml:space="preserve">
+        <value>vnavmesh 尚未建好本地圖的導航網格,巡邏已停止;等它建好後再試一次。</value>
+    </data>
+    <data name="HuntAssistNoTargetData" xml:space="preserve">
+        <value>已接取委託單,但無法判斷目標標的。</value>
+    </data>
+  <data name="Top Left">
+        <value>左上</value>
+  </data>
+  <data name="Top Right">
+        <value>右上</value>
+  </data>
+  <data name="Bottom Left">
+        <value>左下</value>
+  </data>
+  <data name="Bottom Right">
+        <value>右下</value>
+  </data>
+  <data name="CollectableWindowSummaryUnknown">
+        <value>；另有 {0} 個副本含無法判定的項目</value>
+  </data>
+  <data name="CollectableWindowRefresh">
+        <value>重新整理</value>
+  </data>
+  <data name="CollectableWindowRefreshTooltip">
+        <value>整份表只有在按下這個按鈕、改設定、或重新登入時才會重算。逐副本查解鎖狀態不便宜,而收藏品又很少變動,所以不會在你看著的時候一直重算。</value>
+  </data>
+  <data name="CollectableWindowDataTime">
+        <value>資料時間 {0}</value>
+  </data>
 </root>

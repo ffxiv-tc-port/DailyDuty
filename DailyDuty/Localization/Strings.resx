@@ -667,4 +667,460 @@ Limited to once per 5 mins</value>
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>Window Dragging Enabled</value>
     </data>
+    <data name="NoAdditionalOptions" xml:space="preserve">
+        <value>No additional options for this module</value>
+    </data>
+    <data name="Module" xml:space="preserve">
+        <value>Module</value>
+    </data>
+    <data name="Notifications" xml:space="preserve">
+        <value>Notifications</value>
+    </data>
+    <data name="Todo" xml:space="preserve">
+        <value>Todo</value>
+    </data>
+    <data name="StyleConfiguration" xml:space="preserve">
+        <value>Style Configuration</value>
+    </data>
+    <data name="AdvancedMode" xml:space="preserve">
+        <value>Advanced Mode</value>
+    </data>
+    <data name="SimpleMode" xml:space="preserve">
+        <value>Simple Mode</value>
+    </data>
+    <data name="Label" xml:space="preserve">
+        <value>Label</value>
+    </data>
+    <data name="Modules" xml:space="preserve">
+        <value>Modules</value>
+    </data>
+    <data name="OpenConfigurationManager" xml:space="preserve">
+        <value>Open Configuration Manager</value>
+    </data>
+    <data name="TodoList" xml:space="preserve">
+        <value>Todo List</value>
+    </data>
+    <data name="TodoListConfig" xml:space="preserve">
+        <value>Todo List Config</value>
+    </data>
+    <data name="AllowMoving" xml:space="preserve">
+        <value>Allow Moving</value>
+    </data>
+    <data name="AllowResizing" xml:space="preserve">
+        <value>Allow Resizing</value>
+    </data>
+    <data name="FunctionalOptions" xml:space="preserve">
+        <value>Functional Options</value>
+    </data>
+    <data name="TodoListStyle" xml:space="preserve">
+        <value>Todo List Style</value>
+    </data>
+    <data name="DailyTasks" xml:space="preserve">
+        <value>Daily Tasks</value>
+    </data>
+    <data name="WeeklyTasks" xml:space="preserve">
+        <value>Weekly Tasks</value>
+    </data>
+    <data name="SpecialTasks" xml:space="preserve">
+        <value>Special Tasks</value>
+    </data>
+    <data name="Size" xml:space="preserve">
+        <value>Size</value>
+    </data>
+    <data name="ListOrientation" xml:space="preserve">
+        <value>List Orientation</value>
+    </data>
+    <data name="AnchorCorner" xml:space="preserve">
+        <value>Anchor Corner</value>
+    </data>
+    <data name="CategoryVerticalSpacing" xml:space="preserve">
+        <value>Category Vertical Spacing</value>
+    </data>
+    <data name="CategoryHorizontalSpacing" xml:space="preserve">
+        <value>Category Horizontal Spacing</value>
+    </data>
+    <data name="ShowBackground" xml:space="preserve">
+        <value>Show Background</value>
+    </data>
+    <data name="ShowBorder" xml:space="preserve">
+        <value>Show Border</value>
+    </data>
+    <data name="Alignment" xml:space="preserve">
+        <value>Alignment</value>
+    </data>
+    <data name="ShowHeader" xml:space="preserve">
+        <value>Show Header</value>
+    </data>
+    <data name="Timers" xml:space="preserve">
+        <value>Timers</value>
+    </data>
+    <data name="TimersConfig" xml:space="preserve">
+        <value>Timers Config</value>
+    </data>
+    <data name="DailyTimerEnable" xml:space="preserve">
+        <value>Daily Timer Enable</value>
+    </data>
+    <data name="WeeklyTimerEnable" xml:space="preserve">
+        <value>Weekly Timer Enable</value>
+    </data>
+    <data name="HideSeconds" xml:space="preserve">
+        <value>Hide Seconds</value>
+    </data>
+    <data name="DailyTimer" xml:space="preserve">
+        <value>Daily Timer</value>
+    </data>
+    <data name="WeeklyTimer" xml:space="preserve">
+        <value>Weekly Timer</value>
+    </data>
+    <data name="BarColor" xml:space="preserve">
+        <value>Bar Color</value>
+    </data>
+    <data name="LabelColor" xml:space="preserve">
+        <value>Label Color</value>
+    </data>
+    <data name="TimerColor" xml:space="preserve">
+        <value>Timer Color</value>
+    </data>
+    <data name="ShowLabel" xml:space="preserve">
+        <value>Show Label</value>
+    </data>
+    <data name="ShowTimer" xml:space="preserve">
+        <value>Show Timer</value>
+    </data>
+    <data name="EntryTracking" xml:space="preserve">
+        <value>Entry Tracking</value>
+    </data>
+    <data name="DutyFinderWarning" xml:space="preserve">
+        <value>Duty Finder Warning</value>
+    </data>
+    <data name="AddTasks" xml:space="preserve">
+        <value>Add Tasks</value>
+    </data>
+    <data name="NoTasksTracked" xml:space="preserve">
+        <value>No tasks are currently tracked</value>
+    </data>
+    <data name="ClearAll" xml:space="preserve">
+        <value>Clear All</value>
+    </data>
+    <data name="EnableDutyFinderWarnings" xml:space="preserve">
+        <value>Enable Duty Finder Warnings</value>
+    </data>
+    <data name="DutyFinderWarningHelp" xml:space="preserve">
+        <value>Post a warning to chat upon opening duty finder when any of the following challenges are incomplete</value>
+    </data>
+    <data name="AddWarning" xml:space="preserve">
+        <value>Add Warning</value>
+    </data>
+    <data name="NoWarningsActive" xml:space="preserve">
+        <value>No warnings are currently active</value>
+    </data>
+    <data name="TaskStillIncomplete" xml:space="preserve">
+        <value>{0} is still incomplete!</value>
+    </data>
+    <data name="ShowOpenDailyDutyButton" xml:space="preserve">
+        <value>Show 'Open DailyDuty' button</value>
+    </data>
+    <data name="ShowDailyResetTimerInDutyFinder" xml:space="preserve">
+        <value>Show Daily Reset Timer in Duty Finder</value>
+    </data>
+    <data name="ColorDutyFinder" xml:space="preserve">
+        <value>Color Duty Finder</value>
+    </data>
+    <data name="OpenDailyDuty" xml:space="preserve">
+        <value>Open DailyDuty</value>
+    </data>
+    <data name="DailyDutyFeatureTooltip" xml:space="preserve">
+        <value>Feature from DailyDuty Plugin</value>
+    </data>
+    <data name="DailyResetTimerTooltip" xml:space="preserve">
+        <value>[DailyDuty] Time until next daily reset</value>
+    </data>
+    <data name="IncompleteTask" xml:space="preserve">
+        <value>Incomplete Task</value>
+    </data>
+    <data name="CompleteTask" xml:space="preserve">
+        <value>Complete Task</value>
+    </data>
+    <data name="DailyDutyOverlayTooltip" xml:space="preserve">
+        <value>Overlay from DailyDuty plugin</value>
+    </data>
+    <data name="ProgressBar" xml:space="preserve">
+        <value>Progress Bar</value>
+    </data>
+    <data name="ModuleName" xml:space="preserve">
+        <value>Module Name</value>
+    </data>
+    <data name="Tooltip" xml:space="preserve">
+        <value>Tooltip</value>
+    </data>
+    <data name="HeaderTextNode" xml:space="preserve">
+        <value>Header Text Node</value>
+    </data>
+    <data name="ListNode" xml:space="preserve">
+        <value>List Node</value>
+    </data>
+    <data name="CollectableHints" xml:space="preserve">
+        <value>Collectable Hints</value>
+    </data>
+    <data name="CollectableHintsConfig" xml:space="preserve">
+        <value>Collectable Hints</value>
+    </data>
+    <data name="CollectableHintTypesLabel" xml:space="preserve">
+        <value>Show Types:</value>
+    </data>
+    <data name="CollectableHintHeader" xml:space="preserve">
+        <value>Uncollected Items:</value>
+    </data>
+    <data name="CollectableHintTooltip" xml:space="preserve">
+        <value>(hover for details)</value>
+    </data>
+    <data name="CollectableHintAllHeader" xml:space="preserve">
+        <value>Collectables from this duty:</value>
+    </data>
+    <data name="CollectableHintAllObtained" xml:space="preserve">
+        <value>(all obtained)</value>
+    </data>
+    <data name="CollectableHintUnknownOnly" xml:space="preserve">
+        <value>({0} undetermined)</value>
+    </data>
+    <data name="CollectableStateMissing" xml:space="preserve">
+        <value>Missing</value>
+    </data>
+    <data name="CollectableStateAcquired" xml:space="preserve">
+        <value>Obtained</value>
+    </data>
+    <data name="CollectableStateUnknown" xml:space="preserve">
+        <value>Unknown</value>
+    </data>
+    <data name="CollectableOpenWindow" xml:space="preserve">
+        <value>Open Duty Collectable List</value>
+    </data>
+    <data name="CollectableWindowTitle" xml:space="preserve">
+        <value>Duty Collectables</value>
+    </data>
+    <data name="CollectableWindowHelp" xml:space="preserve">
+        <value>Lists the collectables each duty can drop, and whether you already have them.</value>
+    </data>
+    <data name="CollectableWindowNoData" xml:space="preserve">
+        <value>Collectable data could not be loaded.</value>
+    </data>
+    <data name="CollectableWindowNotLoggedIn" xml:space="preserve">
+        <value>Log in to check collectable progress.</value>
+    </data>
+    <data name="CollectableWindowSearchHint" xml:space="preserve">
+        <value>Search duties...</value>
+    </data>
+    <data name="CollectableWindowOnlyIncomplete" xml:space="preserve">
+        <value>Only duties with items left</value>
+    </data>
+    <data name="CollectableWindowTypeFilterHelp" xml:space="preserve">
+        <value>Which collectable types are listed follows the type checkboxes in the Collectable Hints settings.</value>
+    </data>
+    <data name="CollectableWindowSummary" xml:space="preserve">
+        <value>{0} of {1} listed duties still have collectables to get ({2} duties in the bundled data)</value>
+    </data>
+    <data name="CollectableWindowSummaryTooltip" xml:space="preserve">
+        <value>The bundled data is a community drop table intersected with this client's item sheet. A duty missing from this list is a gap in that data, not proof that it drops nothing.</value>
+    </data>
+    <data name="CollectableWindowNoMatch" xml:space="preserve">
+        <value>No duties match the current filter.</value>
+    </data>
+    <data name="CollectableWindowUnknownTooltip" xml:space="preserve">
+        <value>"?N" means N items whose unlock state this client cannot report. They are counted as neither obtained nor missing.</value>
+    </data>
+    <data name="CollectableTypeMount" xml:space="preserve">
+        <value>Mounts</value>
+    </data>
+    <data name="CollectableTypeMinion" xml:space="preserve">
+        <value>Minions</value>
+    </data>
+    <data name="CollectableTypeOrchestrionRoll" xml:space="preserve">
+        <value>Orchestrion Rolls</value>
+    </data>
+    <data name="CollectableTypeTimewornOrchestrionRoll" xml:space="preserve">
+        <value>Timeworn Orchestrion Rolls</value>
+    </data>
+    <data name="CollectableTypeTripleTriadCard" xml:space="preserve">
+        <value>Triple Triad Cards</value>
+    </data>
+    <data name="CollectableTypeChocoboBarding" xml:space="preserve">
+        <value>Chocobo Barding</value>
+    </data>
+    <data name="CollectableTypeOther" xml:space="preserve">
+        <value>Other</value>
+    </data>
+    <data name="HuntAssistSectionTitle" xml:space="preserve">
+        <value>Hunt Board Shortcuts</value>
+    </data>
+    <data name="HuntAssistHelp" xml:space="preserve">
+        <value>One click performs one step. Movement stops when you enter combat or a duty, and when you take the controls back.</value>
+    </data>
+    <data name="HuntAssistGoToBoard" xml:space="preserve">
+        <value>Go to Board</value>
+    </data>
+    <data name="HuntAssistCancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="HuntAssistBillObtained" xml:space="preserve">
+        <value>Accepted</value>
+    </data>
+    <data name="HuntAssistBillAvailable" xml:space="preserve">
+        <value>Not Accepted</value>
+    </data>
+    <data name="HuntAssistAlreadyRunning" xml:space="preserve">
+        <value>Another hunt assistant action is already running.</value>
+    </data>
+    <data name="HuntAssistStatusTeleporting" xml:space="preserve">
+        <value>Teleporting to the board's city...</value>
+    </data>
+    <data name="HuntAssistStatusAethernet" xml:space="preserve">
+        <value>Taking the aethernet to the nearest aetheryte...</value>
+    </data>
+    <data name="HuntAssistStatusWalking" xml:space="preserve">
+        <value>Walking to the hunt board...</value>
+    </data>
+    <data name="HuntAssistStatusArrived" xml:space="preserve">
+        <value>Arrived at the hunt board.</value>
+    </data>
+    <data name="HuntAssistStatusStopped" xml:space="preserve">
+        <value>Movement stopped.</value>
+    </data>
+    <data name="HuntAssistStatusCancelled" xml:space="preserve">
+        <value>Hunt assistant cancelled.</value>
+    </data>
+    <data name="HuntAssistStoppedInCombat" xml:space="preserve">
+        <value>Stopped: you are in combat.</value>
+    </data>
+    <data name="HuntAssistStoppedInDuty" xml:space="preserve">
+        <value>Stopped: you are in a duty.</value>
+    </data>
+    <data name="HuntAssistStoppedTimeout" xml:space="preserve">
+        <value>Stopped: the action timed out.</value>
+    </data>
+    <data name="HuntAssistTeleportFailed" xml:space="preserve">
+        <value>Could not start the teleport.</value>
+    </data>
+    <data name="HuntAssistNoBoardData" xml:space="preserve">
+        <value>No hunt board data is available for this bill.</value>
+    </data>
+    <data name="HuntAssistNavmeshMissing" xml:space="preserve">
+        <value>vnavmesh is not installed - the hunt board was flagged on your map instead.</value>
+    </data>
+    <data name="HuntAssistNavmeshNotReady" xml:space="preserve">
+        <value>vnavmesh could not path here - the hunt board was flagged on your map instead.</value>
+    </data>
+    <data name="HuntAssistLifestreamMissing" xml:space="preserve">
+        <value>Lifestream is not installed - using the game's own teleport.</value>
+    </data>
+    <data name="HuntAssistWrongZone" xml:space="preserve">
+        <value>Could not reach the board's zone - the hunt board was flagged on your map instead.</value>
+    </data>
+    <data name="HuntAssistGoToTarget" xml:space="preserve">
+        <value>Go to Target Zone</value>
+    </data>
+    <data name="HuntAssistStatusTeleportingZone" xml:space="preserve">
+        <value>Teleporting to the mark's zone...</value>
+    </data>
+    <data name="HuntAssistStatusArrivedZone" xml:space="preserve">
+        <value>Arrived in the mark's zone.</value>
+    </data>
+    <data name="HuntAssistAlreadyInZone" xml:space="preserve">
+        <value>You are already in the mark's zone.</value>
+    </data>
+    <data name="HuntAssistNoAetheryte" xml:space="preserve">
+        <value>That zone has no aetheryte - it was opened on your map instead.</value>
+    </data>
+    <data name="HuntAssistTargetTooltip" xml:space="preserve">
+        <value>Teleports to the aetheryte that makes the following patrol shortest.</value>
+    </data>
+    <data name="HuntAssistRankB" xml:space="preserve">
+        <value>B Rank</value>
+    </data>
+    <data name="HuntAssistRankA" xml:space="preserve">
+        <value>A Rank</value>
+    </data>
+    <data name="HuntAssistRankS" xml:space="preserve">
+        <value>S Rank</value>
+    </data>
+    <data name="HuntAssistPatrol" xml:space="preserve">
+        <value>Patrol Spawn Points</value>
+    </data>
+    <data name="HuntAssistPatrolTooltip" xml:space="preserve">
+        <value>Walks the known spawn points on a short route and stops when the mark appears. It never attacks - moving yourself ends the patrol.</value>
+    </data>
+    <data name="HuntAssistStatusPatrolling" xml:space="preserve">
+        <value>Patrolling spawn points</value>
+    </data>
+    <data name="HuntAssistPatrolComplete" xml:space="preserve">
+        <value>Patrol finished - the mark was not found.</value>
+    </data>
+    <data name="HuntAssistTargetFound" xml:space="preserve">
+        <value>Mark found:</value>
+    </data>
+    <data name="HuntAssistNoSpawnData" xml:space="preserve">
+        <value>No spawn point data for this zone.</value>
+    </data>
+    <data name="HuntAssistPatrolNeedsNavmesh" xml:space="preserve">
+        <value>Patrolling needs vnavmesh to be installed.</value>
+    </data>
+    <data name="HuntAssistPatrolWrongZone" xml:space="preserve">
+        <value>You must be in the mark's zone to patrol.</value>
+    </data>
+    <data name="OpenModuleLink" xml:space="preserve">
+        <value>Open</value>
+    </data>
+    <data name="HuntAssistStatusMounting" xml:space="preserve">
+        <value>Mounting up...</value>
+    </data>
+    <data name="HuntAssistUseFlying" xml:space="preserve">
+        <value>Use flying mounts when available</value>
+    </data>
+    <data name="HuntAssistDetectionRadius" xml:space="preserve">
+        <value>Detection radius (yalms)</value>
+    </data>
+    <data name="HuntAssistDetectionRadiusHelp" xml:space="preserve">
+        <value>Horizontal distance at which a spawn point counts as checked - the patrol never has to reach the exact spot. The game only keeps marks loaded within about 100 yalms, so that is the ceiling; the default is deliberately conservative because it also has to absorb the altitude gained while flying.</value>
+    </data>
+    <data name="HuntAssistPatrolSettings" xml:space="preserve">
+        <value>Patrol Settings</value>
+    </data>
+    <data name="HuntAssistStatusPreparing" xml:space="preserve">
+        <value>Preparing patrol...</value>
+    </data>
+    <data name="HuntAssistSpawnDataNotReady" xml:space="preserve">
+        <value>Spawn point data is not ready yet - try again in a moment.</value>
+    </data>
+    <data name="HuntAssistStatusNavmeshBuilding" xml:space="preserve">
+        <value>Waiting for vnavmesh to finish building this zone...</value>
+    </data>
+    <data name="HuntAssistPatrolNavmeshTimeout" xml:space="preserve">
+        <value>vnavmesh has not finished building this zone - the patrol was stopped. Try again once it is ready.</value>
+    </data>
+    <data name="HuntAssistNoTargetData" xml:space="preserve">
+        <value>Bill accepted, but its mark could not be identified.</value>
+    </data>
+  <data name="Top Left">
+        <value>Top Left</value>
+  </data>
+  <data name="Top Right">
+        <value>Top Right</value>
+  </data>
+  <data name="Bottom Left">
+        <value>Bottom Left</value>
+  </data>
+  <data name="Bottom Right">
+        <value>Bottom Right</value>
+  </data>
+  <data name="CollectableWindowSummaryUnknown">
+        <value>; {0} more have items this client cannot determine</value>
+  </data>
+  <data name="CollectableWindowRefresh">
+        <value>Refresh</value>
+  </data>
+  <data name="CollectableWindowRefreshTooltip">
+        <value>The full table is only recalculated when you press this, when a setting changes, or when you log in again. Checking every duty is expensive and collectables are obtained rarely, so it is not recomputed while you watch.</value>
+  </data>
+  <data name="CollectableWindowDataTime">
+        <value>data read at {0}</value>
+  </data>
 </root>

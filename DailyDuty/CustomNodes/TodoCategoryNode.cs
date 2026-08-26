@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using DailyDuty.Classes;
+using DailyDuty.Localization;
 using DailyDuty.Modules.BaseModules;
 using Dalamud.Game.Addon.Events;
 using Dalamud.Interface.Utility.Raii;
@@ -137,13 +138,13 @@ public class TodoCategoryNode : SimpleComponentNode {
 	public override void DrawConfig() {
 		base.DrawConfig();
 				
-		using (var header = ImRaii.TreeNode("Header Text Node")) {
+		using (var header = ImRaii.TreeNode($"{Strings.HeaderTextNode}###HeaderTextNode")) {
 			if (header) {
 				HeaderTextNode.DrawConfig();
 			}
 		}
-				
-		using (var listNode = ImRaii.TreeNode("List Node")) {
+
+		using (var listNode = ImRaii.TreeNode($"{Strings.ListNode}###ListNode")) {
 			if (listNode) {
 				TaskListNode.DrawConfig();
 			}

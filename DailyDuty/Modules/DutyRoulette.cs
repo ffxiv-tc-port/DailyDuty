@@ -60,11 +60,11 @@ public class DutyRouletteConfig : ModuleTaskConfig<ContentRoulette> {
     protected override void DrawModuleConfig() {
         ConfigChanged |= ImGui.Checkbox(Strings.ClickableLink, ref ClickableLink);
         ConfigChanged |= ImGui.Checkbox(Strings.CompleteWhenTomeCapped, ref CompleteWhenCapped);
-        ConfigChanged |= ImGui.Checkbox("Show 'Open DailyDuty' button", ref ShowOpenDailyDutyButton);
-        
+        ConfigChanged |= ImGui.Checkbox(Strings.ShowOpenDailyDutyButton, ref ShowOpenDailyDutyButton);
+
         ImGui.Spacing();
 
-        ConfigChanged |= ImGui.Checkbox("Show Daily Reset Timer in Duty Finder", ref ShowResetTimer);
+        ConfigChanged |= ImGui.Checkbox(Strings.ShowDailyResetTimerInDutyFinder, ref ShowResetTimer);
 
         if (ShowResetTimer) {
             ConfigChanged |= ImGuiTweaks.ColorEditWithDefault("Timer Color", ref TimerColor, ColorHelper.GetColor(7));
@@ -72,7 +72,7 @@ public class DutyRouletteConfig : ModuleTaskConfig<ContentRoulette> {
         
         ImGui.Spacing();
 
-        ConfigChanged |= ImGui.Checkbox("Color Duty Finder", ref ColorContentFinder);
+        ConfigChanged |= ImGui.Checkbox(Strings.ColorDutyFinder, ref ColorContentFinder);
         
         if (ColorContentFinder) {
             ImGuiHelpers.ScaledDummy(5.0f);
@@ -124,9 +124,44 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
         base.Dispose();
     }
     
+    // 🔴 這條鏈有三跳，原本一跳都沒判。
+    //    ① args.GetAddon<T>() 展開成 (T*)args.Addon.Address。這一跳**是安全的**：本處理常式是以
+    //       addon 名稱註冊的（RegisterListener(..., "ContentsFinder", ...)），而 Dalamud 的
+    //       AddonLifecycle.InvokeListenersSafely 對具名 listener 會先跑 args.IsAddon(name)，
+    //       該方法在 Addon.IsNull 時直接回 false ⇒ 具名 listener 根本不會被叫到。所以不加判空。
+    //    ② addon->DutyList 是 AtkComponentTreeList*（AddonContentsFinder +0x358）——純指標欄位，
+    //       尚未建好時是 null。拿 null 當 this 呼叫 [MemberFunction] GetItemRendererByNodeId 會在
+    //       原生端解參考 → AccessViolationException。
+    //    ③ GetItemRendererByNodeId(6) 是照 node id 找項目算繪器的原生查詢，**找不到就回 null**
+    //       （清單項目還沒填好時是常態），接著 ->Populator 就是對 null 解參考。
+    //    AVE 在 .NET Core 是 corrupted-state exception，try/catch 與任何例外隔離包裝一律攔不到，
+    //    只能事前擋。
+    //    失敗語意：這是「開任務搜尋器」的回呼路徑、不是每幀路徑，所以記一行 Warning（使用者跑
+    //    LogLevel 2 ⇒ Information 以上都收得到）後放棄掛 hook。本模組退成「不上色任務輪盤清單」，
+    //    其餘功能不受影響；下次再開任務搜尋器會再觸發一次 PostSetup 重試，與 JumboCactpot 的
+    //    CreateReceiveEventHook 同一個 fail-closed 形狀。
     private void OnContentsFinderSetup(AddonEvent type, AddonArgs args) {
         var addon = args.GetAddon<AddonContentsFinder>();
-        var populateMethod = addon->DutyList->GetItemRendererByNodeId(6)->Populator.Populate;
+
+        var dutyList = addon->DutyList;
+        if (dutyList is null) {
+            Service.Log.Warning("[DutyRoulette] 任務搜尋器的清單元件尚未建立，本次不掛載清單填充 hook。");
+            return;
+        }
+
+        var itemRenderer = dutyList->GetItemRendererByNodeId(6);
+        if (itemRenderer is null) {
+            Service.Log.Warning("[DutyRoulette] 找不到任務清單的項目算繪器（node 6），本次不掛載清單填充 hook。");
+            return;
+        }
+
+        // Populator 是內嵌值型別（+0x128）不是二次指標，itemRenderer 非 null 即可安全取；
+        // 但 Populate 本身是函式指標欄位，尚未安裝填充函式時是 null，交給 HookFromAddress 沒有意義。
+        var populateMethod = itemRenderer->Populator.Populate;
+        if (populateMethod is null) {
+            Service.Log.Warning("[DutyRoulette] 任務清單項目算繪器沒有填充函式位址，本次不掛載清單填充 hook。");
+            return;
+        }
 
         onDutyListPopulate = Service.Hooker.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod, OnPopulateHook);
         onDutyListPopulate?.Enable();
@@ -181,7 +216,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             infoTextNode.IsVisible = modifiedIndexes.Count is not 0;
         }
     
-        onDutyListPopulate!.Original(unitBase, listItemInfo, nodeList);
+        onDutyListPopulate!.OriginalDisposeSafe(unitBase, listItemInfo, nodeList);
     }, Service.Log);
 
     private void TryResetEntry(uint index, AtkTextNode* nameNode, AtkTextNode* levelNode) {
@@ -202,7 +237,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             TextFlags = TextFlags.AutoAdjustNodeSize,
             AlignmentType = AlignmentType.TopLeft,
             Text = GetHintText(),
-            Tooltip = "Feature from DailyDuty Plugin",
+            Tooltip = Strings.DailyDutyFeatureTooltip,
             EnableEventFlags = true,
             IsVisible = false,
         };
@@ -212,7 +247,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             Position = new Vector2(50.0f, 622.0f),
             Size = new Vector2(130.0f, 28.0f),
             IsVisible = true,
-            Label = "Open DailyDuty",
+            Label = Strings.OpenDailyDuty,
         };
         openDailyDutyButton.AddEvent(AddonEventType.ButtonClick, _ => System.WindowManager.GetWindow<ConfigurationWindow>()?.UnCollapseOrToggle() );
         System.NativeController.AttachNode(openDailyDutyButton, addon->RootNode);
@@ -223,7 +258,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
                 Position = new Vector2(targetComponent->X, targetComponent->Y),
                 Size = new Vector2(targetComponent->Width, targetComponent->Height),
                 AlignmentType = AlignmentType.Center,
-                Tooltip = "[DailyDuty] Time until next daily reset",
+                Tooltip = Strings.DailyResetTimerTooltip,
                 Text = "0:00:00:00",
                 EnableEventFlags = true,
                 TextColor = Config.TimerColor,
@@ -278,11 +313,11 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
     private SeString GetHintText()
         => SeString.Parse(new SeStringBuilder()
             .PushColorRgba(Config.IncompleteColor)
-            .Append("Incomplete Task")
+            .Append(Strings.IncompleteTask)
             .PopColor()
             .Append("        ")
             .PushColorRgba(Config.CompleteColor)
-            .Append("Complete Task")
+            .Append(Strings.CompleteTask)
             .PopColor()
             .ToSeString()
             .RawData);

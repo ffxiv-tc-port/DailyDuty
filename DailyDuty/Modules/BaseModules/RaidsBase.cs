@@ -76,7 +76,16 @@ public abstract unsafe class RaidsBase : Modules.WeeklyTask<ModuleTaskData<Conte
 		if (GetDataForCurrentZone() is not { } trackedRaid) return;
 
 		// If we can't get the exd data for this item, return
-		var item = Service.DataManager.GetExcelSheet<Item>().GetRow(data.Item.ItemId);
+		// ⚠️ data.Item.ItemId 是「已套用旗標」的原始 id：HQ 會 +1,000,000、收藏品 +500,000
+		//    （Dalamud 的 GameInventoryItem.ItemId 走 InventoryItem.GetItemId()「with flags applied」；
+		//      正規化過的那顆叫 BaseItemId）。台服 Item 表只有 0..49200 且無空洞，
+		//      所以在追蹤中的團隊任務區域裡收到任何 HQ／收藏品的 ItemAdded/ItemChanged，
+		//      舊寫法的 GetRow 會擲 ArgumentOutOfRangeException，而下一行的 `item.RowId is 0`
+		//      根本等不到——那個守衛從一開始就檢查了錯的東西。
+		//    這裡刻意維持「查不到就跳過」＝與原本被例外中斷後的實際結果相同（計數不變），
+		//    只是不再擲例外洗 log。⚠️ 不可改用 BaseItemId：那會讓 HQ 製作裝備開始被算進
+		//    掉落計數（ItemUICategory 34~38 會命中），屬於回退既有行為。
+		if (!Service.DataManager.GetExcelSheet<Item>().TryGetRow(data.Item.ItemId, out var item)) return;
 		if (item.RowId is 0) return;
 		
 		Service.Log.Debug($"InventoryEvent: {type}: {item.Name}");

@@ -25,7 +25,10 @@ public class CustomDeliveryConfig : ModuleConfig {
         ConfigChanged |= ImGuiTweaks.EnumCombo(Strings.ComparisonMode, ref ComparisonMode);
         
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2.0f);
-        ConfigChanged |= ImGui.SliderInt(Strings.NotificationThreshold, ref NotificationThreshold, 1, 12);
+        ImGui.SliderInt(Strings.NotificationThreshold, ref NotificationThreshold, 1, 12);
+        if (ImGui.IsItemDeactivatedAfterEdit()) {
+            ConfigChanged = true;
+        }
     }
 }
 

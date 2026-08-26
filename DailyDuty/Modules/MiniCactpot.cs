@@ -67,7 +67,7 @@ public unsafe class MiniCactpot : BaseModules.Modules.Daily<MiniCactpotData, Min
 
     public void GoldSaucerUpdate(GoldSaucerEventArgs data) {
         const int miniCactpotBroker = 1010445;
-        if (Service.TargetManager.Target?.DataId is not miniCactpotBroker) return;
+        if (Service.TargetManager.Target?.BaseId is not miniCactpotBroker) return;
 
         if (data.EventId == 5) {
             Data.AllowancesRemaining = data.Data[4];

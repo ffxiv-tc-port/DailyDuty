@@ -86,12 +86,12 @@ public unsafe class WondrousTails : BaseModules.Modules.Weekly<WondrousTailsData
 		const int idyllshireTerritoryType = 478;
 		const uint khloeAliapohDataId = 1017653;
 		if (Service.ClientState.TerritoryType is idyllshireTerritoryType && Config.ModuleEnabled) {
-			var khloe = Service.ObjectTable.FirstOrDefault(obj => obj.DataId is khloeAliapohDataId);
+			var khloe = Service.ObjectTable.FirstOrDefault(obj => obj.BaseId is khloeAliapohDataId);
 
-			if (khloe is not null && Service.ClientState.LocalPlayer is { Position: var playerPosition }) {
+			if (khloe is not null && Service.ObjectTable.LocalPlayer is { Position: var playerPosition }) {
 				Data.DistanceToKhloe = Vector3.Distance(playerPosition, khloe.Position);
 				Data.CloseToKhloe = Data.DistanceToKhloe < 10.0f;
-				Data.CastingTeleport = Service.ClientState.LocalPlayer is { IsCasting: true, CastActionId: 5 or 6 };
+				Data.CastingTeleport = Service.ObjectTable.LocalPlayer is { IsCasting: true, CastActionId: 5 or 6 };
 
 				var noLongerNearKhloe = lastNearKhloe && !Data.CloseToKhloe;
 				var startedTeleportingAway = lastNearKhloe && !lastCastingTeleport && Data.CastingTeleport;

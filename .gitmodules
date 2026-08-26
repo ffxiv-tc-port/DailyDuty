@@ -1,6 +1,6 @@
 [submodule "KamiLib"]
 	path = KamiLib
-	url = https://github.com/MidoriKami/KamiLib
+	url = https://github.com/ffxiv-tc-port/KamiLib.git
 [submodule "KamiToolKit"]
 	path = KamiToolKit
-	url = https://github.com/Lother/KamiToolKit.git
+	url = https://github.com/ffxiv-tc-port/KamiToolKit.git
