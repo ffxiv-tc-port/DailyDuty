@@ -1,10 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using DailyDuty.Localization;
 using Dalamud.Interface.Utility.Raii;

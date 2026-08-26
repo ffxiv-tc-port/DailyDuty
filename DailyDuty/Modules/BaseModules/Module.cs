@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using DailyDuty.Classes;
@@ -8,7 +8,7 @@ using DailyDuty.Models;
 using Dalamud.Game.Text;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 using KamiLib.Configuration;
 using KamiLib.Extensions;
