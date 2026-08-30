@@ -136,13 +136,19 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
     public override void OnTabChanged() => SaveAll();
 
     private void SaveAll() {
-        System.TodoListController.Save();
-        System.TimersController.WeeklyTimerNode?.Save(System.TimersController.WeeklyTimerSavePath);
-        System.TimersController.DailyTimerNode?.Save(System.TimersController.DailyTimerSavePath);
+        // 這個方法也會在卸載外掛(WindowManager.Dispose → OnClose)時跑到,
+        // 那時節點已經在登出的 DetachNodes 裡被釋放了,所以一律走存活檢查。
+        var batch = new StyleSaveBatch();
+
+        System.TodoListController.SaveInto(batch);
+        batch.Save(System.TimersController.WeeklyTimerNode, () => System.TimersController.WeeklyTimerSavePath);
+        batch.Save(System.TimersController.DailyTimerNode, () => System.TimersController.DailyTimerSavePath);
 
         foreach (var module in System.ModuleController.Modules) {
-            module.TodoTaskNode?.Save(StyleFileHelper.GetPath($"{module.ModuleName}.style.json"));
+            batch.Save(module.TodoTaskNode, () => StyleFileHelper.GetPath($"{module.ModuleName}.style.json"));
         }
+
+        batch.LogSkipped("樣式存檔");
     }
 }
 

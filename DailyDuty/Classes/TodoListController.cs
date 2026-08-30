@@ -133,9 +133,18 @@ public class TodoListController : IDisposable {
 	}
 
 	public void Save() {
-		TodoListNode?.Save(TodoListNodePath);
-		DailyTaskNode?.Save(DailyCategoryPath);
-		WeeklyTaskNode?.Save(WeeklyCategoryPath);
-		SpecialTaskNode?.Save(SpecialCategoryPath);
+		var batch = new StyleSaveBatch();
+		SaveInto(batch);
+		batch.LogSkipped("待辦清單樣式存檔");
+	}
+
+	/// <summary>
+	///     併入呼叫端的批次,讓「跳過了幾個已釋放節點」整批只報一次。
+	/// </summary>
+	public void SaveInto(StyleSaveBatch batch) {
+		batch.Save(TodoListNode, () => TodoListNodePath);
+		batch.Save(DailyTaskNode, () => DailyCategoryPath);
+		batch.Save(WeeklyTaskNode, () => WeeklyCategoryPath);
+		batch.Save(SpecialTaskNode, () => SpecialCategoryPath);
 	}
 }
