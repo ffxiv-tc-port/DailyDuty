@@ -1123,4 +1123,13 @@
   <data name="CollectableWindowDataTime">
         <value>資料時間 {0}</value>
   </data>
+    <data name="TrayNotificationOnReset" xml:space="preserve">
+        <value>重置時發出 Windows 系統通知</value>
+    </data>
+    <data name="TrayNotificationOnResetHelp" xml:space="preserve">
+        <value>這個項目重置時發出 Windows 系統通知並閃爍工作列圖示，只在遊戲視窗不在前景時才會觸發。同時重置的項目會合併成一則通知。系統通知需要安裝 NotificationMaster 外掛；未安裝時只會閃爍工作列圖示。</value>
+    </data>
+    <data name="TrayNotificationResetBody" xml:space="preserve">
+        <value>已重置：{0}</value>
+    </data>
 </root>

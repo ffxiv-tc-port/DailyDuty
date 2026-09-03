@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DailyDuty.Modules.BaseModules;
 using KamiLib.Classes;
+using KamiLib.Extensions;
 
 namespace DailyDuty.Classes;
 
@@ -57,10 +58,23 @@ public class ModuleController : IDisposable {
     public void ResetModules() {
         if (!modulesLoaded) return;
         
+        // Collected rather than notified per module: a daily reset trips a dozen modules in
+        // the same frame, and a dozen tray balloons in a row is worse than none at all.
+        List<string>? trayNames = null;
+        
         foreach (var module in Modules) {
             if (module.ShouldReset()) {
                 module.Reset();
+
+                if (module.PendingTrayNotification) {
+                    trayNames ??= [];
+                    trayNames.Add(module.ModuleName.GetDescription());
+                }
             }
+        }
+
+        if (trayNames is not null) {
+            System.TrayNotificationController.NotifyReset(trayNames);
         }
     }
 

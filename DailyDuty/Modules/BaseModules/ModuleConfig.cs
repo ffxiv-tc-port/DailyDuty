@@ -17,6 +17,7 @@ public abstract class ModuleConfig {
     public bool OnLoginMessage = true;
     public bool OnZoneChangeMessage = true;
     public bool ResetMessage;
+    public bool TrayNotificationOnReset;
 	    
     public bool TodoEnabled = true;
 
@@ -74,6 +75,7 @@ public abstract class ModuleConfig {
             ConfigChanged |= ImGuiTweaks.Checkbox(Strings.SendStatusOnLogin, ref OnLoginMessage, Strings.SendStatusOnLoginHelp);
             ConfigChanged |= ImGuiTweaks.Checkbox(Strings.SendStatusOnZoneChange, ref OnZoneChangeMessage, Strings.SendStatusOnZoneChangeHelp);
             ConfigChanged |= ImGuiTweaks.Checkbox(Strings.SendMessageOnReset, ref ResetMessage, Strings.SendMessageOnResetHelp);
+            ConfigChanged |= ImGuiTweaks.Checkbox(Strings.TrayNotificationOnReset, ref TrayNotificationOnReset, Strings.TrayNotificationOnResetHelp);
         }
 
         ImGuiTweaks.Header(Strings.NotificationCustomization);

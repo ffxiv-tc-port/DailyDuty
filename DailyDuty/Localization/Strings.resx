@@ -1123,4 +1123,13 @@ Limited to once per 5 mins</value>
   <data name="CollectableWindowDataTime">
         <value>data read at {0}</value>
   </data>
+    <data name="TrayNotificationOnReset" xml:space="preserve">
+        <value>Windows Notification on Reset</value>
+    </data>
+    <data name="TrayNotificationOnResetHelp" xml:space="preserve">
+        <value>Raises a Windows tray notification and flashes the taskbar icon when this module resets, but only while the game window is in the background. Modules that reset at the same time are combined into a single notification. The tray notification is provided by the NotificationMaster plugin; without it only the taskbar icon flashes.</value>
+    </data>
+    <data name="TrayNotificationResetBody" xml:space="preserve">
+        <value>Reset: {0}</value>
+    </data>
 </root>

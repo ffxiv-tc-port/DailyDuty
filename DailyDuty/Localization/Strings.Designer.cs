@@ -1410,6 +1410,33 @@ namespace DailyDuty.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Windows Notification on Reset.
+        /// </summary>
+        internal static string TrayNotificationOnReset {
+            get {
+                return ResourceManager.GetString("TrayNotificationOnReset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Raises a Windows tray notification and flashes the taskbar icon when this module resets, but only while the game window is in the background. Modules that reset at the same time are combined into a single notification. The tray notification is provided by the NotificationMaster plugin; without it only the taskbar icon flashes..
+        /// </summary>
+        internal static string TrayNotificationOnResetHelp {
+            get {
+                return ResourceManager.GetString("TrayNotificationOnResetHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reset: {0}.
+        /// </summary>
+        internal static string TrayNotificationResetBody {
+            get {
+                return ResourceManager.GetString("TrayNotificationResetBody", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Sends a notification to chat if a reset recently occured.
         /// </summary>
         internal static string SendMessageOnResetHelp {

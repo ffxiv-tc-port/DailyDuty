@@ -68,6 +68,15 @@ public abstract class Module : IDisposable {
     protected virtual void UpdateTaskLists() { }
 
     public virtual bool ShouldReset() => DateTime.UtcNow >= GetData().NextReset;
+
+    /// <summary>
+    /// Set by Reset() when this module wants a Windows tray notification for that reset.
+    /// It has to be latched during Reset() rather than read afterwards: Reset() clears
+    /// Config.Suppressed partway through, so a check made after the fact would notify for
+    /// modules the player had deliberately snoozed. ModuleController reads it immediately
+    /// after calling Reset(), and the next Reset() overwrites it.
+    /// </summary>
+    public bool PendingTrayNotification { get; protected set; }
 }
 
 public abstract class Module<T, TU> : Module where T : ModuleData, new() where TU : ModuleConfig, new() {
@@ -213,6 +222,10 @@ public abstract class Module<T, TU> : Module where T : ModuleData, new() where T
 
     public override void Reset() {
         Service.Log.Debug($"[{ModuleName}] Resetting Module, Next Reset: {GetNextReset().ToLocalTime()}");
+
+        // Same gate SendResetMessage() applies, evaluated here because Config.Suppressed is
+        // cleared further down this method.
+        PendingTrayNotification = Config is { TrayNotificationOnReset: true, ModuleEnabled: true, Suppressed: false };
 
         SendResetMessage();
         

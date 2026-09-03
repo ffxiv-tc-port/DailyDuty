@@ -22,6 +22,7 @@ public static class System {
 	public static Teleporter Teleporter { get; set; }
 	public static ConfigurationWindow ConfigurationWindow { get; set; }
 	public static TodoListController TodoListController { get; set; }
+	public static TrayNotificationController TrayNotificationController { get; set; }
 	public static TimersController TimersController { get; set; }
 	public static TodoConfig TodoConfig { get; set; }
 	public static TimersConfig TimersConfig { get; set; }
