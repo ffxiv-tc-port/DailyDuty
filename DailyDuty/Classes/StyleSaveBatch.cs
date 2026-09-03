@@ -38,7 +38,7 @@ public sealed class StyleSaveBatch {
 	}
 
 	/// <summary>
-	///     真的跳過了才留紀錄。使用者跑 LogLevel 2,所以用 Information。
+	///     真的跳過了才留紀錄。使用者跑 LogLevel 1,所以用 Information。
 	/// </summary>
 	public void LogSkipped(string context) {
 		if (skippedCount is 0) return;

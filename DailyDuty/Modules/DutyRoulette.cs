@@ -137,7 +137,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
     //    AVE 在 .NET Core 是 corrupted-state exception，try/catch 與任何例外隔離包裝一律攔不到，
     //    只能事前擋。
     //    失敗語意：這是「開任務搜尋器」的回呼路徑、不是每幀路徑，所以記一行 Warning（使用者跑
-    //    LogLevel 2 ⇒ Information 以上都收得到）後放棄掛 hook。本模組退成「不上色任務輪盤清單」，
+    //    LogLevel 1 ⇒ Information 以上都收得到）後放棄掛 hook。本模組退成「不上色任務輪盤清單」，
     //    其餘功能不受影響；下次再開任務搜尋器會再觸發一次 PostSetup 重試，與 JumboCactpot 的
     //    CreateReceiveEventHook 同一個 fail-closed 形狀。
     private void OnContentsFinderSetup(AddonEvent type, AddonArgs args) {
