@@ -1132,4 +1132,13 @@
     <data name="TrayNotificationResetBody" xml:space="preserve">
         <value>已重置：{0}</value>
     </data>
+    <data name="VoiceNotifications" xml:space="preserve">
+        <value>語音通知</value>
+    </data>
+    <data name="SpeakOnReset" xml:space="preserve">
+        <value>重置後仍有未完成項目時出聲</value>
+    </data>
+    <data name="SpeakOnResetHelp" xml:space="preserve">
+        <value>每日或每週重置之後,只要還有任何啟用中的項目沒完成,就請 TataruPraise(塔塔露誇獎)外掛念一句簡短的提醒。全部都做完時不會出聲;登入時也不會出聲,只有在遊戲中真的碰到重置那一刻才會。沒有安裝 TataruPraise 時完全不會有任何動作。</value>
+    </data>
 </root>

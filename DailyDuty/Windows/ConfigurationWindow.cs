@@ -28,6 +28,7 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
         new TodoConfigTab(),
         new TimersConfigTab(),
         new CollectableConfigTab(),
+        new VoiceConfigTab(),
     ];
     
     protected override List<Module> Options => System.ModuleController.Modules;
@@ -692,6 +693,32 @@ public class CollectableConfigTab : ITabItem {
         if (configChanged) {
             System.CollectableConfig.Save();
             System.CollectableController.InvalidateCache();
+        }
+    }
+}
+
+/// <summary>
+/// 「重置之後還有沒做完的事就出聲」的開關。
+/// </summary>
+/// <remarks>
+/// 🔴 純通知。這個分頁不會排程、不會代打、不會改任何項目的狀態,只決定要不要請
+/// TataruPraise 念一句。實際的判斷與時間閘門在 <see cref="TataruPraiseIpc"/> 與
+/// <see cref="ModuleController.ResetModules"/>。
+/// </remarks>
+public class VoiceConfigTab : ITabItem {
+    public string Name => Strings.VoiceNotifications;
+    public bool Disabled => false;
+
+    public void Draw() {
+        var configChanged = false;
+
+        ImGuiTweaks.Header(Strings.VoiceNotifications);
+        using (ImRaii.PushIndent()) {
+            configChanged |= ImGuiTweaks.Checkbox(Strings.SpeakOnReset, ref System.SystemConfig.SpeakOnReset, Strings.SpeakOnResetHelp);
+        }
+
+        if (configChanged) {
+            System.SystemConfig.Save();
         }
     }
 }

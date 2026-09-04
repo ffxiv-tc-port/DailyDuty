@@ -32,6 +32,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         System.HuntAssistController = new HuntAssistController();
 
         System.TrayNotificationController = new TrayNotificationController();
+        System.TataruPraiseIpc = new TataruPraiseIpc();
         System.ModuleController = new ModuleController();
         System.TodoListController = new TodoListController();
         System.TimersController = new TimersController();

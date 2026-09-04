@@ -3363,5 +3363,32 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("CollectableWindowDataTime", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Voice Notifications.
+        /// </summary>
+        internal static string VoiceNotifications {
+            get {
+                return ResourceManager.GetString("VoiceNotifications", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Speak after a reset when tasks remain.
+        /// </summary>
+        internal static string SpeakOnReset {
+            get {
+                return ResourceManager.GetString("SpeakOnReset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to After the daily or weekly reset, if any enabled module is still incomplete, asks the TataruPraise plugin to say one short line. Nothing is said when everything is already done, and nothing is said at login - only when a reset actually happens while you are playing. Does nothing at all if TataruPraise is not installed..
+        /// </summary>
+        internal static string SpeakOnResetHelp {
+            get {
+                return ResourceManager.GetString("SpeakOnResetHelp", resourceCulture);
+            }
+        }
     }
 }

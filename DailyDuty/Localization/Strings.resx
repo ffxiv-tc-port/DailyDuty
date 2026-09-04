@@ -1132,4 +1132,13 @@ Limited to once per 5 mins</value>
     <data name="TrayNotificationResetBody" xml:space="preserve">
         <value>Reset: {0}</value>
     </data>
+    <data name="VoiceNotifications" xml:space="preserve">
+        <value>Voice Notifications</value>
+    </data>
+    <data name="SpeakOnReset" xml:space="preserve">
+        <value>Speak after a reset when tasks remain</value>
+    </data>
+    <data name="SpeakOnResetHelp" xml:space="preserve">
+        <value>After the daily or weekly reset, if any enabled module is still incomplete, asks the TataruPraise plugin to say one short line. Nothing is said when everything is already done, and nothing is said at login - only when a reset actually happens while you are playing. Does nothing at all if TataruPraise is not installed.</value>
+    </data>
 </root>
