@@ -118,27 +118,44 @@ public static class HuntBoards {
 
 	/// <summary>Resolves (and caches) a board's placement. Null when the sheets do not have it.</summary>
 	public static HuntBoardLocation? Resolve(uint eObjectId) {
+		HuntBoardLocation? resolved = null;
+		string? pendingWarning = null;
+		Exception? pendingError = null;
+
 		lock (CacheLock) {
 			if (ResolvedBoards.TryGetValue(eObjectId, out var cached)) return cached;
 
-			HuntBoardLocation? resolved = null;
 			try {
-				resolved = ResolveUncached(eObjectId);
+				resolved = ResolveUncached(eObjectId, out pendingWarning);
 			}
 			catch (Exception ex) {
-				Service.Log.Error(ex, $"[HuntAssist] Failed to resolve hunt board {eObjectId}");
+				pendingError = ex;
 			}
 
 			ResolvedBoards[eObjectId] = resolved;
-			return resolved;
 		}
+
+		// Written with the lock released. Service.Log goes through Dalamud's Serilog sink,
+		// which does file I/O and takes locks of its own - holding CacheLock across that puts
+		// every other resolver behind the log file. Level, text and trigger are unchanged;
+		// only the moment of the write moved.
+		if (pendingWarning is not null) Service.Log.Warning(pendingWarning);
+		if (pendingError is not null) Service.Log.Error(pendingError, $"[HuntAssist] Failed to resolve hunt board {eObjectId}");
+
+		return resolved;
 	}
 
-	private static HuntBoardLocation? ResolveUncached(uint eObjectId) {
+	/// <summary>
+	/// The warning this can produce is handed back rather than written: the only caller holds
+	/// <see cref="CacheLock"/>, and the log write belongs outside it.
+	/// </summary>
+	private static HuntBoardLocation? ResolveUncached(uint eObjectId, out string? pendingWarning) {
+		pendingWarning = null;
+
 		EnsureBoardPlacementCache();
 
 		if (!boardPlacementCache!.TryGetValue(eObjectId, out var placement)) {
-			Service.Log.Warning($"[HuntAssist] No Level row places EObj {eObjectId}");
+			pendingWarning = $"[HuntAssist] No Level row places EObj {eObjectId}";
 			return null;
 		}
 

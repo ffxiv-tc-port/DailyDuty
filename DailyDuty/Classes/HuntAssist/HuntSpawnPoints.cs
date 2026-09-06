@@ -73,6 +73,24 @@ public static class HuntSpawnPoints {
 	private static readonly object CacheLock = new();
 
 	/// <summary>
+	/// A log line produced while <see cref="CacheLock"/> was held. Service.Log goes through
+	/// Dalamud's Serilog sink, which does file I/O and takes locks of its own, so the write is
+	/// deferred until the lock is released instead of being made inside it.
+	///
+	/// Deliberately pure data: the write lives in <see cref="EmitPending"/> so that nothing
+	/// reachable from inside the lock can log, not even by accident.
+	/// </summary>
+	private readonly record struct PendingLog(bool IsError, Exception? Error, string Message);
+
+	/// <summary>Writes a deferred line. Must be called with <see cref="CacheLock"/> released.</summary>
+	private static void EmitPending(PendingLog? pending) {
+		if (pending is not { } log) return;
+
+		if (log.IsError) Service.Log.Error(log.Error, log.Message);
+		else Service.Log.Warning(log.Message);
+	}
+
+	/// <summary>
 	/// World-space spawn points for a zone, filtered to the ranks that can use them.
 	/// Empty when we have no data for that zone - callers must degrade, not assume.
 	/// </summary>
@@ -87,48 +105,65 @@ public static class HuntSpawnPoints {
 	/// to do". Nothing is cached in that case, so a later call can succeed.
 	/// </summary>
 	public static bool TryGetSpawnPoints(uint territoryId, MarkRank rank, out IReadOnlyList<Vector3> points) {
+		PendingLog? rawDataLog = null;
+		PendingLog? buildFailureLog = null;
+		bool result;
+
 		lock (CacheLock) {
 			if (WorldPointCache.TryGetValue((territoryId, rank), out var cached)) {
 				points = cached;
-				return true;
+				result = true;
 			}
+			else {
+				List<Vector3>? built;
+				try {
+					built = BuildSpawnPoints(territoryId, rank, out rawDataLog);
+				}
+				catch (Exception ex) {
+					// An exception is "not ready", never "no points" - caching an empty list here
+					// would make one bad moment permanent for the rest of the session.
+					buildFailureLog = new PendingLog(true, ex, $"[HuntAssist] Failed to build spawn points for territory {territoryId}");
+					built = null;
+				}
 
-			List<Vector3>? built;
-			try {
-				built = BuildSpawnPoints(territoryId, rank);
+				if (built is null) {
+					points = [];
+					result = false;
+				}
+				else {
+					WorldPointCache[(territoryId, rank)] = built;
+					points = built;
+					result = true;
+				}
 			}
-			catch (Exception ex) {
-				// An exception is "not ready", never "no points" - caching an empty list here
-				// would make one bad moment permanent for the rest of the session.
-				Service.Log.Error(ex, $"[HuntAssist] Failed to build spawn points for territory {territoryId}");
-				points = [];
-				return false;
-			}
-
-			if (built is null) {
-				points = [];
-				return false;
-			}
-
-			WorldPointCache[(territoryId, rank)] = built;
-			points = built;
-			return true;
 		}
+
+		// Same lines, same levels, same conditions - written once the lock is released.
+		EmitPending(rawDataLog);
+		EmitPending(buildFailureLog);
+
+		return result;
 	}
 
 	public static bool HasData(uint territoryId) {
+		PendingLog? rawDataLog;
+		bool result;
+
 		lock (CacheLock) {
-			EnsureRawData();
-			return rawZones!.ContainsKey((ushort) territoryId);
+			EnsureRawData(out rawDataLog);
+			result = rawZones!.ContainsKey((ushort) territoryId);
 		}
+
+		EmitPending(rawDataLog);
+		return result;
 	}
 
 	/// <summary>
 	/// Null means "the conversion data is not available yet, ask again later". An empty list
 	/// means "this zone genuinely has no spawn points" and is safe to cache.
 	/// </summary>
-	private static List<Vector3>? BuildSpawnPoints(uint territoryId, MarkRank rank) {
-		EnsureRawData();
+	private static List<Vector3>? BuildSpawnPoints(uint territoryId, MarkRank rank, out PendingLog? pendingLog) {
+		EnsureRawData(out pendingLog);
 
 		if (!rawZones!.TryGetValue((ushort) territoryId, out var positions)) return [];
 
@@ -171,7 +206,9 @@ public static class HuntSpawnPoints {
 	private static float MapToWorld(float mapCoordinate, float scale, int offset)
 		=> (mapCoordinate - 1.0f - (2048.0f / scale) - (0.02f * offset)) / 0.02f;
 
-	private static void EnsureRawData() {
+	private static void EnsureRawData(out PendingLog? pendingLog) {
+		pendingLog = null;
+
 		if (rawZones is not null) return;
 
 		var zones = new Dictionary<ushort, List<RawPosition>>();
@@ -181,7 +218,7 @@ public static class HuntSpawnPoints {
 			using var stream = assembly.GetManifestResourceStream(EmbeddedResourceName);
 
 			if (stream is null) {
-				Service.Log.Warning($"[HuntAssist] Embedded resource '{EmbeddedResourceName}' was not found, patrol data will be unavailable.");
+				pendingLog = new PendingLog(false, null, $"[HuntAssist] Embedded resource '{EmbeddedResourceName}' was not found, patrol data will be unavailable.");
 				rawZones = zones;
 				return;
 			}
@@ -197,7 +234,7 @@ public static class HuntSpawnPoints {
 			}
 		}
 		catch (Exception ex) {
-			Service.Log.Error(ex, "[HuntAssist] Failed to load embedded spawn point data");
+			pendingLog = new PendingLog(true, ex, "[HuntAssist] Failed to load embedded spawn point data");
 		}
 
 		rawZones = zones;
