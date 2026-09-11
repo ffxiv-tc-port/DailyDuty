@@ -9,6 +9,7 @@ using DailyDuty.Modules.BaseModules;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Hooking;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiLib.Classes;
@@ -73,7 +74,17 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 		if (addon->AtkValues[4].Type is not ValueType.String) throw new Exception("Type Mismatch Exception");
 		if (addon->AtkValues[2].Type is not ValueType.Int) throw new Exception("Type Mismatch Exception");
                 
-		var missionText = Alphanumeric().Replace(addon->AtkValues[4].GetValueAsString().ToLower(), string.Empty);
+		// 🔴 GetValueAsString() 對 ValueType.String 走的是 CStringPointer.ToString():
+		//    把整段位元組當 UTF-8 直接解碼,完全不剝 SeString payload;任務名一旦帶連結／圖示 payload,
+		//    解出來就會混進 U+FFFD 與控制位元組。而比對的另一端 GcArmyExpedition.Name.ToString()
+		//    在本 pin 逐字就是 Lumina 的 ExtractText()(payload 已剝掉)⇒ 兩端基準不同。
+		//    ⚠️ 同一行的 Alphanumeric() 正規式只濾掉非「字母或數字」,
+		//    payload 位元組裡任何剛好是字母或數字的位元組都會留下來 ⇒ 它擋不住這件事。
+		//    比不中的後果是靜默的:missionInfo 為 null → 週常「部隊小隊任務」永遠不會被標成已完成。
+		//    改用 Dalamud 的 CStringPointer.ExtractText(),與另一端走同一支 Lumina 解析器。
+		// ⚠️ 沒有 payload 的純文字任務名兩種讀法逐字相同,所以行為不變;風險面也沒變大
+		//    (兩者都經過同一個 CStringPointer.AsSpan(),指標為 null 時回空 span、不解參)。
+		var missionText = Alphanumeric().Replace(addon->AtkValues[4].String.ExtractText().ToLower(), string.Empty);
 		var missionSuccessful = addon->AtkValues[2].Int == 1;
 
 		var missionInfo = Service.DataManager.GetExcelSheet<GcArmyExpedition>()
