@@ -175,7 +175,17 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
     private void OnPopulateHook(AtkUnitBase* unitBase, AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList) => HookSafety.ExecuteSafe(() => {
         var index = listItemInfo->ListItem->Renderer->OwnerNode->NodeId;
         
-        var dutyName = listItemInfo->ListItem->StringValues[0].ToString();
+        // 🔴 CStringPointer.ToString() 把整段位元組當 UTF-8 直接解碼,完全不剝 SeString payload
+        //    (它就是 AsSpan() 之後 Encoding.UTF8.GetString());副本名一旦帶連字符(02 1F 01 03)
+        //    或其他 macro payload,解出來會混進 U+FFFD 與控制位元組。
+        //    而比對的另一端 roulette.Category.ExtractText() 是 Lumina 的解析器(payload 已剝掉,
+        //    連字符渲染成 U+002D)⇒ 兩端基準不同,比不中的後果是靜默的:dutyInfo 為 null
+        //    → 該列不上色、也不會被當成隨機任務追蹤。
+        //    改用 Dalamud 的 CStringPointer.ExtractText(),與另一端走同一支 Lumina 解析器
+        //    (同 repo GrandCompanySquadron.cs 已經這樣做)。
+        // ⚠️ 沒有 payload 的純文字副本名兩種讀法逐字相同,所以行為不變;風險面也沒變大
+        //    (兩者都經過同一個 CStringPointer.AsSpan())。
+        var dutyName = listItemInfo->ListItem->StringValues[0].ExtractText();
         var dutyInfo = Service.DataManager.GetExcelSheet<ContentRoulette>().FirstOrNull(roulette => string.Equals(dutyName, roulette.Category.ExtractText(), StringComparison.OrdinalIgnoreCase));
 
         var dutyNameTextNode = (AtkTextNode*) nodeList[3];
