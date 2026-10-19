@@ -18,7 +18,7 @@ public class RaidsAlliance : RaidsBase {
 
 	protected override StatusMessage GetStatusMessage() => new LinkedStatusMessage {
 		LinkEnabled = Config.ClickableLink,
-		Message = $"{IncompleteTaskCount} {Strings.RaidsAvailable}",
+		Message = HasTrackedTasks() ? $"{IncompleteTaskCount} {Strings.RaidsAvailable}" : Strings.TasksNoneTracked,
 		Payload = PayloadId.OpenDutyFinderAllianceRaid,
 	};
 }

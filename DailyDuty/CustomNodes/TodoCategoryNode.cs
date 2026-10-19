@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using DailyDuty.Classes;
+using DailyDuty.Localization;
 using DailyDuty.Modules.BaseModules;
 using Dalamud.Game.Addon.Events;
 using Dalamud.Interface.Utility.Raii;
@@ -58,6 +59,12 @@ public class TodoCategoryNode : SimpleComponentNode {
 		TaskNodes.Clear();
 		
 		foreach (var module in System.ModuleController.GetModules(ModuleType)) {
+			// 沒載起來的模組不進待辦清單:它的狀態是預設值,畫出來會是假的完成度。
+			if (!module.IsLoaded) {
+				module.TodoTaskNode = null;
+				continue;
+			}
+
 			var newTaskNode = new TodoTaskNode {
 				FontSize = 12,
 				Margin = new Spacing(1.0f),  
@@ -137,13 +144,13 @@ public class TodoCategoryNode : SimpleComponentNode {
 	public override void DrawConfig() {
 		base.DrawConfig();
 				
-		using (var header = ImRaii.TreeNode("Header Text Node")) {
+		using (var header = ImRaii.TreeNode($"{Strings.HeaderTextNode}###HeaderTextNode")) {
 			if (header) {
 				HeaderTextNode.DrawConfig();
 			}
 		}
-				
-		using (var listNode = ImRaii.TreeNode("List Node")) {
+
+		using (var listNode = ImRaii.TreeNode($"{Strings.ListNode}###ListNode")) {
 			if (listNode) {
 				TaskListNode.DrawConfig();
 			}

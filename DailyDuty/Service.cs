@@ -12,6 +12,7 @@ public sealed class Service {
     [PluginService] public static IFramework Framework { get; set; }
     [PluginService] public static ITargetManager TargetManager { get; set; }
     [PluginService] public static IObjectTable ObjectTable { get; set; }
+    [PluginService] public static IPlayerState PlayerState { get; set; }
     [PluginService] public static IAddonLifecycle AddonLifecycle { get; set; }
     [PluginService] public static IPluginLog Log { get; set; }
     [PluginService] public static ICondition Condition { get; set; }

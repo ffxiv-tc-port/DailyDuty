@@ -1,17 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Numerics;
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using Dalamud.Hooking;
 using Dalamud.Interface;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 
 namespace DailyDuty.Modules;
@@ -58,7 +61,7 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
 
 	public override bool HasClickableLink => Config.ClickableLink;
 	
-	public override PayloadId ClickableLinkPayloadId => PayloadId.GoldSaucerTeleport;
+	public override PayloadId ClickableLinkPayloadId => PayloadId.JumboCactpotTravel;
 
 	private Hook<AgentInterface.Delegates.ReceiveEvent>? onReceiveEventHook;
 	private int ticketData = -1;
@@ -66,11 +69,85 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
 	protected override ModuleStatus GetModuleStatus() 
 		=> Data.Tickets.Count == 3 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
 
+	// All three tickets claimed - the broker has nothing left to offer this week.
+	public override uint TravelDestinationObjectId
+		=> Data.Tickets.Count >= 3 ? 0 : HuntBoards.JumboCactpotBrokerObjectId;
+
+	public override void DrawData() {
+		base.DrawData();
+
+		DrawTravelAssist();
+	}
+
+	/// <summary>
+	/// One click takes the character to the Jumbo Cactpot broker: teleport to the Gold Saucer,
+	/// walk the last stretch, and stop there.
+	///
+	/// Movement only - it never buys a ticket, never targets the broker and never opens a
+	/// window. Playing the game is still the player's job.
+	/// </summary>
+	private void DrawTravelAssist() {
+		if (TravelDestinationObjectId is 0) return;
+
+		var controller = System.HuntAssistController;
+
+		ImGuiTweaks.Header(Strings.TravelAssistSectionTitle);
+		using var indent = ImRaii.PushIndent();
+
+		if (controller.StatusText.Length > 0) {
+			var statusColor = controller.IsRunning ? KnownColor.Orange.Vector() : KnownColor.Gray.Vector();
+			ImGui.TextColored(statusColor, controller.StatusText);
+		}
+
+		var buttonSize = new Vector2(ImGui.GetContentRegionAvail().X, 23.0f * ImGuiHelpers.GlobalScale);
+
+		// One controller for the whole plugin - a running trip may belong to another module.
+		if (controller.IsRunning) {
+			if (ImGui.Button(Strings.HuntAssistCancel, buttonSize)) controller.Cancel();
+
+			return;
+		}
+
+		if (HuntBoards.Resolve(HuntBoards.JumboCactpotBrokerObjectId) is not { } destination) {
+			ImGui.TextColored(KnownColor.Orange.Vector(), Strings.TravelAssistNoDestinationData);
+			return;
+		}
+
+		if (ImGui.Button(Strings.TravelAssistGoToJumboCactpot, buttonSize)) {
+			controller.GoToLocation(destination, Strings.TravelAssistStatusTeleporting);
+		}
+
+		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.TravelAssistJumboCactpotTooltip);
+	}
+
 	public override void Load() {
 		base.Load();
 
-		onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentInterface.Delegates.ReceiveEvent>(AgentModule.Instance()->GetAgentByInternalId(AgentId.LotteryWeekly)->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		onReceiveEventHook ??= CreateReceiveEventHook();
 		onReceiveEventHook?.Enable();
+	}
+
+	// 代理人模組在登入流程早期可能尚未建立，任一層取不到就放棄掛載 hook，
+	// 讓本模組維持「未掛 hook」而不是裸解參考造成崩潰；下次 Load 會再試一次。
+	private Hook<AgentInterface.Delegates.ReceiveEvent>? CreateReceiveEventHook() {
+		var agentModule = AgentModule.Instance();
+		if (agentModule is null) {
+			Service.Log.Warning("[JumboCactpot] 取不到 AgentModule，本次不掛載 ReceiveEvent hook。");
+			return null;
+		}
+
+		var agent = agentModule->GetAgentByInternalId(AgentId.LotteryWeekly);
+		if (agent is null) {
+			Service.Log.Warning("[JumboCactpot] 取不到 LotteryWeekly 代理人，本次不掛載 ReceiveEvent hook。");
+			return null;
+		}
+
+		if (agent->VirtualTable is null) {
+			Service.Log.Warning("[JumboCactpot] LotteryWeekly 代理人的虛擬表為空，本次不掛載 ReceiveEvent hook。");
+			return null;
+		}
+
+		return Service.Hooker.HookFromAddress<AgentInterface.Delegates.ReceiveEvent>(agent->VirtualTable->ReceiveEvent, OnReceiveEvent);
 	}
 
 	public override void Unload() {
@@ -92,12 +169,11 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
 	protected override StatusMessage GetStatusMessage() => new LinkedStatusMessage {
 		LinkEnabled = Config.ClickableLink,
 		Message = $"{3 - Data.Tickets.Count} {Strings.TicketsAvailable}",
-		Payload = PayloadId.GoldSaucerTeleport,
+		Payload = PayloadId.JumboCactpotTravel,
 	};
     
 	public void GoldSaucerUpdate(GoldSaucerEventArgs data) {
-		const int jumboCactpotBroker = 1010446;
-		if (Service.TargetManager.Target?.DataId != jumboCactpotBroker) return;
+		if (Service.TargetManager.Target?.BaseId is not HuntBoards.JumboCactpotBrokerObjectId) return;
 		Data.Tickets.Clear();
 
 		for(var i = 0; i < 3; ++i) {
@@ -111,7 +187,7 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
 	}
     
 	private AtkValue* OnReceiveEvent(AgentInterface* agent, AtkValue* returnValue, AtkValue* args, uint argCount, ulong sender) {
-		var result = onReceiveEventHook!.Original(agent, returnValue, args, argCount, sender);
+		var result = onReceiveEventHook!.OriginalDisposeSafe(agent, returnValue, args, argCount, sender);
         
 		HookSafety.ExecuteSafe(() => {
 			var data = args->Int;

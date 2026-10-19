@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 
 namespace DailyDuty.Modules;
@@ -50,7 +51,7 @@ public unsafe class FashionReport : BaseModules.Modules.Special<FashionReportDat
 
 	public override bool HasClickableLink => Config.ClickableLink;
     
-	public override PayloadId ClickableLinkPayloadId => PayloadId.GoldSaucerTeleport;
+	public override PayloadId ClickableLinkPayloadId => PayloadId.FashionReportTravel;
 
 	public override void Update() {
 		var reportOpen = Time.NextWeeklyReset().AddDays(-4);
@@ -72,6 +73,18 @@ public unsafe class FashionReport : BaseModules.Modules.Special<FashionReportDat
 
 	public override DateTime GetNextReset() => Time.NextFashionReportReset();
 
+	// Nothing to walk to while the report is closed, or once this week's entry is in.
+	public override uint TravelDestinationObjectId
+		=> GetModuleStatus() is ModuleStatus.Incomplete ? HuntBoards.FashionReportJudgeObjectId : 0;
+
+	public override void DrawData() {
+		base.DrawData();
+
+		if (TravelDestinationObjectId is 0) return;
+
+		TravelAssist.Draw(HuntBoards.FashionReportJudgeObjectId, Strings.TravelAssistGoToFashionReport, Strings.TravelAssistFashionReportTooltip);
+	}
+
 	protected override ModuleStatus GetModuleStatus() {
 		if (Data.FashionReportAvailable == false) return ModuleStatus.Unavailable;
 
@@ -91,12 +104,11 @@ public unsafe class FashionReport : BaseModules.Modules.Special<FashionReportDat
 			FashionReportMode.Plus80 when Data.HighestWeeklyScore <= 80 => $"{Data.HighestWeeklyScore} {Strings.HighestScore}",
 			_ => throw new ArgumentOutOfRangeException(),
 		},
-		Payload = PayloadId.GoldSaucerTeleport,
+		Payload = PayloadId.FashionReportTravel,
 	};
     
 	public void GoldSaucerUpdate(GoldSaucerEventArgs data) {
-		const int maskedRoseId = 1025176;
-		if (Service.TargetManager.Target?.DataId != maskedRoseId) return;
+		if (Service.TargetManager.Target?.BaseId != HuntBoards.FashionReportJudgeObjectId) return;
 
 		var allowances = Data.AllowancesRemaining;
 		var score = Data.HighestWeeklyScore;

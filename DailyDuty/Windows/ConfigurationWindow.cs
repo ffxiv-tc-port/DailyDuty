@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
@@ -10,7 +10,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 using KamiLib.CommandManager;
 using KamiLib.Configuration;
@@ -22,11 +22,13 @@ namespace DailyDuty.Windows;
 
 public class ConfigurationWindow : TabbedSelectionWindow<Module> {
 
-    protected override string SelectionListTabName => "Modules";
+    protected override string SelectionListTabName => Strings.Modules;
     
     protected override List<ITabItem> Tabs { get; } = [
         new TodoConfigTab(),
         new TimersConfigTab(),
+        new CollectableConfigTab(),
+        new VoiceConfigTab(),
     ];
     
     protected override List<Module> Options => System.ModuleController.Modules;
@@ -37,14 +39,21 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
 
     protected override bool ShowListButton => true;
 
+    // 清單每幀每列畫一個圖示；ToIconString() 每次都配置新字串。
+    private static readonly string WarningIcon = FontAwesomeIcon.ExclamationTriangle.ToIconString();
+    private static readonly string SuppressedIcon = FontAwesomeIcon.History.ToIconString();
+    private static readonly string UnknownIcon = FontAwesomeIcon.Question.ToIconString();
+    private static readonly string StatusIcon = FontAwesomeIcon.Circle.ToIconString();
+
+    // 載入失敗的一律留在列上：藏起來就只剩記錄檔看得見「它今天沒上工」。
     protected override bool FilterOptions(Module option)
-        => !System.SystemConfig.HideDisabledModules || option.IsEnabled;
+        => option.LoadFailed || !System.SystemConfig.HideDisabledModules || option.IsEnabled;
 
     public ConfigurationWindow() : base("DailyDuty - Configuration Window", new Vector2(1000.0f, 500.0f)) {
         TitleBarButtons.Add(new TitleBarButton {
             Click = _ => System.WindowManager.AddWindow(new ConfigurationManagerWindow(), WindowFlags.OpenImmediately),
             Icon = FontAwesomeIcon.Cog,
-            ShowTooltip = () => ImGui.SetTooltip("Open Configuration Manager"),
+            ShowTooltip = () => ImGui.SetTooltip(Strings.OpenConfigurationManager),
             IconOffset = new Vector2(2.0f, 1.0f),
         });
         
@@ -52,31 +61,72 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
             Delegate = _ => UnCollapseOrToggle(),
             ActivationPath = "/",
         });
+
+        System.CommandManager.RegisterCommand(new CommandHandler {
+            Delegate = _ => System.WindowManager.OpenOrCreateUnique<CollectableWindow>(WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn),
+            ActivationPath = "/collectables",
+        });
+    }
+
+    /// <summary>
+    /// Opens the window on a specific module. Driven by the chat link payloads, so a reminder
+    /// in chat can take the player straight to the module that produced it.
+    /// </summary>
+    public void OpenToModule(ModuleName moduleName) {
+        var module = System.ModuleController.Modules.FirstOrDefault(item => item.ModuleName == moduleName);
+
+        if (module is not null) {
+            SelectItem(module);
+            FocusSelectionListTab();
+        }
+
+        UnCollapseOrShow();
     }
 
     protected override void DrawListOption(Module option) {
         ImGui.Text(option.ModuleName.GetDescription());
         
         ImGui.SameLine(ImGui.GetContentRegionAvail().X - 13.0f * ImGuiHelpers.GlobalScale);
+
+        // 這次沒載起來的模組不去讀 ModuleStatus —— 那個 getter 正是會擲例外的地方。
+        if (option.LoadFailed) {
+            using (var failedIcon = Service.PluginInterface.PushIconFont()) {
+                ImGui.TextColored(KnownColor.Orange.Vector(), WarningIcon);
+            }
+
+            if (ImGui.IsItemHovered()) {
+                ImGui.SetTooltip(Strings.ModuleLoadFailed);
+            }
+
+            return;
+        }
+
         using var _ = Service.PluginInterface.PushIconFont();
 
         switch (option.ModuleStatus) {
             case ModuleStatus.Suppressed when option.IsEnabled:
-                ImGui.TextColored(KnownColor.MediumPurple.Vector(), FontAwesomeIcon.History.ToIconString());
+                ImGui.TextColored(KnownColor.MediumPurple.Vector(), SuppressedIcon);
                 break;
             
             case ModuleStatus.Unknown when option.IsEnabled:
-                ImGui.TextColored(KnownColor.Orange.Vector(), FontAwesomeIcon.Question.ToIconString());
+                ImGui.TextColored(KnownColor.Orange.Vector(), UnknownIcon);
                 break;
             
             default:
                 var color = option.IsEnabled ? KnownColor.Green.Vector() : KnownColor.Red.Vector();
-                ImGui.TextColored(color, FontAwesomeIcon.Circle.ToIconString());
+                ImGui.TextColored(color, StatusIcon);
                 break;
         }
     }
 
     protected override void DrawSelectedOption(Module option) {
+        // Load() 失敗的模組其 Config/Data 還是預設值:畫出來是假的,而這裡任何一次
+        // 存檔都會把玩家真正的設定檔蓋成預設。
+        if (option.LoadFailed) {
+            ImGuiHelpers.CenteredText(Strings.ModuleLoadFailed);
+            return;
+        }
+
         using var table = ImRaii.Table("module_table", 2, ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.Resizable, ImGui.GetContentRegionAvail());
         if (!table) return;
 
@@ -115,18 +165,24 @@ public class ConfigurationWindow : TabbedSelectionWindow<Module> {
     public override void OnTabChanged() => SaveAll();
 
     private void SaveAll() {
-        System.TodoListController.Save();
-        System.TimersController.WeeklyTimerNode?.Save(System.TimersController.WeeklyTimerSavePath);
-        System.TimersController.DailyTimerNode?.Save(System.TimersController.DailyTimerSavePath);
+        // 這個方法也會在卸載外掛(WindowManager.Dispose → OnClose)時跑到,
+        // 那時節點已經在登出的 DetachNodes 裡被釋放了,所以一律走存活檢查。
+        var batch = new StyleSaveBatch();
+
+        System.TodoListController.SaveInto(batch);
+        batch.Save(System.TimersController.WeeklyTimerNode, () => System.TimersController.WeeklyTimerSavePath);
+        batch.Save(System.TimersController.DailyTimerNode, () => System.TimersController.DailyTimerSavePath);
 
         foreach (var module in System.ModuleController.Modules) {
-            module.TodoTaskNode?.Save(StyleFileHelper.GetPath($"{module.ModuleName}.style.json"));
+            batch.Save(module.TodoTaskNode, () => StyleFileHelper.GetPath($"{module.ModuleName}.style.json"));
         }
+
+        batch.LogSkipped("樣式存檔");
     }
 }
 
 public class TodoConfigTab : ITabItem {
-    public string Name => "Todo List";
+    public string Name => Strings.TodoList;
     public bool Disabled => false;
 
     public void Draw() {
@@ -136,30 +192,30 @@ public class TodoConfigTab : ITabItem {
 
         using var id = ImRaii.PushId("main_config");
   
-        ImGuiTweaks.Header("Todo List Config");
+        ImGuiTweaks.Header(Strings.TodoListConfig);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.Enable, ref System.TodoConfig.Enabled);
 
             ImGuiHelpers.ScaledDummy(5.0f);
-            
+
             var enableMoving = listNode.EnableMoving;
-            if (ImGui.Checkbox("Allow Moving", ref enableMoving)) {
+            if (ImGui.Checkbox(Strings.AllowMoving, ref enableMoving)) {
                 listNode.EnableMoving = enableMoving;
             }
-        
+
             var enableResizing = listNode.EnableResizing;
-            if (ImGui.Checkbox("Allow Resizing", ref enableResizing)) {
+            if (ImGui.Checkbox(Strings.AllowResizing, ref enableResizing)) {
                 listNode.EnableResizing = enableResizing;
             }
         }
-        
-        ImGuiTweaks.Header("Functional Options");
+
+        ImGuiTweaks.Header(Strings.FunctionalOptions);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.HideInQuestEvent, ref System.TodoConfig.HideDuringQuests);
             configChanged |= ImGui.Checkbox(Strings.HideInDuties, ref System.TodoConfig.HideInDuties);
         }
         
-        ImGuiTweaks.Header("Todo List Style");
+        ImGuiTweaks.Header(Strings.TodoListStyle);
         DrawTodoConfig();
         
         if (configChanged) {
@@ -178,7 +234,7 @@ public class TodoConfigTab : ITabItem {
     }
 
     private static void DrawSimpleModeConfig() {
-        using var simpleMode = ImRaii.TabItem("Simple Mode");
+        using var simpleMode = ImRaii.TabItem($"{Strings.SimpleMode}###SimpleMode");
         if (!simpleMode) return;
 
         using var tabChild = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
@@ -196,21 +252,21 @@ public class TodoConfigTab : ITabItem {
     }
 
     private static void DrawSimpleDailyTab() {
-        using var dailyTab = ImRaii.TabItem("Daily Tasks");
+        using var dailyTab = ImRaii.TabItem($"{Strings.DailyTasks}###DailyTasks");
         if (!dailyTab) return;
-        
-        DrawSimpleCategoryConfig(System.TodoListController.DailyTaskNode);        
+
+        DrawSimpleCategoryConfig(System.TodoListController.DailyTaskNode);
     }
-    
+
     private static void DrawSimpleWeeklyTab() {
-        using var weeklyTab = ImRaii.TabItem("Weekly Tasks");
+        using var weeklyTab = ImRaii.TabItem($"{Strings.WeeklyTasks}###WeeklyTasks");
         if (!weeklyTab) return;
-        
-        DrawSimpleCategoryConfig(System.TodoListController.WeeklyTaskNode);        
+
+        DrawSimpleCategoryConfig(System.TodoListController.WeeklyTaskNode);
     }
-    
+
     private static void DrawSimpleSpecialTab() {
-        using var specialTab = ImRaii.TabItem("Special Tasks");
+        using var specialTab = ImRaii.TabItem($"{Strings.SpecialTasks}###SpecialTasks");
         if (!specialTab) return;
         
         DrawSimpleCategoryConfig(System.TodoListController.SpecialTaskNode);        
@@ -240,8 +296,8 @@ public class TodoConfigTab : ITabItem {
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        ImGui.Text("Position");
-                        
+        ImGui.Text(Strings.Position);
+
         ImGui.TableNextColumn();
         var position = listNode.Position;
         ImGuiTweaks.SetFullWidth();
@@ -250,8 +306,8 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Size");
-                
+        ImGui.Text(Strings.Size);
+
         ImGui.TableNextColumn();
         var size = listNode.Size;
         ImGuiTweaks.SetFullWidth();
@@ -260,8 +316,8 @@ public class TodoConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Background Color");
-                
+        ImGui.Text(Strings.CategoryBackgroundColor);
+
         ImGui.TableNextColumn();
         var backgroundColor = listNode.BackgroundColor;
         ImGuiTweaks.SetFullWidth();
@@ -270,22 +326,22 @@ public class TodoConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("List Orientation");
-                
+        ImGui.Text(Strings.ListOrientation);
+
         ImGui.TableNextColumn();
         var orientation = listNode.LayoutOrientation;
         ImGuiTweaks.SetFullWidth();
-        if (ComboHelper.EnumCombo("##Orientation", ref orientation)) {
+        if (ImGuiTweaks.EnumCombo("##Orientation", ref orientation)) {
             listNode.LayoutOrientation = orientation;
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Anchor Corner");
-                
+        ImGui.Text(Strings.AnchorCorner);
+
         ImGui.TableNextColumn();
         var anchor = listNode.LayoutAnchor;
         ImGuiTweaks.SetFullWidth();
-        if (ComboHelper.EnumCombo("##Anchor", ref anchor)) {
+        if (ImGuiTweaks.EnumCombo("##Anchor", ref anchor)) {
             listNode.LayoutAnchor = anchor;
 
             dailyCategory.TaskListNode.LayoutAnchor = anchor;
@@ -306,8 +362,8 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Category Vertical Spacing");
-        
+        ImGui.Text(Strings.CategoryVerticalSpacing);
+
         ImGui.TableNextColumn();
         var categorySpacing = dailyCategory.Margin.Top;
         ImGuiTweaks.SetFullWidth();
@@ -329,8 +385,8 @@ public class TodoConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Category Horizontal Spacing");
-                
+        ImGui.Text(Strings.CategoryHorizontalSpacing);
+
         ImGui.TableNextColumn();
         var horizontalSpacing = dailyCategory.Margin.Left;
         ImGuiTweaks.SetFullWidth();
@@ -352,7 +408,7 @@ public class TodoConfigTab : ITabItem {
         }
         
         ImGui.TableNextColumn();
-        ImGui.Text("Show Background");
+        ImGui.Text(Strings.ShowBackground);
 
         ImGui.TableNextColumn();
         var background = listNode.ShowBackground;
@@ -362,7 +418,7 @@ public class TodoConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Show Border");
+        ImGui.Text(Strings.ShowBorder);
 
         ImGui.TableNextColumn();
         var border = listNode.ShowBorder;
@@ -385,7 +441,7 @@ public class TodoConfigTab : ITabItem {
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        ImGui.Text("Header Color");
+        ImGui.Text(Strings.HeaderColor);
 
         ImGui.TableNextColumn();
         var headerColor = node.HeaderTextNode.TextColor;
@@ -395,17 +451,17 @@ public class TodoConfigTab : ITabItem {
         }
         
         ImGui.TableNextColumn();
-        ImGui.Text("Alignment");
-        
+        ImGui.Text(Strings.Alignment);
+
         ImGui.TableNextColumn();
         var alignment = listNode.LayoutOrientation;
         ImGuiTweaks.SetFullWidth();
-        if (ComboHelper.EnumCombo("##Alignment", ref alignment)) {
+        if (ImGuiTweaks.EnumCombo("##Alignment", ref alignment)) {
             listNode.LayoutOrientation = alignment;
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Font Size");
+        ImGui.Text(Strings.FontSize);
 
         ImGui.TableNextColumn();
         var firstNode = node.TaskNodes.FirstOrDefault();
@@ -422,8 +478,8 @@ public class TodoConfigTab : ITabItem {
         }
         
         ImGui.TableNextColumn();
-        ImGui.Text("Show Header");
-        
+        ImGui.Text(Strings.ShowHeader);
+
         ImGui.TableNextColumn();
         var showHeader = node.HeaderTextNode.IsVisible;
         ImGuiTweaks.SetFullWidth();
@@ -433,9 +489,9 @@ public class TodoConfigTab : ITabItem {
     }
 
     private static void DrawAdvancedModeConfig() {
-        using var advancedMode = ImRaii.TabItem("Advanced Mode");
+        using var advancedMode = ImRaii.TabItem($"{Strings.AdvancedMode}###AdvancedMode");
         if (!advancedMode) return;
-        
+
         using var tabChild = ImRaii.Child("tab_child", ImGui.GetContentRegionAvail());
         if (!tabChild) return;
 
@@ -444,7 +500,7 @@ public class TodoConfigTab : ITabItem {
 }
 
 public class TimersConfigTab : ITabItem {
-    public string Name => "Timers";
+    public string Name => Strings.Timers;
     public bool Disabled => false;
     public void Draw() {
         if (System.TimersController.DailyTimerNode is not { } dailyTimerNode) return;
@@ -452,36 +508,36 @@ public class TimersConfigTab : ITabItem {
         
         var configChanged = false;
 
-        ImGuiTweaks.Header("Timers Config");
+        ImGuiTweaks.Header(Strings.TimersConfig);
         using (ImRaii.PushIndent()) {
             configChanged |= ImGui.Checkbox(Strings.Enable, ref System.TimersConfig.Enabled);
-            
+
             ImGuiHelpers.ScaledDummy(5.0f);
-            
+
             var enableMoving = dailyTimerNode.EnableMoving;
-            if (ImGui.Checkbox("Allow Moving", ref enableMoving)) {
+            if (ImGui.Checkbox(Strings.AllowMoving, ref enableMoving)) {
                 dailyTimerNode.EnableMoving = enableMoving;
                 weeklyTimerNode.EnableMoving = enableMoving;
             }
-        
+
             var enableResizing = dailyTimerNode.EnableResizing;
-            if (ImGui.Checkbox("Allow Resizing", ref enableResizing)) {
+            if (ImGui.Checkbox(Strings.AllowResizing, ref enableResizing)) {
                 dailyTimerNode.EnableResizing = enableResizing;
                 weeklyTimerNode.EnableResizing = enableResizing;
             }
 
             ImGuiHelpers.ScaledDummy(5.0f);
-            
-            configChanged |= ImGui.Checkbox("Daily Timer Enable", ref System.TimersConfig.EnableDailyTimer);
-            configChanged |= ImGui.Checkbox("Weekly Timer Enable", ref System.TimersConfig.EnableWeeklyTimer);
-            
+
+            configChanged |= ImGui.Checkbox(Strings.DailyTimerEnable, ref System.TimersConfig.EnableDailyTimer);
+            configChanged |= ImGui.Checkbox(Strings.WeeklyTimerEnable, ref System.TimersConfig.EnableWeeklyTimer);
+
             ImGuiHelpers.ScaledDummy(5.0f);
 
             configChanged |= ImGui.Checkbox(Strings.HideInDuties, ref System.TimersConfig.HideInDuties);
             configChanged |= ImGui.Checkbox(Strings.HideInQuestEvent, ref System.TimersConfig.HideInQuestEvents);
-            
+
             ImGuiHelpers.ScaledDummy(5.0f);
-            configChanged |= ImGui.Checkbox("Hide Seconds", ref System.TimersConfig.HideTimerSeconds);
+            configChanged |= ImGui.Checkbox(Strings.HideSeconds, ref System.TimersConfig.HideTimerSeconds);
 
         }
 
@@ -512,7 +568,7 @@ public class TimersConfigTab : ITabItem {
         if (!weeklyChild) return;
 
         using (ImRaii.PushId("Daily")) {
-            ImGui.TextUnformatted("Daily Timer");
+            ImGui.TextUnformatted(Strings.DailyTimer);
             ImGuiHelpers.ScaledDummy(5.0f);
             DrawTimerConfig(System.TimersController.DailyTimerNode);
         }
@@ -523,7 +579,7 @@ public class TimersConfigTab : ITabItem {
         if (!weeklyChild) return;
         
         using (ImRaii.PushId("Weekly")) {
-            ImGui.TextUnformatted("Weekly Timer");
+            ImGui.TextUnformatted(Strings.WeeklyTimer);
             ImGuiHelpers.ScaledDummy(5.0f);
             DrawTimerConfig(System.TimersController.WeeklyTimerNode);
         }
@@ -540,14 +596,14 @@ public class TimersConfigTab : ITabItem {
     }
 
     private static void DrawAdvancedModeConfig(TimerNode node) {
-        using var advancedMode = ImRaii.TabItem("Advanced Mode");
+        using var advancedMode = ImRaii.TabItem($"{Strings.AdvancedMode}###AdvancedMode");
         if (!advancedMode) return;
-        
+
         node.DrawConfig();
     }
 
     private static void DrawSimpleModeConfig(TimerNode node) {
-        using var simpleMode = ImRaii.TabItem("Simple Mode");
+        using var simpleMode = ImRaii.TabItem($"{Strings.SimpleMode}###SimpleMode");
         if (!simpleMode) return;
 
         using var table = ImRaii.Table("simple_mode_table", 2);
@@ -559,7 +615,7 @@ public class TimersConfigTab : ITabItem {
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        ImGui.Text("Position");
+        ImGui.Text(Strings.Position);
 
         ImGui.TableNextColumn();
         var position = node.Position;
@@ -569,7 +625,7 @@ public class TimersConfigTab : ITabItem {
         }
 
         ImGui.TableNextColumn();
-        ImGui.Text("Size");
+        ImGui.Text(Strings.Size);
 
         ImGui.TableNextColumn();
         var size = node.Size;
@@ -579,8 +635,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Bar Color");
-                
+        ImGui.Text(Strings.BarColor);
+
         ImGui.TableNextColumn();
         var color = node.BarColor;
         ImGuiTweaks.SetFullWidth();
@@ -589,8 +645,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Label Color");
-                
+        ImGui.Text(Strings.LabelColor);
+
         ImGui.TableNextColumn();
         var labelColor = node.LabelColor;
         ImGuiTweaks.SetFullWidth();
@@ -599,8 +655,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Timer Color");
-                
+        ImGui.Text(Strings.TimerColor);
+
         ImGui.TableNextColumn();
         var timerColor = node.TimerColor;
         ImGuiTweaks.SetFullWidth();
@@ -609,8 +665,8 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Show Label");
-                
+        ImGui.Text(Strings.ShowLabel);
+
         ImGui.TableNextColumn();
         var showText = node.ShowLabel;
         ImGuiTweaks.SetFullWidth();
@@ -619,13 +675,77 @@ public class TimersConfigTab : ITabItem {
         }
                 
         ImGui.TableNextColumn();
-        ImGui.Text("Show Timer");
-                
+        ImGui.Text(Strings.ShowTimer);
+
         ImGui.TableNextColumn();
         var showTimer = node.ShowTimer;
         ImGuiTweaks.SetFullWidth();
         if (ImGui.Checkbox("##ShowTimer", ref showTimer)) {
             node.ShowTimer = showTimer;
+        }
+    }
+}
+
+public class CollectableConfigTab : ITabItem {
+    public string Name => Strings.CollectableHints;
+    public bool Disabled => false;
+
+    public void Draw() {
+        var configChanged = false;
+
+        ImGuiTweaks.Header(Strings.CollectableHintsConfig);
+        using (ImRaii.PushIndent()) {
+            configChanged |= ImGui.Checkbox(Strings.Enable, ref System.CollectableConfig.Enabled);
+
+            ImGuiHelpers.ScaledDummy(5.0f);
+
+            // 「哪些副本還有沒拿到的東西」由獨立視窗承擔(刻意不在原生任務列表逐列標示,理由見 CollectableWindow)。
+            if (ImGui.Button(Strings.CollectableOpenWindow, new Vector2(ImGui.GetContentRegionAvail().X, 23.0f * ImGuiHelpers.GlobalScale))) {
+                System.WindowManager.OpenOrCreateUnique<CollectableWindow>(WindowFlags.OpenImmediately | WindowFlags.RequireLoggedIn);
+            }
+
+            ImGuiHelpers.ScaledDummy(5.0f);
+
+            ImGui.TextUnformatted(Strings.CollectableHintTypesLabel);
+
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeMount, ref System.CollectableConfig.ShowMounts);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeMinion, ref System.CollectableConfig.ShowMinions);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeOrchestrionRoll, ref System.CollectableConfig.ShowOrchestrionRolls);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeTimewornOrchestrionRoll, ref System.CollectableConfig.ShowTimewornOrchestrionRolls);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeTripleTriadCard, ref System.CollectableConfig.ShowTripleTriadCards);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeChocoboBarding, ref System.CollectableConfig.ShowChocoboBarding);
+            configChanged |= ImGui.Checkbox(Strings.CollectableTypeOther, ref System.CollectableConfig.ShowOther);
+        }
+
+        if (configChanged) {
+            System.CollectableConfig.Save();
+            System.CollectableController.InvalidateCache();
+        }
+    }
+}
+
+/// <summary>
+/// 「重置之後還有沒做完的事就出聲」的開關。
+/// </summary>
+/// <remarks>
+/// 🔴 純通知。這個分頁不會排程、不會代打、不會改任何項目的狀態,只決定要不要請
+/// TataruPraise 念一句。實際的判斷與時間閘門在 <see cref="TataruPraiseIpc"/> 與
+/// <see cref="ModuleController.ResetModules"/>。
+/// </remarks>
+public class VoiceConfigTab : ITabItem {
+    public string Name => Strings.VoiceNotifications;
+    public bool Disabled => false;
+
+    public void Draw() {
+        var configChanged = false;
+
+        ImGuiTweaks.Header(Strings.VoiceNotifications);
+        using (ImRaii.PushIndent()) {
+            configChanged |= ImGuiTweaks.Checkbox(Strings.SpeakOnReset, ref System.SystemConfig.SpeakOnReset, Strings.SpeakOnResetHelp);
+        }
+
+        if (configChanged) {
+            System.SystemConfig.Save();
         }
     }
 }

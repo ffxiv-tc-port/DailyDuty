@@ -1,4 +1,5 @@
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Models;
 using DailyDuty.Windows;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -21,9 +22,18 @@ public static class System {
 	public static Teleporter Teleporter { get; set; }
 	public static ConfigurationWindow ConfigurationWindow { get; set; }
 	public static TodoListController TodoListController { get; set; }
+	public static TrayNotificationController TrayNotificationController { get; set; }
+	public static TataruPraiseIpc TataruPraiseIpc { get; set; }
+	public static StatusIpc StatusIpc { get; set; }
 	public static TimersController TimersController { get; set; }
 	public static TodoConfig TodoConfig { get; set; }
 	public static TimersConfig TimersConfig { get; set; }
 	public static AddonController<AddonContentsFinder> ContentsFinderController { get; set; }
 	public static OverlayController OverlayController { get; set; }
+	public static CollectableConfig CollectableConfig { get; set; }
+	public static CollectableController CollectableController { get; set; }
+	public static HuntAssistController HuntAssistController { get; set; }
+	public static HuntAssistConfig HuntAssistConfig { get; set; }
+	public static TravelAssistConfig TravelAssistConfig { get; set; }
+	public static CharacterFileWarmup CharacterFileWarmup { get; set; }
 }

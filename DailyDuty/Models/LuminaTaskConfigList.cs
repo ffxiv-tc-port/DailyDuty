@@ -1,10 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using DailyDuty.Localization;
 using Dalamud.Interface.Utility.Raii;
@@ -68,19 +68,29 @@ public class LuminaTaskConfigList<T> : ICollection<LuminaTaskConfig<T>> where T 
 		return result;
 	}
 
+	// 挑戰筆記分類表在一次遊戲執行中不會變；設定頁每幀都要整張掃過一次。
+	private static List<(uint RowId, string Name)>? contentsNoteCategories;
+
+	private static List<(uint RowId, string Name)> GetContentsNoteCategories()
+		=> contentsNoteCategories ??= Service.DataManager.GetExcelSheet<ContentsNoteCategory>()
+			.Where(category => category.Unknown0.ToString() != string.Empty)
+			.Select(category => (category.RowId, category.Unknown0.ToString()))
+			.ToList();
+
 	private bool DrawContentsNoteConfig() {
 		var result = false;
 		
-		foreach (var category in Service.DataManager.GetExcelSheet<ContentsNoteCategory>().Where(category => category.Unknown0.ExtractText() != string.Empty)) {
-			if (ImGui.CollapsingHeader(category.Unknown0.ExtractText())) {
+		foreach (var category in GetContentsNoteCategories()) {
+			if (ImGui.CollapsingHeader(category.Name)) {
 				using var indent = ImRaii.PushIndent();
 				
 				foreach (var option in ConfigList) {
 					var luminaData = Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(option.RowId);
 					if (luminaData.ContentType.RowId != category.RowId) continue;
 
+					// GetRow 查得到列時，Label() 與 Name.ToString() 是同一個字。
 					var enabled = option.Enabled;
-					if (ImGui.Checkbox(luminaData.Name.ToString(), ref enabled)) {
+					if (ImGui.Checkbox(option.Label(), ref enabled)) {
 						option.Enabled = enabled;
 						result = true;
 					}
@@ -110,7 +120,7 @@ public class LuminaTaskConfigList<T> : ICollection<LuminaTaskConfig<T>> where T 
 
 				ImGui.TableNextColumn();
 				var enabled = data.Enabled;
-				if (ImGui.Checkbox(luminaData.Name.ToString(), ref enabled)) {
+				if (ImGui.Checkbox(data.Label(), ref enabled)) {
 					data.Enabled = enabled;
 					result = true;
 				}

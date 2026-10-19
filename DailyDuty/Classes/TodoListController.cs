@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using DailyDuty.CustomNodes;
+using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using Dalamud.Interface;
@@ -93,11 +94,15 @@ public class TodoListController : IDisposable {
 	public void Update() {
 		if (TodoListNode is null) return;
 		
-		var passedDutyCheck = System.TodoConfig.HideInDuties && !Service.Condition.IsBoundByDuty() || !System.TodoConfig.HideInDuties;
-		var passedQuestCheck = System.TodoConfig.HideDuringQuests && !Service.Condition.IsInQuestEvent()  || !System.TodoConfig.HideDuringQuests;
+		var passedDutyCheck = System.TodoConfig.HideInDuties && !FrameConditions.IsBoundByDuty(Service.Condition) || !System.TodoConfig.HideInDuties;
+		var passedQuestCheck = System.TodoConfig.HideDuringQuests && !FrameConditions.IsInQuestEvent(Service.Condition)  || !System.TodoConfig.HideDuringQuests;
 
-		TodoListNode.IsVisible = passedDutyCheck && passedQuestCheck && System.TodoConfig.Enabled && TodoListNodes.Any(node => node?.AnyTasksActive ?? false);
+		TodoListNode.IsVisible = passedDutyCheck && passedQuestCheck && System.TodoConfig.Enabled && AnyCategoryActive();
 	}
+
+	// 每幀都會問，所以不經 TodoListNodes（那個屬性每次建一份新清單）；順序與它相同。
+	private bool AnyCategoryActive()
+		=> (DailyTaskNode?.AnyTasksActive ?? false) || (WeeklyTaskNode?.AnyTasksActive ?? false) || (SpecialTaskNode?.AnyTasksActive ?? false);
 
 	public void Refresh() {
 		if (TodoListNode is null) return;
@@ -112,19 +117,19 @@ public class TodoListController : IDisposable {
 	public void DrawConfig() {
 		TodoListNode?.DrawConfig();
 
-		using (var dailyCategory = ImRaii.TreeNode("Daily Tasks")) {
+		using (var dailyCategory = ImRaii.TreeNode($"{Strings.DailyTasks}###DailyTasks")) {
 			if (dailyCategory) {
 				DailyTaskNode?.DrawConfig();
 			}
 		}
 
-		using (var weeklyCategory = ImRaii.TreeNode("Weekly Tasks")) {
+		using (var weeklyCategory = ImRaii.TreeNode($"{Strings.WeeklyTasks}###WeeklyTasks")) {
 			if (weeklyCategory) {
 				WeeklyTaskNode?.DrawConfig();
 			}
 		}
 
-		using (var specialCategory = ImRaii.TreeNode("Special Tasks")) {
+		using (var specialCategory = ImRaii.TreeNode($"{Strings.SpecialTasks}###SpecialTasks")) {
 			if (specialCategory) {
 				SpecialTaskNode?.DrawConfig();
 			}
@@ -132,9 +137,18 @@ public class TodoListController : IDisposable {
 	}
 
 	public void Save() {
-		TodoListNode?.Save(TodoListNodePath);
-		DailyTaskNode?.Save(DailyCategoryPath);
-		WeeklyTaskNode?.Save(WeeklyCategoryPath);
-		SpecialTaskNode?.Save(SpecialCategoryPath);
+		var batch = new StyleSaveBatch();
+		SaveInto(batch);
+		batch.LogSkipped("待辦清單樣式存檔");
+	}
+
+	/// <summary>
+	///     併入呼叫端的批次,讓「跳過了幾個已釋放節點」整批只報一次。
+	/// </summary>
+	public void SaveInto(StyleSaveBatch batch) {
+		batch.Save(TodoListNode, () => TodoListNodePath);
+		batch.Save(DailyTaskNode, () => DailyCategoryPath);
+		batch.Save(WeeklyTaskNode, () => WeeklyCategoryPath);
+		batch.Save(SpecialTaskNode, () => SpecialCategoryPath);
 	}
 }

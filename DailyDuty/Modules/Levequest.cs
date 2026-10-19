@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using DailyDuty.Classes;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 
 namespace DailyDuty.Modules;
@@ -29,7 +29,10 @@ public class LevequestConfig : ModuleConfig {
         ConfigChanged |= ImGuiTweaks.EnumCombo(Strings.ComparisonMode, ref ComparisonMode);
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2.0f);
-        ConfigChanged |= ImGui.SliderInt(Strings.NotificationThreshold, ref NotificationThreshold, 0, 100);
+        ImGui.SliderInt(Strings.NotificationThreshold, ref NotificationThreshold, 0, 100);
+        if (ImGui.IsItemDeactivatedAfterEdit()) {
+            ConfigChanged = true;
+        }
     }
 }
 

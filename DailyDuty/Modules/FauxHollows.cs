@@ -1,10 +1,11 @@
-﻿using DailyDuty.Classes;
+using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace DailyDuty.Modules;
 
@@ -56,6 +57,17 @@ public class FauxHollows : BaseModules.Modules.Weekly<FauxHollowsData, FauxHollo
 		Data.FauxHollowsCompletions = 0;
         
 		base.Reset();
+	}
+
+	public override uint TravelDestinationObjectId
+		=> GetModuleStatus() is ModuleStatus.Complete ? 0 : HuntBoards.FauxHollowsCommanderObjectId;
+
+	public override void DrawData() {
+		base.DrawData();
+
+		if (TravelDestinationObjectId is 0) return;
+
+		TravelAssist.Draw(HuntBoards.FauxHollowsCommanderObjectId, Strings.TravelAssistGoToFauxHollows, Strings.TravelAssistFauxHollowsTooltip);
 	}
 
 	protected override ModuleStatus GetModuleStatus() => Config.IncludeRetelling switch {

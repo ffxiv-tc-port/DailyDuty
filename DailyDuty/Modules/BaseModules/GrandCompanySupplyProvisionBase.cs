@@ -20,7 +20,10 @@ public abstract unsafe class GrandCompanySupplyProvisionBase : Modules.DailyTask
 	}
 
 	public override void Update() {
-		if (SupplyAgent is not null && SupplyAgent->IsAgentActive()) {
+		// 代理人本體活著不保證 ItemArray 已配置：兩者生命週期不同步，
+		// 以 null 建 Span 再索引會從位址 0 讀取並觸發無法攔截的 AccessViolation。
+		// ItemArray 為 null 時整批跳過本幀更新（沿用上一次的判定），下一幀再試。
+		if (SupplyAgent is not null && SupplyAgent->IsAgentActive() && SupplyAgent->ItemArray is not null) {
 			Data.TaskData.Update(ref DataChanged, rowId => {
 				var itemSpan = new Span<GrandCompanyItem>(SupplyAgent->ItemArray, SupplyAgent->NumItems);
 				var adjustedIndex = (int)(rowId - 8);
@@ -33,9 +36,12 @@ public abstract unsafe class GrandCompanySupplyProvisionBase : Modules.DailyTask
 		base.Update();
 	}
 
-	protected override ModuleStatus GetModuleStatus()
-		=> IncompleteTaskCount == 0 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
+	protected override ModuleStatus GetModuleStatus() {
+		if (!HasTrackedTasks()) return ModuleStatus.Unknown;
+
+		return IncompleteTaskCount == 0 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
+	}
 
 	protected override StatusMessage GetStatusMessage() 
-		=> $"{IncompleteTaskCount} {Strings.AllowancesRemaining}";
+		=> HasTrackedTasks() ? $"{IncompleteTaskCount} {Strings.AllowancesRemaining}" : Strings.TasksNoneTracked;
 }

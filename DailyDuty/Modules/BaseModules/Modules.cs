@@ -1,8 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using DailyDuty.Classes;
+using DailyDuty.Localization;
 using DailyDuty.Models;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Lumina.Excel;
 
 namespace DailyDuty.Modules.BaseModules;
@@ -59,10 +65,20 @@ public static class Modules {
 
         protected int IncompleteTaskCount;
 
+        /// <summary>設定裡有沒有選任何一項要追蹤。一項都沒選時模組回 Unknown，不回 Complete。</summary>
+        protected bool HasTrackedTasks() => AnyTaskTracked(Config.TaskConfig);
+
+        protected override bool NothingSelectedToTrack => !HasTrackedTasks();
+
         protected override void UpdateTaskData() {
             IncompleteTaskCount = GetIncompleteCount(Config.TaskConfig, Data.TaskData);
             TooltipText = string.Join("\n", GetIncompleteRows(Config.TaskConfig, Data.TaskData));
             System.TodoListController.Refresh();
+        }
+
+        public override void DrawData() {
+            DrawNoneTrackedHint(HasTrackedTasks());
+            base.DrawData();
         }
     }
 
@@ -73,10 +89,20 @@ public static class Modules {
 
         protected int IncompleteTaskCount;
 
+        /// <summary>設定裡有沒有選任何一項要追蹤。一項都沒選時模組回 Unknown，不回 Complete。</summary>
+        protected bool HasTrackedTasks() => AnyTaskTracked(Config.TaskConfig);
+
+        protected override bool NothingSelectedToTrack => !HasTrackedTasks();
+
         protected override void UpdateTaskData() {
             IncompleteTaskCount = GetIncompleteCount(Config.TaskConfig, Data.TaskData);
             TooltipText = string.Join("\n", GetIncompleteRows(Config.TaskConfig, Data.TaskData));
             System.TodoListController.Refresh();
+        }
+
+        public override void DrawData() {
+            DrawNoneTrackedHint(HasTrackedTasks());
+            base.DrawData();
         }
     }
 
@@ -94,6 +120,26 @@ public static class Modules {
         }
     }
     
+    // 模組清單與狀態 IPC 每幀都可能讀到，所以不用 LINQ。
+    private static bool AnyTaskTracked<TV>(LuminaTaskConfigList<TV> config) where TV : struct, IExcelRow<TV> {
+        foreach (var task in config.ConfigList) {
+            if (task.Enabled) return true;
+        }
+
+        return false;
+    }
+
+    // 狀態列只寫灰字「未知」；為什麼不知道、去哪裡補，放在資料頁最上面一眼看得到的地方。
+    private static void DrawNoneTrackedHint(bool hasTrackedTasks) {
+        if (hasTrackedTasks) return;
+
+        using (ImRaii.PushColor(ImGuiCol.Text, KnownColor.Orange.Vector())) {
+            ImGui.TextWrapped(Strings.TasksNoneTracked);
+        }
+
+        ImGuiHelpers.ScaledDummy(5.0f);
+    }
+
     private static int GetIncompleteCount<TV>(LuminaTaskConfigList<TV> config, LuminaTaskDataList<TV> data) where TV : struct, IExcelRow<TV> {
         if (config.Count != data.Count) throw new Exception("Task and Data array size are mismatched. Unable to calculate IncompleteCount.");
 

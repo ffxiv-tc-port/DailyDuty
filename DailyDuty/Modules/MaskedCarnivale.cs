@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Linq;
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
@@ -9,7 +10,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
@@ -48,19 +49,34 @@ public unsafe class MaskedCarnivale : BaseModules.Modules.WeeklyTask<ModuleTaskD
 		Service.AddonLifecycle.UnregisterListener(AozContentResultPostSetup);
 	}
 
+	public override uint TravelDestinationObjectId
+		=> IncompleteTaskCount is 0 ? 0 : HuntBoards.MaskedCarnivaleAttendantObjectId;
+
+	public override void DrawData() {
+		base.DrawData();
+
+		if (TravelDestinationObjectId is 0) return;
+
+		TravelAssist.Draw(HuntBoards.MaskedCarnivaleAttendantObjectId, Strings.TravelAssistGoToMaskedCarnivale, Strings.TravelAssistMaskedCarnivaleTooltip);
+	}
+
 	protected override void UpdateTaskLists() {
-		var luminaTaskUpdater = new LuminaTaskUpdater<Addon>(this, addon => addon.RowId is 12449 or 12448 or 12447);
+		var luminaTaskUpdater = new LuminaTaskUpdater<Addon>(this, 12447, 12448, 12449);
 		luminaTaskUpdater.UpdateConfig(Config.TaskConfig);
 		luminaTaskUpdater.UpdateData(Data.TaskData);
 	}
 
+	// AgentAozContentBriefing.Instance() 由 [Agent] 產生器產生，兩層都合法回 null（登入前／登出後是常態）。
+	// 每次呼叫都重走一遍 Framework → UIModule → AgentModule → 代理人陣列，所以收成一個區域變數：
+	// 守衛與使用點指的才是同一個指標（同一次 Update 內沒有讓出點，代理人指標不會變動）。
 	public override void Update() {
-		if (AgentAozContentBriefing.Instance() is not null && AgentAozContentBriefing.Instance()->IsAgentActive()) {
+		var agent = AgentAozContentBriefing.Instance();
+		if (agent is not null && agent->IsAgentActive()) {
 			foreach (var task in Data.TaskData) {
 				var status = task.RowId switch {
-					12449 => AgentAozContentBriefing.Instance()->IsWeeklyChallengeComplete(AozWeeklyChallenge.Novice),
-					12448 => AgentAozContentBriefing.Instance()->IsWeeklyChallengeComplete(AozWeeklyChallenge.Moderate),
-					12447 => AgentAozContentBriefing.Instance()->IsWeeklyChallengeComplete(AozWeeklyChallenge.Advanced),
+					12449 => agent->IsWeeklyChallengeComplete(AozWeeklyChallenge.Novice),
+					12448 => agent->IsWeeklyChallengeComplete(AozWeeklyChallenge.Moderate),
+					12447 => agent->IsWeeklyChallengeComplete(AozWeeklyChallenge.Advanced),
 					_ => throw new ArgumentOutOfRangeException(),
 				};
 
@@ -75,7 +91,7 @@ public unsafe class MaskedCarnivale : BaseModules.Modules.WeeklyTask<ModuleTaskD
 	}
 
 	private void AozContentResultPostSetup(AddonEvent eventType, AddonArgs addonInfo) {
-		var addon = (AtkUnitBase*) addonInfo.Addon;
+		var addon = (AtkUnitBase*) addonInfo.Addon.Address;
         
 		if (addon->AtkValues[112] is not { Type: ValueType.UInt, UInt: var completionIndex }) throw new Exception("Type Mismatch Exception");
 		if (addon->AtkValues[114] is not { Type: ValueType.Bool, Byte: var completionStatus }) throw new Exception("Type Mismatch Exception");
@@ -104,12 +120,15 @@ public unsafe class MaskedCarnivale : BaseModules.Modules.WeeklyTask<ModuleTaskD
 		base.Reset();
 	}
 
-	protected override ModuleStatus GetModuleStatus() 
-		=> IncompleteTaskCount == 0 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
+	protected override ModuleStatus GetModuleStatus() {
+		if (!HasTrackedTasks()) return ModuleStatus.Unknown;
+
+		return IncompleteTaskCount == 0 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
+	}
 
 	protected override StatusMessage GetStatusMessage() => new LinkedStatusMessage {
 		LinkEnabled = Config.ClickableLink,
-		Message = $"{IncompleteTaskCount} {Strings.ChallengesRemaining}",
+		Message = HasTrackedTasks() ? $"{IncompleteTaskCount} {Strings.ChallengesRemaining}" : Strings.TasksNoneTracked,
 		Payload = PayloadId.UldahTeleport,
 	};
 }

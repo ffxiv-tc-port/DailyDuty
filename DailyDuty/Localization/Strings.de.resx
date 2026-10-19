@@ -374,23 +374,14 @@ Auf einmal pro 5 Minuten limitiert</value>
   <data name="InstanceNotificationsHelp" xml:space="preserve">
         <value>Beim Betreten eines Spielinhalts, zeige an ob dieser zurückgesetzt werden muss oder bereits verfügbar ist</value>
     </data>
-  <data name="WondrousTailsClickableLink" xml:space="preserve">
-        <value>Benachrichtigungen können angeklickt werden, um das Abenteueralbum zu öffnen oder nach Frohehalde zu teleportieren</value>
-    </data>
   <data name="StickerAvailableNotice" xml:space="preserve">
         <value>Aufkleber verfügbar Nachricht</value>
-    </data>
-  <data name="StickerAvailableNoticeHelp" xml:space="preserve">
-        <value>Bei Zonenänderung, warne, wenn Aufkleber noch beansprucht werden können</value>
     </data>
   <data name="UnclaimedBookWarning" xml:space="preserve">
         <value>Nicht abgeholtes Abenteueralbum Warnung</value>
     </data>
   <data name="ShuffleAvailableNotice" xml:space="preserve">
         <value>Neu Verteilung verfügbar Nachricht</value>
-    </data>
-  <data name="ShuffleAvailableNoticeHelp" xml:space="preserve">
-        <value>Warnt, wenn du in der Nähe des zweiten Chance-Limits bist und die Aufkleber neu verteilen kannst</value>
     </data>
   <data name="PlacedStickers" xml:space="preserve">
         <value>Platzierte Aufkleber</value>
@@ -406,21 +397,6 @@ Auf einmal pro 5 Minuten limitiert</value>
     </data>
   <data name="TimeRemaining" xml:space="preserve">
         <value>Verbleibende Zeit</value>
-    </data>
-  <data name="RerollNotice" xml:space="preserve">
-        <value>Für diesen Inhalt ist ein Aufkleber erhältlich, wenn du ihn zurücksetzt</value>
-    </data>
-  <data name="RerollsAvailable" xml:space="preserve">
-        <value>Du hast {0} neu Verteilungen verfügbar</value>
-    </data>
-  <data name="StampAlreadyAvailable" xml:space="preserve">
-        <value>Für diesen Inhalt wurde bereits ein Aufkleber erhalten</value>
-    </data>
-  <data name="CompletionAvailable" xml:space="preserve">
-        <value>Wenn du diesen Inhalt abschließt, erhältst du einen Aufkleber</value>
-    </data>
-  <data name="StampClaimable" xml:space="preserve">
-        <value>Du kannst einen Aufkleber für diesen Inhalt erhalten!</value>
     </data>
   <data name="StickerAvailable" xml:space="preserve">
         <value>Aufkleber verfügbar</value>
@@ -664,5 +640,86 @@ Auf einmal pro 5 Minuten limitiert</value>
     </data>
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>Window Dragging Enabled</value>
+    </data>
+  <data name="Top Left">
+    <value>Oben links</value>
+  </data>
+  <data name="Top Right">
+    <value>Oben rechts</value>
+  </data>
+  <data name="Bottom Left">
+    <value>Unten links</value>
+  </data>
+  <data name="Bottom Right">
+    <value>Unten rechts</value>
+  </data>
+  <data name="TravelAssistSectionTitle" xml:space="preserve">
+        <value>Schnellreise</value>
+    </data>
+  <data name="TravelAssistGoToMiniCactpot" xml:space="preserve">
+        <value>Bring mich zum Mini-Glückskaktor</value>
+    </data>
+  <data name="TravelAssistMiniCactpotTooltip" xml:space="preserve">
+        <value>Teleportiert zum Gold Saucer und läuft zum Verkäufer des Mini-Glückskaktors. Nur Bewegung - es wird niemals ein Los gekauft und kein Fenster geöffnet.</value>
+    </data>
+  <data name="TravelAssistNoDestinationData" xml:space="preserve">
+        <value>Zieldaten nicht verfügbar</value>
+    </data>
+  <data name="TravelAssistStatusTeleporting" xml:space="preserve">
+        <value>Teleportiere zum Ziel...</value>
+    </data>
+  <data name="HuntAssistNotRecorded" xml:space="preserve">
+        <value>Nicht gespeichert</value>
+    </data>
+  <data name="HuntAssistRecordPosition" xml:space="preserve">
+        <value>Aktuelle Position speichern</value>
+    </data>
+  <data name="HuntAssistRecordTooltip" xml:space="preserve">
+        <value>Stellen Sie sich vor die Jagdtafel und klicken Sie dann hier. Ab dann wird die gespeicherte Position anstelle der Spieldaten verwendet.</value>
+    </data>
+  <data name="HuntAssistRecordedPosition" xml:space="preserve">
+        <value>Gespeicherte Position</value>
+    </data>
+  <data name="HuntAssistRecordedTooltip" xml:space="preserve">
+        <value>Zur selbst gespeicherten Position gehen.</value>
+    </data>
+  <data name="HuntAssistClearRecorded" xml:space="preserve">
+        <value>Gespeicherte Position löschen</value>
+    </data>
+  <data name="TravelAssistGoToJumboCactpot" xml:space="preserve">
+        <value>Bring mich zum Jumbo-Glückskaktor</value>
+    </data>
+  <data name="TravelAssistJumboCactpotTooltip" xml:space="preserve">
+        <value>Teleportiert zum Gold Saucer und läuft zum Verkäufer des Jumbo-Glückskaktors. Nur Bewegung - es wird niemals ein Los gekauft und kein Fenster geöffnet.</value>
+    </data>
+  <data name="TravelAssistGoToFashionReport" xml:space="preserve">
+        <value>Bring mich zum Fashion Report</value>
+    </data>
+  <data name="TravelAssistFashionReportTooltip" xml:space="preserve">
+        <value>Teleportiert zum Gold Saucer und läuft zu Masked Rose. Nur Bewegung - es wird niemals teilgenommen und kein Fenster geöffnet.</value>
+    </data>
+  <data name="TravelAssistGoToMaskedCarnivale" xml:space="preserve">
+        <value>Bring mich zum Masked Carnivale</value>
+    </data>
+  <data name="TravelAssistMaskedCarnivaleTooltip" xml:space="preserve">
+        <value>Teleportiert nach Ul'dah und läuft zum Aufseher des Masked Carnivale. Nur Bewegung - es wird niemals eine Stufe gestartet und kein Fenster geöffnet.</value>
+    </data>
+  <data name="TravelAssistGoToDomanEnclave" xml:space="preserve">
+        <value>Bring mich zur Spendenkiste der Doman-Enklave</value>
+    </data>
+  <data name="TravelAssistDomanEnclaveTooltip" xml:space="preserve">
+        <value>Teleportiert zur Doman-Enklave und läuft zur Spendenkiste des Wiederaufbaus. Nur Bewegung - es wird niemals gespendet und kein Fenster geöffnet.</value>
+    </data>
+  <data name="TravelAssistGoToKhloe" xml:space="preserve">
+        <value>Bring mich zu Khloe Aliapoh</value>
+    </data>
+  <data name="TravelAssistKhloeTooltip" xml:space="preserve">
+        <value>Teleportiert nach Idyllshire und läuft zu Khloe Aliapoh. Nur Bewegung - es wird niemals ein Journal abgeholt und kein Fenster geöffnet.</value>
+    </data>
+  <data name="TravelAssistGoToFauxHollows" xml:space="preserve">
+        <value>Bring mich zum Faux Commander</value>
+    </data>
+  <data name="TravelAssistFauxHollowsTooltip" xml:space="preserve">
+        <value>Teleportiert nach Idyllshire und läuft zum Faux Commander. Nur Bewegung - es wird niemals das Rätsel gestartet und kein Fenster geöffnet.</value>
     </data>
 </root>

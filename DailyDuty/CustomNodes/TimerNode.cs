@@ -1,5 +1,8 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Numerics;
+using DailyDuty.Classes;
+using DailyDuty.Localization;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
@@ -15,6 +18,8 @@ public sealed class TimerNode : SimpleComponentNode {
 	[JsonProperty] private readonly TextNode moduleNameNode;
 	[JsonProperty] private readonly TextNineGridNode timeRemainingNode;
 	[JsonProperty] private readonly TextNode tooltipNode;
+
+	private readonly TimeRemainingText timeRemainingText = new();
 
 	public TimerNode() {
 		progressBarNode = new CastBarProgressBarNode {
@@ -57,7 +62,7 @@ public sealed class TimerNode : SimpleComponentNode {
 			TextOutlineColor = KnownColor.Black.Vector(),
 			AlignmentType = AlignmentType.Center,
 			Text = "?",
-			Tooltip = "Overlay from DailyDuty plugin",
+			Tooltip = Strings.DailyDutyOverlayTooltip,
 			EventFlagsSet = true,
 			IsVisible = true,
 		};
@@ -101,6 +106,19 @@ public sealed class TimerNode : SimpleComponentNode {
 		get => timeRemainingNode.Label;
 	}
 
+	/// <summary>
+	/// 每幀更新倒數文字用這支：字串只在顯示內容會變時重組；設定元件文字與重算位置照舊每幀做。
+	/// </summary>
+	public unsafe void SetTimeRemaining(TimeSpan remaining, bool hideSeconds) {
+		var text = timeRemainingText.Get(remaining, hideSeconds);
+
+		// 與 TextNineGridNode.Label 的 setter 是同一個原生呼叫，只是不經 SeString 來回。
+		var component = (AtkComponentTextNineGrid*) timeRemainingNode.ComponentBase;
+		if (component is not null) component->SetText(text);
+
+		timeRemainingNode.X = progressBarNode.Width - timeRemainingNode.Width - 7.5f;
+	}
+
 	public Vector4 BarColor {
 		get => progressBarNode.BarColor;
 		set => progressBarNode.BarColor = value;
@@ -129,25 +147,25 @@ public sealed class TimerNode : SimpleComponentNode {
 	public override void DrawConfig() {
 		base.DrawConfig();
 				
-		using (var progressBar = ImRaii.TreeNode("Progress Bar")) {
+		using (var progressBar = ImRaii.TreeNode($"{Strings.ProgressBar}###ProgressBar")) {
 			if (progressBar) {
 				progressBarNode.DrawConfig();
 			}
 		}
-				
-		using (var moduleName = ImRaii.TreeNode("Module Name")) {
+
+		using (var moduleName = ImRaii.TreeNode($"{Strings.ModuleName}###ModuleName")) {
 			if (moduleName) {
 				moduleNameNode.DrawConfig();
 			}
 		}
-				
-		using (var timeRemaining = ImRaii.TreeNode("Time Remaining")) {
+
+		using (var timeRemaining = ImRaii.TreeNode($"{Strings.TimeRemaining}###TimeRemaining")) {
 			if (timeRemaining) {
 				timeRemainingNode.DrawConfig();
 			}
 		}
-				
-		using (var tooltip = ImRaii.TreeNode("Tooltip")) {
+
+		using (var tooltip = ImRaii.TreeNode($"{Strings.Tooltip}###Tooltip")) {
 			if (tooltip) {
 				tooltipNode.DrawConfig();
 			}

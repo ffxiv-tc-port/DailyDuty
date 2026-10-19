@@ -374,23 +374,14 @@
   <data name="InstanceNotificationsHelp" xml:space="preserve">
         <value>コンテンツ突入時、「リトライ」する必要があるか、または印を獲得可能であるかを表示します</value>
     </data>
-  <data name="WondrousTailsClickableLink" xml:space="preserve">
-        <value>通知をクリックすると、クロの空想帳を開くか、イディルシャイアにテレポできます</value>
-    </data>
   <data name="StickerAvailableNotice" xml:space="preserve">
         <value>印を貼付可能なときに通知する</value>
-    </data>
-  <data name="StickerAvailableNoticeHelp" xml:space="preserve">
-        <value>エリア移動するとき、印を貼付可能である場合に警告します</value>
     </data>
   <data name="UnclaimedBookWarning" xml:space="preserve">
         <value>空想帳を受け取っていない場合警告する</value>
     </data>
   <data name="ShuffleAvailableNotice" xml:space="preserve">
         <value>シャッフル可能なときに通知する</value>
-    </data>
-  <data name="ShuffleAvailableNoticeHelp" xml:space="preserve">
-        <value>チャンスポイントが上限に近く、かつ「シャッフル」可能なときに警告します</value>
     </data>
   <data name="PlacedStickers" xml:space="preserve">
         <value>マスに付けた印の数</value>
@@ -406,21 +397,6 @@
     </data>
   <data name="TimeRemaining" xml:space="preserve">
         <value>残り時間</value>
-    </data>
-  <data name="RerollNotice" xml:space="preserve">
-        <value>このコンテンツを対象とするマスは、「リトライ」すれば未コンプリートに戻せます</value>
-    </data>
-  <data name="RerollsAvailable" xml:space="preserve">
-        <value>現在のチャンスポイント：{0}</value>
-    </data>
-  <data name="StampAlreadyAvailable" xml:space="preserve">
-        <value>このコンテンツを対象とするマスは、すでに印を付けられる状態です</value>
-    </data>
-  <data name="CompletionAvailable" xml:space="preserve">
-        <value>このコンテンツをコンプリートすると、印を付けられます</value>
-    </data>
-  <data name="StampClaimable" xml:space="preserve">
-        <value>このコンテンツで印を付けることができます！</value>
     </data>
   <data name="StickerAvailable" xml:space="preserve">
         <value>印貼付可能</value>
@@ -664,5 +640,86 @@
     </data>
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>Window Dragging Enabled</value>
+    </data>
+  <data name="Top Left">
+    <value>左上</value>
+  </data>
+  <data name="Top Right">
+    <value>右上</value>
+  </data>
+  <data name="Bottom Left">
+    <value>左下</value>
+  </data>
+  <data name="Bottom Right">
+    <value>右下</value>
+  </data>
+  <data name="TravelAssistSectionTitle" xml:space="preserve">
+        <value>移動ショートカット</value>
+    </data>
+  <data name="TravelAssistGoToMiniCactpot" xml:space="preserve">
+        <value>ミニ・くじテンダーまで連れて行く</value>
+    </data>
+  <data name="TravelAssistMiniCactpotTooltip" xml:space="preserve">
+        <value>ゴールドソーサーにテレポし、ミニ・くじテンダーのところまで歩きます。移動のみで、くじを購入したりウィンドウを開いたりすることはありません。</value>
+    </data>
+  <data name="TravelAssistNoDestinationData" xml:space="preserve">
+        <value>目的地のデータがありません</value>
+    </data>
+  <data name="TravelAssistStatusTeleporting" xml:space="preserve">
+        <value>目的地にテレポ中...</value>
+    </data>
+  <data name="HuntAssistNotRecorded" xml:space="preserve">
+        <value>未登録</value>
+    </data>
+  <data name="HuntAssistRecordPosition" xml:space="preserve">
+        <value>現在位置を登録</value>
+    </data>
+  <data name="HuntAssistRecordTooltip" xml:space="preserve">
+        <value>掲示板の前に立ってからここをクリックしてください。以降はゲームデータではなく、登録した位置を使用します。</value>
+    </data>
+  <data name="HuntAssistRecordedPosition" xml:space="preserve">
+        <value>登録した位置</value>
+    </data>
+  <data name="HuntAssistRecordedTooltip" xml:space="preserve">
+        <value>自分で登録した位置に移動します。</value>
+    </data>
+  <data name="HuntAssistClearRecorded" xml:space="preserve">
+        <value>登録した位置を削除</value>
+    </data>
+  <data name="TravelAssistGoToJumboCactpot" xml:space="preserve">
+        <value>ジャンボ・くじテンダーまで連れて行く</value>
+    </data>
+  <data name="TravelAssistJumboCactpotTooltip" xml:space="preserve">
+        <value>ゴールドソーサーにテレポし、ジャンボ・くじテンダーのところまで歩きます。移動のみで、くじを購入したりウィンドウを開いたりすることはありません。</value>
+    </data>
+  <data name="TravelAssistGoToFashionReport" xml:space="preserve">
+        <value>ファッションチェックまで連れて行く</value>
+    </data>
+  <data name="TravelAssistFashionReportTooltip" xml:space="preserve">
+        <value>ゴールドソーサーにテレポし、マスクド・ローズのところまで歩きます。移動のみで、審査に参加したりウィンドウを開いたりすることはありません。</value>
+    </data>
+  <data name="TravelAssistGoToMaskedCarnivale" xml:space="preserve">
+        <value>マスクド・カーニバルまで連れて行く</value>
+    </data>
+  <data name="TravelAssistMaskedCarnivaleTooltip" xml:space="preserve">
+        <value>ウルダハにテレポし、マスクド・カーニバルの受付のところまで歩きます。移動のみで、ステージに申し込んだりウィンドウを開いたりすることはありません。</value>
+    </data>
+  <data name="TravelAssistGoToDomanEnclave" xml:space="preserve">
+        <value>ドマ町人地の支援物資置き場まで連れて行く</value>
+    </data>
+  <data name="TravelAssistDomanEnclaveTooltip" xml:space="preserve">
+        <value>ドマ町人地にテレポし、復興支援物資の置き場まで歩きます。移動のみで、寄付をしたりウィンドウを開いたりすることはありません。</value>
+    </data>
+  <data name="TravelAssistGoToKhloe" xml:space="preserve">
+        <value>クロエ・アリアポーまで連れて行く</value>
+    </data>
+  <data name="TravelAssistKhloeTooltip" xml:space="preserve">
+        <value>イディルシャイアにテレポし、クロエ・アリアポーのところまで歩きます。移動のみで、手帳を受け取ったりウィンドウを開いたりすることはありません。</value>
+    </data>
+  <data name="TravelAssistGoToFauxHollows" xml:space="preserve">
+        <value>Faux Commanderまで連れて行く</value>
+    </data>
+  <data name="TravelAssistFauxHollowsTooltip" xml:space="preserve">
+        <value>イディルシャイアにテレポし、Faux Commanderのところまで歩きます。移動のみで、パズルを開始したりウィンドウを開いたりすることはありません。</value>
     </data>
 </root>

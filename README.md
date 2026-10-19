@@ -1,44 +1,72 @@
 # DailyDuty
-[![Download count](https://img.shields.io/endpoint?url=https://qzysathwfhebdai6xgauhz4q7m0mzmrf.lambda-url.us-east-1.on.aws/DailyDuty)](https://github.com/MidoriKami/DailyDuty)
 
-DailyDuty is a XivLauncher/Dalamud plugin.
+[DailyDuty](https://github.com/MidoriKami/DailyDuty) 的台服移植版。自動追蹤各項每日／每週任務進度的插件，適合容易忘記做每日／每週例行任務的玩家。指令 `/dd`。
 
-DailyDuty allows you to easily and automatically track various daily and weekly tasks.
-DailyDuty is designed for people that need _**constant reminders**_ to do things or else they will entirely forget to do them.
+不追蹤僱員（Retainer）或公會相關事項，那類需求請改用 Accountant。
 
-The goal of this plugin is to allow you to more easily and more passively complete tasks that reward weekly or daily bonuses.
+## 支援的項目
 
-DailyDuty will **not** track anything to do with Retainers or Free Companies, for that use `Accountant` by `Ottermandias`
+- 理符任務
+- 隨機任務
+- 老主顧交易
+- 天書奇談
+- 假面狂歡
+- 挑戰筆記
+- 友好部族任務
+- 怪物通緝令（每日／每週）
+- 多瑪飛地
+- 軍隊（物資補給／軍需品／冒險者分隊）
+- 大型任務、團隊任務
+- 時尚品鑑
+- 仙人微彩、仙人仙彩
+- 幻巧拼圖
+- 寶物地圖
 
-## Configuration Window
+## 視窗
 
-You can open the configuration window with the chat command `/dd`
+- 設定視窗（`/dd`）：逐模組開關與細項設定；設定管理器可管理各角色的設定
+- 資料視窗：顯示每個模組目前記錄的資料
+- 待辦清單與重置倒數計時：疊在遊戲畫面上的未完成項目清單與每日／每週重置計時
+- 副本收藏品總表（`/dd collectables`）：列出各副本還缺哪些收藏品
+- 完成的項目不會另外提示；尚未完成、且已可執行的項目會用聊天訊息通知，部分模組的通知訊息可點擊直接觸發對應動作
 
-This window has all the available configuration options for each module within DailyDuty
+## 帶我去
 
-![image](https://github.com/MidoriKami/DailyDuty/assets/9083275/f693e331-7ce7-4137-8e9a-03c0ff9c1526)
+部分項目有「帶我去」按鈕，按一下只負責把你帶到目的地（傳送＋走到 NPC 或佈告板前），不會替你接任務或戰鬥：
 
-## Data Window
+- 怪物通緝令（每日／每週）：前往發那張通緝令的佈告板；每週佈告板可以站在板子前自己記位置
+- 天書奇談、幻巧拼圖、多瑪飛地、假面狂歡、時尚品鑑、仙人微彩、仙人仙彩：前往對應的 NPC
+- 狩獵協助：可依較短路徑巡邏已知的重生點，發現目標就停下；不會自動攻擊，自己操作移動就會結束巡邏
 
-This window displays all the currently stored data for each module
+隨時可以取消；有裝 Lifestream 時用它傳送、沒有就用遊戲自己的傳送；有裝 vnavmesh 時自動走過去、沒有就只標地圖旗標。
 
-![image](https://github.com/MidoriKami/DailyDuty/assets/9083275/8a029924-4b92-4ca5-aced-3f3da0c26644)
+## 指令
 
-## Notifications
+- `/dd`：開關設定視窗
+- `/dd collectables`：開啟副本收藏品總表
+- `/dd todo enable`／`disable`／`toggle`：開關待辦清單
+- `/dd timers enable`／`disable`／`toggle`：開關重置倒數計時
 
-DailyDuty uses chat messages to notify you of tasks that are able to be completed.
+## 台服版的修改
 
-You will not see notifications for tasks that aren't yet available to be completed, such as Fashion Report, until there is something that you the user are able to do.
+- 介面繁體中文化，用語對齊台服官方譯名。
+- 新增「帶我去」（見上節）與狩獵協助巡邏。
+- 開放唯讀的狀態 IPC（`DailyDuty.GetIncompleteModules` 等）：別的插件可以查詢還沒做完的項目並請它「帶我去」。
+- 重置後仍有未完成項目時可請塔塔露誇獎念一句（預設開）；可在重置時發 Windows 系統通知（預設關，只在遊戲失焦時）。
+- 清單型模組一項都沒選時改顯示「未知」，不再算「已完成」。
+- 天書奇談的「重新貼」提醒在奇想點有 2 點時就響。
+- 角色設定管理不再自動向 Lodestone 查角色，要查請在視窗上勾選。
+- 某個項目載入失敗或特徵碼對不上時只跳過它自己，插件照常載入。
+- 多處減少登入卡頓與記憶體用量。
 
-You will not see notifications for tasks that are "Complete", you can use `/dd status` to view the status of the various modules.
+## 需要搭配的插件
 
-DailyDuty also includes clickable chat links that have an associated action they will do once clicked on.
-Modules that have clickable links will describe what that modules links will do, and allow you to enable or disable the link.
+- 選用：Lifestream、vnavmesh（「帶我去」）、TataruPraise
 
-**All chat messages can only been seen by you, Dalamud Plugins are client side only**
- 
- (Example notifications, this is not a complete list)
- 
-![image](https://user-images.githubusercontent.com/9083275/172264986-6a4a5528-9e65-4d30-bd84-288e36ce26da.png)
+## 安裝
 
+在 Dalamud 設定的「自訂插件庫」加入
+`https://raw.githubusercontent.com/ffxiv-tc-port/DalamudPluginsTC/main/repo.json`
+並啟用，再從插件列表安裝。
 
+原作者：[MidoriKami](https://github.com/MidoriKami/DailyDuty)

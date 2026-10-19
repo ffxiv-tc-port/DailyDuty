@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -19,7 +19,7 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using KamiLib.Classes;
 using KamiLib.Extensions;
 using KamiToolKit.Classes;
@@ -60,25 +60,25 @@ public class DutyRouletteConfig : ModuleTaskConfig<ContentRoulette> {
     protected override void DrawModuleConfig() {
         ConfigChanged |= ImGui.Checkbox(Strings.ClickableLink, ref ClickableLink);
         ConfigChanged |= ImGui.Checkbox(Strings.CompleteWhenTomeCapped, ref CompleteWhenCapped);
-        ConfigChanged |= ImGui.Checkbox("Show 'Open DailyDuty' button", ref ShowOpenDailyDutyButton);
-        
+        ConfigChanged |= ImGui.Checkbox(Strings.ShowOpenDailyDutyButton, ref ShowOpenDailyDutyButton);
+
         ImGui.Spacing();
 
-        ConfigChanged |= ImGui.Checkbox("Show Daily Reset Timer in Duty Finder", ref ShowResetTimer);
+        ConfigChanged |= ImGui.Checkbox(Strings.ShowDailyResetTimerInDutyFinder, ref ShowResetTimer);
 
         if (ShowResetTimer) {
-            ConfigChanged |= ImGuiTweaks.ColorEditWithDefault("Timer Color", ref TimerColor, ColorHelper.GetColor(7));
+            ConfigChanged |= ImGuiTweaks.ColorEditWithDefault(Strings.TimerColor, ref TimerColor, ColorHelper.GetColor(7));
         }
         
         ImGui.Spacing();
 
-        ConfigChanged |= ImGui.Checkbox("Color Duty Finder", ref ColorContentFinder);
+        ConfigChanged |= ImGui.Checkbox(Strings.ColorDutyFinder, ref ColorContentFinder);
         
         if (ColorContentFinder) {
             ImGuiHelpers.ScaledDummy(5.0f);
 
-            ConfigChanged |= ImGuiTweaks.ColorEditWithDefault("Complete Color", ref CompleteColor, KnownColor.LimeGreen.Vector());
-            ConfigChanged |= ImGuiTweaks.ColorEditWithDefault("Incomplete Color", ref IncompleteColor, KnownColor.OrangeRed.Vector());
+            ConfigChanged |= ImGuiTweaks.ColorEditWithDefault(Strings.CompleteColor, ref CompleteColor, KnownColor.LimeGreen.Vector());
+            ConfigChanged |= ImGuiTweaks.ColorEditWithDefault(Strings.IncompleteColor, ref IncompleteColor, KnownColor.OrangeRed.Vector());
         }
         
         ImGuiHelpers.ScaledDummy(5.0f);
@@ -124,9 +124,33 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
         base.Dispose();
     }
     
+    // 🔴 這條鏈上要判空的有兩跳（AVE 攔不到，只能事前擋）：addon->DutyList 是純指標欄位，
+    //    尚未建好時是 null；GetItemRendererByNodeId(6) 找不到就回 null（清單項目還沒填好時是常態）。
+    //    args.GetAddon<T>() 本身不必判：具名 listener 在 Addon 為 null 時根本不會被叫到。
+    //    失敗語意：記一行 Warning 後放棄掛 hook，本模組退成「不上色任務輪盤清單」，
+    //    下次再開任務搜尋器會再觸發一次 PostSetup 重試。
     private void OnContentsFinderSetup(AddonEvent type, AddonArgs args) {
         var addon = args.GetAddon<AddonContentsFinder>();
-        var populateMethod = addon->DutyList->GetItemRendererByNodeId(6)->Populator.Populate;
+
+        var dutyList = addon->DutyList;
+        if (dutyList is null) {
+            Service.Log.Warning("[DutyRoulette] 任務搜尋器的清單元件尚未建立，本次不掛載清單填充 hook。");
+            return;
+        }
+
+        var itemRenderer = dutyList->GetItemRendererByNodeId(6);
+        if (itemRenderer is null) {
+            Service.Log.Warning("[DutyRoulette] 找不到任務清單的項目算繪器（node 6），本次不掛載清單填充 hook。");
+            return;
+        }
+
+        // Populator 是內嵌值型別（+0x128）不是二次指標，itemRenderer 非 null 即可安全取；
+        // 但 Populate 本身是函式指標欄位，尚未安裝填充函式時是 null，交給 HookFromAddress 沒有意義。
+        var populateMethod = itemRenderer->Populator.Populate;
+        if (populateMethod is null) {
+            Service.Log.Warning("[DutyRoulette] 任務清單項目算繪器沒有填充函式位址，本次不掛載清單填充 hook。");
+            return;
+        }
 
         onDutyListPopulate = Service.Hooker.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod, OnPopulateHook);
         onDutyListPopulate?.Enable();
@@ -140,7 +164,10 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
     private void OnPopulateHook(AtkUnitBase* unitBase, AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList) => HookSafety.ExecuteSafe(() => {
         var index = listItemInfo->ListItem->Renderer->OwnerNode->NodeId;
         
-        var dutyName = listItemInfo->ListItem->StringValues[0].ToString();
+        // 🔴 用 CStringPointer.ExtractText() 而不是 ToString():後者把整段位元組當 UTF-8 直接解碼、不剝 SeString payload,
+        //    而比對的另一端 roulette.Category.ExtractText() 是 Lumina 的解析器(payload 已剝掉)。
+        //    兩端基準不同時比不中的後果是靜默的:dutyInfo 為 null → 該列不上色、也不會被當成隨機任務追蹤。
+        var dutyName = listItemInfo->ListItem->StringValues[0].ExtractText();
         var dutyInfo = Service.DataManager.GetExcelSheet<ContentRoulette>().FirstOrNull(roulette => string.Equals(dutyName, roulette.Category.ExtractText(), StringComparison.OrdinalIgnoreCase));
 
         var dutyNameTextNode = (AtkTextNode*) nodeList[3];
@@ -181,7 +208,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             infoTextNode.IsVisible = modifiedIndexes.Count is not 0;
         }
     
-        onDutyListPopulate!.Original(unitBase, listItemInfo, nodeList);
+        onDutyListPopulate!.OriginalDisposeSafe(unitBase, listItemInfo, nodeList);
     }, Service.Log);
 
     private void TryResetEntry(uint index, AtkTextNode* nameNode, AtkTextNode* levelNode) {
@@ -202,7 +229,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             TextFlags = TextFlags.AutoAdjustNodeSize,
             AlignmentType = AlignmentType.TopLeft,
             Text = GetHintText(),
-            Tooltip = "Feature from DailyDuty Plugin",
+            Tooltip = Strings.DailyDutyFeatureTooltip,
             EnableEventFlags = true,
             IsVisible = false,
         };
@@ -212,7 +239,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             Position = new Vector2(50.0f, 622.0f),
             Size = new Vector2(130.0f, 28.0f),
             IsVisible = true,
-            Label = "Open DailyDuty",
+            Label = Strings.OpenDailyDuty,
         };
         openDailyDutyButton.AddEvent(AddonEventType.ButtonClick, _ => System.WindowManager.GetWindow<ConfigurationWindow>()?.UnCollapseOrToggle() );
         System.NativeController.AttachNode(openDailyDutyButton, addon->RootNode);
@@ -223,7 +250,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
                 Position = new Vector2(targetComponent->X, targetComponent->Y),
                 Size = new Vector2(targetComponent->Width, targetComponent->Height),
                 AlignmentType = AlignmentType.Center,
-                Tooltip = "[DailyDuty] Time until next daily reset",
+                Tooltip = Strings.DailyResetTimerTooltip,
                 Text = "0:00:00:00",
                 EnableEventFlags = true,
                 TextColor = Config.TimerColor,
@@ -276,16 +303,16 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
         => addon->DutyList->CategoryItemRendererList->AtkComponentListItemRenderer->ComponentNode;
 
     private SeString GetHintText()
-        => new SeStringBuilder()
+        => SeString.Parse(new SeStringBuilder()
             .PushColorRgba(Config.IncompleteColor)
-            .Append("Incomplete Task")
+            .Append(Strings.IncompleteTask)
             .PopColor()
             .Append("        ")
             .PushColorRgba(Config.CompleteColor)
-            .Append("Complete Task")
+            .Append(Strings.CompleteTask)
             .PopColor()
             .ToSeString()
-            .ToDalamudString();
+            .RawData);
 
     protected override void UpdateTaskLists() {
         var luminaUpdater = new LuminaTaskUpdater<ContentRoulette>(this, roulette => roulette.DutyType.ExtractText() != string.Empty);
@@ -310,13 +337,15 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
     }
 
     protected override ModuleStatus GetModuleStatus() {
+        // 「達上限就算完成」是使用者自己開的規則，與選了哪幾項無關，所以排在「一項都沒選」之前。
         if (Config.CompleteWhenCapped && Data.AtTomeCap) return ModuleStatus.Complete;
+        if (!HasTrackedTasks()) return ModuleStatus.Unknown;
 
         return IncompleteTaskCount == 0 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
     }
     
     protected override StatusMessage GetStatusMessage() => new LinkedStatusMessage {
-        Message = $"{IncompleteTaskCount} {Strings.RoulettesRemaining}", 
+        Message = HasTrackedTasks() ? $"{IncompleteTaskCount} {Strings.RoulettesRemaining}" : Strings.TasksNoneTracked, 
         LinkEnabled = Config.ClickableLink, 
         Payload = PayloadId.OpenDutyFinderRoulette,
     };

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using DailyDuty.Classes;
 using DailyDuty.Localization;
@@ -8,7 +8,7 @@ using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using Dalamud.Interface.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 
 namespace DailyDuty.Modules.BaseModules;
@@ -26,7 +26,11 @@ public class RaidsConfig : ModuleTaskConfig<ContentFinderCondition> {
 }
 
 public abstract unsafe class RaidsBase : Modules.WeeklyTask<ModuleTaskData<ContentFinderCondition>, RaidsConfig, ContentFinderCondition> {
-	protected override ModuleStatus GetModuleStatus() => IncompleteTaskCount == 0 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
+	protected override ModuleStatus GetModuleStatus() {
+		if (!HasTrackedTasks()) return ModuleStatus.Unknown;
+
+		return IncompleteTaskCount == 0 ? ModuleStatus.Complete : ModuleStatus.Incomplete;
+	}
 	private static AgentContentsFinder* Agent => AgentContentsFinder.Instance();
 	
 	public override bool HasClickableLink => Config.ClickableLink;
@@ -76,7 +80,11 @@ public abstract unsafe class RaidsBase : Modules.WeeklyTask<ModuleTaskData<Conte
 		if (GetDataForCurrentZone() is not { } trackedRaid) return;
 
 		// If we can't get the exd data for this item, return
-		var item = Service.DataManager.GetExcelSheet<Item>().GetRow(data.Item.ItemId);
+		// ⚠️ data.Item.ItemId 是「已套用旗標」的原始 id：HQ 會 +1,000,000、收藏品 +500,000
+		//    （正規化過的那顆叫 BaseItemId），在 Item 表裡查不到，所以用 TryGetRow、查不到就跳過（計數不變）。
+		//    ⚠️ 不可改用 BaseItemId：那會讓 HQ 製作裝備開始被算進掉落計數
+		//    （ItemUICategory 34~38 會命中），屬於回退既有行為。
+		if (!Service.DataManager.GetExcelSheet<Item>().TryGetRow(data.Item.ItemId, out var item)) return;
 		if (item.RowId is 0) return;
 		
 		Service.Log.Debug($"InventoryEvent: {type}: {item.Name}");
@@ -135,7 +143,11 @@ public abstract unsafe class RaidsBase : Modules.WeeklyTask<ModuleTaskData<Conte
 					Complete = false,
 					CurrentCount = 0,
 				});
-			             
+			}
+
+			// 全部加完才各存一次（每次存都是整份重寫）；清單為空時一筆都沒加，不存。
+			// 先設定後資料：IsDataStale 只比對資料，反過來存若中斷在兩次之間，舊設定會與新資料對不上且不會重建。
+			if (dutyList.Count > 0) {
 				SaveConfig();
 				SaveData();
 			}

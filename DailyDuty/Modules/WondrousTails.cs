@@ -1,14 +1,15 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using DailyDuty.Classes;
+using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using DailyDuty.Modules.BaseModules;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace DailyDuty.Modules;
 
@@ -84,14 +85,13 @@ public unsafe class WondrousTails : BaseModules.Modules.Weekly<WondrousTailsData
 		Data.CastingTeleport = false;
         
 		const int idyllshireTerritoryType = 478;
-		const uint khloeAliapohDataId = 1017653;
 		if (Service.ClientState.TerritoryType is idyllshireTerritoryType && Config.ModuleEnabled) {
-			var khloe = Service.ObjectTable.FirstOrDefault(obj => obj.DataId is khloeAliapohDataId);
+			var khloe = Service.ObjectTable.FirstOrDefault(obj => obj.BaseId is HuntBoards.WondrousTailsKhloeObjectId);
 
-			if (khloe is not null && Service.ClientState.LocalPlayer is { Position: var playerPosition }) {
+			if (khloe is not null && Service.ObjectTable.LocalPlayer is { Position: var playerPosition }) {
 				Data.DistanceToKhloe = Vector3.Distance(playerPosition, khloe.Position);
 				Data.CloseToKhloe = Data.DistanceToKhloe < 10.0f;
-				Data.CastingTeleport = Service.ClientState.LocalPlayer is { IsCasting: true, CastActionId: 5 or 6 };
+				Data.CastingTeleport = Service.ObjectTable.LocalPlayer is { IsCasting: true, CastActionId: 5 or 6 };
 
 				var noLongerNearKhloe = lastNearKhloe && !Data.CloseToKhloe;
 				var startedTeleportingAway = lastNearKhloe && !lastCastingTeleport && Data.CastingTeleport;
@@ -104,6 +104,18 @@ public unsafe class WondrousTails : BaseModules.Modules.Weekly<WondrousTailsData
 				}
 			}
 		}
+	}
+
+	// Khloe is only worth a trip while there is a new journal of hers to pick up.
+	public override uint TravelDestinationObjectId
+		=> Data is { NewBookAvailable: true, PlayerHasBook: false } ? HuntBoards.WondrousTailsKhloeObjectId : 0;
+
+	public override void DrawData() {
+		base.DrawData();
+
+		if (TravelDestinationObjectId is 0) return;
+
+		TravelAssist.Draw(HuntBoards.WondrousTailsKhloeObjectId, Strings.TravelAssistGoToKhloe, Strings.TravelAssistKhloeTooltip);
 	}
 
 	protected override ModuleStatus GetModuleStatus() {
@@ -119,7 +131,8 @@ public unsafe class WondrousTails : BaseModules.Modules.Weekly<WondrousTailsData
 			Payload = PayloadId.OpenWondrousTailsBook,
 		},
 
-		{ SecondChance: > 7, PlacedStickers: >= 3 and <= 7, PlayerHasBook: true, BookExpired: false } when Config.ShuffleAvailableNotice  => new LinkedStatusMessage {
+		// 消耗2奇想點：重新貼; 只有已貼上3～7個印花時可用
+		{ SecondChance: >= 2, PlacedStickers: >= 3 and <= 7, PlayerHasBook: true, BookExpired: false } when Config.ShuffleAvailableNotice  => new LinkedStatusMessage {
 			LinkEnabled = Config.ClickableLink,
 			Message = Strings.ShuffleAvailable,
 			Payload = PayloadId.OpenWondrousTailsBook,

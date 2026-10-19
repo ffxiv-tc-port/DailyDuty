@@ -20,6 +20,12 @@ public class LocalizationController : IDisposable {
 
     private void OnLanguageChange(string languageCode) {
         try {
+            // TC Dalamud reports UiLanguage as "tw", which CultureInfo resolves to Twi (Ghana),
+            // not Traditional Chinese - map it (and any zh* variant) onto the shipped zh-Hant satellite.
+            if (languageCode is "tw" || languageCode.StartsWith("zh", StringComparison.OrdinalIgnoreCase)) {
+                languageCode = "zh-Hant";
+            }
+
             Service.Log.Information($"Loading Localization for {languageCode}");
             Strings.Culture = new CultureInfo(languageCode);
         }

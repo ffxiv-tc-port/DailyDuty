@@ -42,6 +42,6 @@ public unsafe class GoldSaucerMessageController : IDisposable {
             GoldSaucerUpdate?.Invoke(new GoldSaucerEventArgs(data, eventId));
         }, Service.Log);
 
-        return goldSaucerUpdateHook!.Original(a1, a2, a3, a4, a5, data, eventId);
+        return goldSaucerUpdateHook!.OriginalDisposeSafe(a1, a2, a3, a4, a5, data, eventId);
     }
 }

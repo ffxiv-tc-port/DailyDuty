@@ -110,14 +110,14 @@ public class TimersController : IDisposable {
 		var percent =  1.0f - (float)(timeRemaining / resetPeriod);
 		if (percent > 1.0f) return;
 
-		node.TimeRemainingText = timeRemaining.FormatTimespan(System.TimersConfig.HideTimerSeconds);
+		node.SetTimeRemaining(timeRemaining, System.TimersConfig.HideTimerSeconds);
 		node.Progress = percent;
 	}
 	
 	private bool ShouldShow() {
 		if (!System.TimersConfig.Enabled) return false;
-		if (System.TimersConfig.HideInDuties && Service.Condition.IsBoundByDuty()) return false;
-		if (System.TimersConfig.HideInQuestEvents && Service.Condition.IsInQuestEvent()) return false;
+		if (System.TimersConfig.HideInDuties && FrameConditions.IsBoundByDuty(Service.Condition)) return false;
+		if (System.TimersConfig.HideInQuestEvents && FrameConditions.IsInQuestEvent(Service.Condition)) return false;
 
 		return true;
 	}

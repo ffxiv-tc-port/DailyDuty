@@ -1,6 +1,7 @@
 [submodule "KamiLib"]
 	path = KamiLib
-	url = https://github.com/MidoriKami/KamiLib
+	url = https://github.com/ffxiv-tc-port/KamiLib.git
+	branch = tc-dailyduty-api13-pin
 [submodule "KamiToolKit"]
 	path = KamiToolKit
-	url = https://github.com/MidoriKami/KamiToolKit.git
+	url = https://github.com/ffxiv-tc-port/KamiToolKit.git

@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using Dalamud.Interface;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel;
 using DailyDuty.Localization;
 using Lumina.Excel.Sheets;
@@ -58,33 +58,8 @@ public class LuminaTaskDataList<T> : ICollection<LuminaTaskData<T>> where T : st
 	private void DrawStandardDataList() {
 		foreach (var dataEntry in DataList) {
 			ImGui.TableNextColumn();
-			switch (this) {
-				case LuminaTaskDataList<ContentsNote>:
-					ImGui.Text(Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(dataEntry.RowId).Name.ToString());
-					break;
-                
-				case LuminaTaskDataList<ContentRoulette>:
-					ImGui.Text(Service.DataManager.GetExcelSheet<ContentRoulette>().GetRow(dataEntry.RowId).Name.ToString());
-					break;
-                
-				case LuminaTaskDataList<ClassJob>:
-					var classJob = Service.DataManager.GetExcelSheet<ClassJob>().GetRow(dataEntry.RowId);
-					var classJobLabel = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(classJob.Name.ToString());
-					ImGui.Text(classJobLabel);
-					break;
-                
-				case LuminaTaskDataList<MobHuntOrderType>:
-					var mobHuntOrderType = Service.DataManager.GetExcelSheet<MobHuntOrderType>().GetRow(dataEntry.RowId);
-					var eventItemName = mobHuntOrderType.EventItem.Value.Name.ExtractText();
-					if (eventItemName == string.Empty) eventItemName = mobHuntOrderType.EventItem.Value.Singular.ExtractText();
-
-					var mobHuntLabel = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(eventItemName);
-					ImGui.Text(mobHuntLabel);
-					break;
-                
-				case LuminaTaskDataList<Addon>:
-					ImGui.Text(Service.DataManager.GetExcelSheet<Addon>().GetRow(dataEntry.RowId).Text.ToString());
-					break;
+			if ((dataEntry.DisplayLabel ??= GetRowLabel(dataEntry.RowId)) is { } label) {
+				ImGui.Text(label);
 			}
             
 			ImGui.TableNextColumn();
@@ -94,6 +69,37 @@ public class LuminaTaskDataList<T> : ICollection<LuminaTaskData<T>> where T : st
 		}
 	}
     
+	// 查不到列時照舊擲例外（不記住），與每幀現查的行為相同。
+	private string? GetRowLabel(uint rowId) {
+		switch (this) {
+			case LuminaTaskDataList<ContentsNote>:
+				return Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(rowId).Name.ToString();
+
+			case LuminaTaskDataList<ContentRoulette>:
+				return Service.DataManager.GetExcelSheet<ContentRoulette>().GetRow(rowId).Name.ToString();
+
+			case LuminaTaskDataList<ClassJob>:
+				var classJob = Service.DataManager.GetExcelSheet<ClassJob>().GetRow(rowId);
+				return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(classJob.Name.ToString());
+
+			case LuminaTaskDataList<MobHuntOrderType>:
+				var mobHuntOrderType = Service.DataManager.GetExcelSheet<MobHuntOrderType>().GetRow(rowId);
+				var eventItemName = mobHuntOrderType.EventItem.Value.Name.ToString();
+				if (eventItemName == string.Empty) eventItemName = mobHuntOrderType.EventItem.Value.Singular.ToString();
+
+				return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(eventItemName);
+
+			case LuminaTaskDataList<Addon>:
+				return Service.DataManager.GetExcelSheet<Addon>().GetRow(rowId).Text.ToString();
+
+			case LuminaTaskDataList<ContentFinderCondition>:
+				return Service.DataManager.GetExcelSheet<ContentFinderCondition>().GetRow(rowId).Name.ToString();
+
+			default:
+				return null;
+		}
+	}
+
 	private void DrawContentFinderCondition() {
 		ImGui.TableNextColumn();
 		ImGui.TextColored(KnownColor.Gray.Vector(), Strings.DutyName);
@@ -104,11 +110,10 @@ public class LuminaTaskDataList<T> : ICollection<LuminaTaskData<T>> where T : st
 		if (DataList.Count > 0) {
 			foreach (var data in DataList) {
 				ImGui.TableNextColumn();
-				var luminaData = Service.DataManager.GetExcelSheet<ContentFinderCondition>().GetRow(data.RowId);
-				ImGui.Text(luminaData.Name.ToString());
+				ImGui.Text(data.DisplayLabel ??= GetRowLabel(data.RowId)!);
 
 				ImGui.TableNextColumn();
-				ImGui.Text(data.CurrentCount.ToString());
+				ImGui.Text($"{data.CurrentCount}");
 			}
 		}
 		else {

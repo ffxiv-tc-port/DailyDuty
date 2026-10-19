@@ -373,23 +373,14 @@
   <data name="InstanceNotificationsHelp" xml:space="preserve">
         <value>Lors de l'entrée d'une mission, affichez si cette mission a besoin d'être relancée ou si elle est déjà disponible</value>
     </data>
-  <data name="WondrousTailsClickableLink" xml:space="preserve">
-        <value>Permettre la téléportation à l'Idyllée ou d'ouvrir le carnet de Khloe en cliquant sur les notifications</value>
-    </data>
   <data name="StickerAvailableNotice" xml:space="preserve">
         <value>Notification de vignettes disponibles</value>
-    </data>
-  <data name="StickerAvailableNoticeHelp" xml:space="preserve">
-        <value>Lors d'un changement de zone, afficher un avertissement si des vignettes peuvent être réclamées</value>
     </data>
   <data name="UnclaimedBookWarning" xml:space="preserve">
         <value>Avertissement si vous n'avez pas ramassé le carnet de Khloe</value>
     </data>
   <data name="ShuffleAvailableNotice" xml:space="preserve">
         <value>Notifier lorsque la fonction de recollage est disponible</value>
-    </data>
-  <data name="ShuffleAvailableNoticeHelp" xml:space="preserve">
-        <value>Émet un avertissement lorsque vous approchez la limite de points de chance et que vous pouvez recoller vos vignettes</value>
     </data>
   <data name="PlacedStickers" xml:space="preserve">
         <value>Vignettes collées</value>
@@ -405,21 +396,6 @@
     </data>
   <data name="TimeRemaining" xml:space="preserve">
         <value>Temps restant</value>
-    </data>
-  <data name="RerollNotice" xml:space="preserve">
-        <value>Cette mission vous permet d'acquérir une vignette si vous la transférez</value>
-    </data>
-  <data name="RerollsAvailable" xml:space="preserve">
-        <value>Vous avez {0} transferts disponibles</value>
-    </data>
-  <data name="StampAlreadyAvailable" xml:space="preserve">
-        <value>Une vignette pouvant être collée est déjà disponible pour cette mission</value>
-    </data>
-  <data name="CompletionAvailable" xml:space="preserve">
-        <value>Compléter cette mission vous octroiera une vignette</value>
-    </data>
-  <data name="StampClaimable" xml:space="preserve">
-        <value>Vous pouvez réclamer une vignette pour cette mission!</value>
     </data>
   <data name="StickerAvailable" xml:space="preserve">
         <value>Vignettes disponibles</value>
@@ -663,5 +639,86 @@
     </data>
     <data name="WindowDraggingEnabled" xml:space="preserve">
         <value>Window Dragging Enabled</value>
+    </data>
+  <data name="Top Left">
+    <value>En haut à gauche</value>
+  </data>
+  <data name="Top Right">
+    <value>En haut à droite</value>
+  </data>
+  <data name="Bottom Left">
+    <value>En bas à gauche</value>
+  </data>
+  <data name="Bottom Right">
+    <value>En bas à droite</value>
+  </data>
+  <data name="TravelAssistSectionTitle" xml:space="preserve">
+        <value>Raccourci de voyage</value>
+    </data>
+  <data name="TravelAssistGoToMiniCactpot" xml:space="preserve">
+        <value>Emmenez-moi au Mini Cactpot</value>
+    </data>
+  <data name="TravelAssistMiniCactpotTooltip" xml:space="preserve">
+        <value>Téléporte au Gold Saucer et marche jusqu'au vendeur du Mini Cactpot. Déplacement uniquement - n'achète jamais de billet et n'ouvre aucune fenêtre.</value>
+    </data>
+  <data name="TravelAssistNoDestinationData" xml:space="preserve">
+        <value>Données de destination indisponibles</value>
+    </data>
+  <data name="TravelAssistStatusTeleporting" xml:space="preserve">
+        <value>Téléportation vers la destination...</value>
+    </data>
+  <data name="HuntAssistNotRecorded" xml:space="preserve">
+        <value>Non enregistrée</value>
+    </data>
+  <data name="HuntAssistRecordPosition" xml:space="preserve">
+        <value>Enregistrer la position actuelle</value>
+    </data>
+  <data name="HuntAssistRecordTooltip" xml:space="preserve">
+        <value>Placez-vous devant le panneau, puis cliquez ici. La position enregistrée sera ensuite utilisée à la place des données du jeu.</value>
+    </data>
+  <data name="HuntAssistRecordedPosition" xml:space="preserve">
+        <value>Position enregistrée</value>
+    </data>
+  <data name="HuntAssistRecordedTooltip" xml:space="preserve">
+        <value>Aller à la position que vous avez enregistrée.</value>
+    </data>
+  <data name="HuntAssistClearRecorded" xml:space="preserve">
+        <value>Effacer la position enregistrée</value>
+    </data>
+  <data name="TravelAssistGoToJumboCactpot" xml:space="preserve">
+        <value>Emmenez-moi au Méga Cactpot</value>
+    </data>
+  <data name="TravelAssistJumboCactpotTooltip" xml:space="preserve">
+        <value>Téléporte au Gold Saucer et marche jusqu'au vendeur du Méga Cactpot. Déplacement uniquement - n'achète jamais de billet et n'ouvre aucune fenêtre.</value>
+    </data>
+  <data name="TravelAssistGoToFashionReport" xml:space="preserve">
+        <value>Emmenez-moi au Fashion Report</value>
+    </data>
+  <data name="TravelAssistFashionReportTooltip" xml:space="preserve">
+        <value>Téléporte au Gold Saucer et marche jusqu'à Masked Rose. Déplacement uniquement - ne participe jamais à votre place et n'ouvre aucune fenêtre.</value>
+    </data>
+  <data name="TravelAssistGoToMaskedCarnivale" xml:space="preserve">
+        <value>Emmenez-moi au Masked Carnivale</value>
+    </data>
+  <data name="TravelAssistMaskedCarnivaleTooltip" xml:space="preserve">
+        <value>Téléporte à Ul'dah et marche jusqu'au préposé du Masked Carnivale. Déplacement uniquement - ne vous inscrit jamais à une étape et n'ouvre aucune fenêtre.</value>
+    </data>
+  <data name="TravelAssistGoToDomanEnclave" xml:space="preserve">
+        <value>Emmenez-moi à la boîte de dons de l'Enclave doman</value>
+    </data>
+  <data name="TravelAssistDomanEnclaveTooltip" xml:space="preserve">
+        <value>Téléporte à l'Enclave doman et marche jusqu'à la boîte de dons de la reconstruction. Déplacement uniquement - ne fait jamais de don et n'ouvre aucune fenêtre.</value>
+    </data>
+  <data name="TravelAssistGoToKhloe" xml:space="preserve">
+        <value>Emmenez-moi à Khloe Aliapoh</value>
+    </data>
+  <data name="TravelAssistKhloeTooltip" xml:space="preserve">
+        <value>Téléporte à Idyllshire et marche jusqu'à Khloe Aliapoh. Déplacement uniquement - ne récupère jamais de carnet et n'ouvre aucune fenêtre.</value>
+    </data>
+  <data name="TravelAssistGoToFauxHollows" xml:space="preserve">
+        <value>Emmenez-moi au Faux Commander</value>
+    </data>
+  <data name="TravelAssistFauxHollowsTooltip" xml:space="preserve">
+        <value>Téléporte à Idyllshire et marche jusqu'au Faux Commander. Déplacement uniquement - ne lance jamais le puzzle et n'ouvre aucune fenêtre.</value>
     </data>
 </root>

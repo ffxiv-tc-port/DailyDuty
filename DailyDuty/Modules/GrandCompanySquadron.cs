@@ -9,6 +9,7 @@ using DailyDuty.Modules.BaseModules;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Hooking;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiLib.Classes;
@@ -48,13 +49,24 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 
 		Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "GcArmyExpeditionResult", GcArmyExpeditionResultPreFinalize);
                 
-		onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentGcArmyExpedition.Delegates.ReceiveEvent>(AgentGcArmyExpedition.Instance()->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		// AgentGcArmyExpedition.Instance() 走 CS 的 [Agent] 產生器(agentModule == null ? null : ...),
+		// AgentModule 還沒配起來時是合法地回 null;裸接 ->VirtualTable 等於從位址 0 讀 vtable 指標,
+		// 是 try/catch 與 HookSafety 都攔不到的 AccessViolation。同檔 Update() 已經是判空寫法。
+		// 這裡跳過不是永久放棄:Load() 每次登入都會跑,而 hook 是 ??= 掛的,下次登入會自動重試。
+		var gcAgent = AgentGcArmyExpedition.Instance();
+		if (gcAgent is null || gcAgent->VirtualTable is null) {
+			Service.Log.Information("[GrandCompanySquadron] AgentGcArmyExpedition 尚未就緒，本次跳過 ReceiveEvent hook 掛載；下次登入會自動重試。");
+		}
+		else {
+			onReceiveEventHook ??= Service.Hooker.HookFromAddress<AgentGcArmyExpedition.Delegates.ReceiveEvent>(gcAgent->VirtualTable->ReceiveEvent, OnReceiveEvent);
+		}
+
 		onReceiveEventHook?.Enable();
 	}
 
 	// The mission is no longer in progress when the window closes
 	private void GcArmyExpeditionResultPreFinalize(AddonEvent eventType, AddonArgs addonInfo) {
-		var addon = (AtkUnitBase*) addonInfo.Addon;
+		var addon = (AtkUnitBase*) addonInfo.Addon.Address;
                 
 		Data.MissionStarted = false;
 		DataChanged = true;
@@ -62,7 +74,11 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 		if (addon->AtkValues[4].Type is not ValueType.String) throw new Exception("Type Mismatch Exception");
 		if (addon->AtkValues[2].Type is not ValueType.Int) throw new Exception("Type Mismatch Exception");
                 
-		var missionText = Alphanumeric().Replace(addon->AtkValues[4].GetValueAsString().ToLower(), string.Empty);
+		// 🔴 用 CStringPointer.ExtractText() 而不是 GetValueAsString():後者走 ToString(),把整段位元組當 UTF-8
+		//    直接解碼、不剝 SeString payload,而比對的另一端 GcArmyExpedition.Name.ToString() 是 Lumina 的
+		//    ExtractText()(payload 已剝掉)。同一行的 Alphanumeric() 只濾掉非「字母或數字」,擋不住 payload 位元組。
+		//    比不中的後果是靜默的:missionInfo 為 null → 週常「部隊小隊任務」永遠不會被標成已完成。
+		var missionText = Alphanumeric().Replace(addon->AtkValues[4].String.ExtractText().ToLower(), string.Empty);
 		var missionSuccessful = addon->AtkValues[2].Int == 1;
 
 		var missionInfo = Service.DataManager.GetExcelSheet<GcArmyExpedition>()
@@ -96,8 +112,14 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	public override void Update() {
 		var gcAgent = AgentGcArmyExpedition.Instance();
 		
-		if (gcAgent->IsAgentActive() && gcAgent->SelectedTab == 2) {
-			Data.MissionCompleted = TryUpdateData(Data.MissionCompleted, gcAgent->ExpeditionData->MissionInfo[0].Available == 0);
+		if (gcAgent is not null && gcAgent->IsAgentActive() && gcAgent->SelectedTab == 2) {
+			// IsAgentActive() 只代表代理人本體活著，不保證 ExpeditionData 已配置：
+			// 兩者生命週期不同步，裸讀會直接觸發無法攔截的 AccessViolation。
+			// 每次重取、顯式判空、同幀即用；為 null 時安靜跳過本幀的讀取，下一幀再試。
+			var expeditionData = gcAgent->ExpeditionData;
+			if (expeditionData is not null) {
+				Data.MissionCompleted = TryUpdateData(Data.MissionCompleted, expeditionData->MissionInfo[0].Available == 0);
+			}
 		}
 
 		if (Data.MissionCompleteTime > DateTime.UtcNow) {
@@ -111,7 +133,7 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	}
             
 	private AtkValue* OnReceiveEvent(AgentGcArmyExpedition* thisPtr, AtkValue* returnValue, AtkValue* args, uint argCount, ulong sender) {
-		var result = onReceiveEventHook!.Original(thisPtr, returnValue, args, argCount, sender);
+		var result = onReceiveEventHook!.OriginalDisposeSafe(thisPtr, returnValue, args, argCount, sender);
                 
 		HookSafety.ExecuteSafe(() => {
 			if (sender == 1 && args[0].Int == 0) {
