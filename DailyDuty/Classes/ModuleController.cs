@@ -22,6 +22,11 @@ public class ModuleController : IDisposable {
     /// </remarks>
     private bool loggedStatusCountFailure;
 
+    // 每日重置之後多久內的重置算「每日重置」那一波：要蓋住晚一分鐘的 HuntMarksDaily，其他重置都差好幾小時。
+    private static readonly TimeSpan DailyResetWindow = TimeSpan.FromMinutes(5);
+
+    private DateTime lastNonDailySkipLogUtc = DateTime.MinValue;
+
     public ModuleController() {
         Modules = Reflection.ActivateOfType<Module>().ToList();
         goldSaucerMessageController = new GoldSaucerMessageController();
@@ -146,7 +151,8 @@ public class ModuleController : IDisposable {
         // 語音提醒跟系統通知的觸發條件是分開的:系統通知逐項目 opt-in(TrayNotificationOnReset),
         // 語音只問「這一波重置裡有沒有任何一個是使用者還在追的項目」。
         var activeModuleReset = false;
-        
+        List<string>? activeResetNames = null;
+
         foreach (var module in Modules) {
             if (!module.IsLoaded) continue;
 
@@ -162,6 +168,8 @@ public class ModuleController : IDisposable {
                 // 在 Reset() 之後讀仍然是對的,不需要像 PendingTrayNotification 那樣先閂起來。
                 if (module.IsEnabled) {
                     activeModuleReset = true;
+                    activeResetNames ??= [];
+                    activeResetNames.Add(module.ModuleName.ToString());
                 }
             }
         }
@@ -176,6 +184,18 @@ public class ModuleController : IDisposable {
         // 📌 登入時的補重置走的是 Module.Load() 直接呼叫 Reset(),不經過這裡,所以不會在登入
         // 那一瞬間跟 TataruPraise 既有的「登入」情境疊成兩聲。
         if (activeModuleReset && System.SystemConfig.SpeakOnReset) {
+            // TataruPraise 只有「每日重置」這個情境：其他時刻的重置送它等於念錯，所以不出聲。
+            var nowUtc = DateTime.UtcNow;
+            var lastDailyResetUtc = Time.NextDailyReset().AddDays(-1);
+            if (nowUtc - lastDailyResetUtc >= DailyResetWindow) {
+                if (nowUtc - lastNonDailySkipLogUtc >= TimeSpan.FromMinutes(1)) {
+                    lastNonDailySkipLogUtc = nowUtc;
+                    Service.Log.Information($"[{TataruPraiseIpc.PluginName}] 這一波重置不是每日重置（{string.Join(", ", activeResetNames ?? [])}），不念「{TataruPraiseIpc.CategoryDailyReset}」。");
+                }
+
+                return;
+            }
+
             int outstanding;
 
             try {
@@ -196,7 +216,7 @@ public class ModuleController : IDisposable {
             }
 
             loggedStatusCountFailure = false;
-            System.TataruPraiseIpc.NotifyReset(outstanding);
+            System.TataruPraiseIpc.NotifyDailyReset(outstanding, lastDailyResetUtc);
         }
     }
 

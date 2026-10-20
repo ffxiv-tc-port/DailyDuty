@@ -4,7 +4,7 @@ using Dalamud.Plugin.Ipc.Exceptions;
 namespace DailyDuty.Classes;
 
 /// <summary>
-/// 單向橋接到「塔塔露誇獎」(TataruPraise)：日課／週課重置之後，如果還有沒做完的事，請它念一句。
+/// 單向橋接到「塔塔露誇獎」(TataruPraise)：每日重置之後，如果還有沒做完的事，請它念一句。
 /// </summary>
 /// <remarks>
 /// 🔴 <b>零組件相依。</b>只用 Dalamud 原生 CallGate 的字串契約（本外掛沒有 ECommons），
@@ -58,16 +58,21 @@ public class TataruPraiseIpc {
 
     private DateTime lastSpokenUtc = DateTime.MinValue;
 
+    /// <summary>已經請它念過的那一次每日重置（UTC）。同一次每日重置只念一句，晚一分鐘重置的模組不會再念第二句。</summary>
+    private DateTime lastNotifiedDailyResetUtc = DateTime.MinValue;
+
     /// <summary>
-    /// 重置之後還有沒做完的事，請塔塔露念一句。
+    /// 每日重置之後還有沒做完的事，請塔塔露念一句。
     /// </summary>
     /// <param name="outstandingCount">重置之後仍然「未完成」的項目數，只寫進記錄，不送給對方。</param>
+    /// <param name="dailyResetUtc">這一波所屬的每日重置時刻（UTC），用來讓同一次每日重置只念一句。</param>
     /// <remarks>
-    /// 🔴 <b>呼叫端必須自己確定站在「剛剛才重置」這個邊緣上。</b>這個方法只有時間閘門，
+    /// 🔴 <b>呼叫端必須自己確定站在「剛剛才每日重置」這個邊緣上。</b>這個方法只有時間閘門，
     /// 沒有辦法分辨「重置了」和「每一幀都在輪詢」。
     /// </remarks>
-    public void NotifyReset(int outstandingCount) {
+    public void NotifyDailyReset(int outstandingCount, DateTime dailyResetUtc) {
         if (outstandingCount <= 0) return;
+        if (dailyResetUtc == lastNotifiedDailyResetUtc) return;
 
         var now = DateTime.UtcNow;
         if (now - lastSpokenUtc < MinimumGap) {
@@ -88,6 +93,7 @@ public class TataruPraiseIpc {
             var accepted = Service.PluginInterface.GetIpcSubscriber<string, bool>(TagPraise).InvokeFunc(CategoryDailyReset);
             loggedNotInstalled = false;
             lastSpokenUtc = now;
+            lastNotifiedDailyResetUtc = dailyResetUtc;
 
             // 📌 Information 級：這是「使用者說重置了卻沒出聲」時唯一問得出真相的一行。
             // ⚠️ 回傳 false 不是錯誤：可能還在冷卻，也可能「每日重置」這個情境在池裡一句都沒有。

@@ -3311,7 +3311,7 @@ namespace DailyDuty.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Speak after a reset when tasks remain.
+        ///   Looks up a localized string similar to Speak after the daily reset when tasks remain.
         /// </summary>
         internal static string SpeakOnReset {
             get {
@@ -3320,7 +3320,7 @@ namespace DailyDuty.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to After the daily or weekly reset, if any enabled module is still incomplete, asks the TataruPraise plugin to say one short line. Nothing is said when everything is already done, and nothing is said at login - only when a reset actually happens while you are playing. Does nothing at all if TataruPraise is not installed..
+        ///   Looks up a localized string similar to After the daily reset, if any enabled module is still incomplete, asks the TataruPraise plugin to say one short line. Other resets (weekly, levequest allowances, Jumbo Cactpot drawing, Grand Company deliveries) stay silent, because TataruPraise only has lines for the daily reset. Nothing is said when everything is already done, and nothing is said at login - only when a reset actually happens while you are playing. Does nothing at all if TataruPraise is not installed..
         /// </summary>
         internal static string SpeakOnResetHelp {
             get {

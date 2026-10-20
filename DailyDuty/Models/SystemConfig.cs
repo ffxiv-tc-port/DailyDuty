@@ -7,7 +7,7 @@ public unsafe class SystemConfig : CharacterConfiguration {
     public bool HideDisabledModules = false;
 
     /// <summary>
-    /// 重置之後如果還有沒做完的項目,請 TataruPraise 念一句。
+    /// 每日重置之後如果還有沒做完的項目,請 TataruPraise 念一句。
     /// </summary>
     /// <remarks>
     /// 預設開啟。這不是「多一個提示音」——沒裝 TataruPraise 的人整條路徑是 no-op,

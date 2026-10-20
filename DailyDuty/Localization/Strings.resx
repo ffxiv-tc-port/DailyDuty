@@ -1115,10 +1115,10 @@ Limited to once per 5 mins</value>
         <value>Voice Notifications</value>
     </data>
     <data name="SpeakOnReset" xml:space="preserve">
-        <value>Speak after a reset when tasks remain</value>
+        <value>Speak after the daily reset when tasks remain</value>
     </data>
     <data name="SpeakOnResetHelp" xml:space="preserve">
-        <value>After the daily or weekly reset, if any enabled module is still incomplete, asks the TataruPraise plugin to say one short line. Nothing is said when everything is already done, and nothing is said at login - only when a reset actually happens while you are playing. Does nothing at all if TataruPraise is not installed.</value>
+        <value>After the daily reset, if any enabled module is still incomplete, asks the TataruPraise plugin to say one short line. Other resets (weekly, levequest allowances, Jumbo Cactpot drawing, Grand Company deliveries) stay silent, because TataruPraise only has lines for the daily reset. Nothing is said when everything is already done, and nothing is said at login - only when a reset actually happens while you are playing. Does nothing at all if TataruPraise is not installed.</value>
     </data>
     <data name="TravelAssistSectionTitle" xml:space="preserve">
         <value>Travel Shortcut</value>
