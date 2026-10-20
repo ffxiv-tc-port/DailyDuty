@@ -19,6 +19,7 @@ public enum HuntAssistStep {
 	Teleporting,
 	TeleportingToZone,
 	AethernetHop,
+	ApproachingAetheryte,
 	WaitingForAethernet,
 	Walking,
 	PreparingPatrol,
@@ -58,6 +59,16 @@ public sealed class HuntAssistController {
 	private static readonly TimeSpan AethernetStartTimeout = TimeSpan.FromSeconds(15);
 
 	/// <summary>
+	/// 傳送落地點可能在 Lifestream 認得的範圍（水平 11 米）外。告示板在別的區域時，先走到乙太之光
+	/// 這個距離內再試城內傳送；只找這個半徑內的乙太之光，走路有時限、整趟最多試這麼多次。
+	/// </summary>
+	private const float AetheryteApproachRadius = 8.0f;
+	private const float AetheryteStandOff = 6.0f;
+	private const float AetheryteSearchRadius = 40.0f;
+	private const int MaxAetheryteApproaches = 2;
+	private static readonly TimeSpan AetheryteApproachTimeout = TimeSpan.FromSeconds(20);
+
+	/// <summary>
 	/// Raised before asking vnavmesh for the floor under a destination. PointOnFloor only accepts
 	/// surfaces at or below the probe, and the mesh sits slightly above the placement height, so
 	/// probing at the placement itself skips its own floor for whatever lies underneath.
@@ -86,7 +97,7 @@ public sealed class HuntAssistController {
 
 	public string StatusText { get; private set; } = string.Empty;
 
-	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling;
+	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.ApproachingAetheryte or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling;
 
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
@@ -121,6 +132,11 @@ public sealed class HuntAssistController {
 	private Vector3? hopShardPosition;
 	private bool hopTransitionSeen;
 	private readonly Stopwatch hopIdleClock = new();
+
+	// 走向乙太之光時只記座標與 BaseId（值），不留物件表的包裝。
+	private int aetheryteApproaches;
+	private Vector3 approachAetherytePosition;
+	private uint approachAetheryteBaseId;
 
 	/// <summary>
 	/// Starts the trip to a hunt board. Returns false (and says why via
@@ -158,6 +174,7 @@ public sealed class HuntAssistController {
 		ActiveOrderTypeRowId = orderTypeRowId;
 		teleportIssued = false;
 		moveIssued = false;
+		aetheryteApproaches = 0;
 		Step = HuntAssistStep.Teleporting;
 		StatusText = startingStatus ?? string.Format(Strings.HuntAssistStatusTeleporting, label);
 		stepClock.Restart();
@@ -472,6 +489,10 @@ public sealed class HuntAssistController {
 				UpdateAethernetHop(board, player.Position);
 				break;
 
+			case HuntAssistStep.ApproachingAetheryte:
+				UpdateApproachingAetheryte(player.Position);
+				break;
+
 			case HuntAssistStep.Walking:
 				UpdateWalking(board, player.Position);
 				break;
@@ -547,6 +568,17 @@ public sealed class HuntAssistController {
 		// The aethernet menu only opens in range of an aetheryte or shard. Asking for the
 		// active one is a real state check, not a guess about where the teleport dropped us.
 		var activeAetheryte = Lifestream.ActiveAetheryte;
+
+		// 告示板在別的區域時走路到不了，只剩城內傳送一條路（黑渦團告示板就是這樣）。
+		if (activeAetheryte is 0 && Service.ClientState.TerritoryType != board.TerritoryId && aetheryteApproaches < MaxAetheryteApproaches && Navmesh.IsInstalled) {
+			if (!Navmesh.IsReady) {
+				if (stepClock.Elapsed <= NavmeshBuildTimeout) return;
+			}
+			else if (TryStartAetheryteApproach(playerPosition)) {
+				return;
+			}
+		}
+
 		if (activeAetheryte is 0 || activeAetheryte == board.NearestAetheryteId) {
 			LogLeg("不搭城內乙太之晶", activeAetheryte is 0 ? "身邊沒有可用的乙太之光／城內乙太之晶" : $"已在最近的城內乙太之晶 {activeAetheryte} 旁", playerPosition);
 			EnterStep(HuntAssistStep.Walking, WalkingStatus);
@@ -582,6 +614,81 @@ public sealed class HuntAssistController {
 
 		LogLeg("搭城內乙太之晶", $"從 {activeAetheryte} 傳送到 {hopShardId}", playerPosition);
 		EnterStep(HuntAssistStep.WaitingForAethernet, Strings.HuntAssistStatusAethernet);
+	}
+
+	/// <summary>
+	/// 走到最近的乙太之光旁，之後回到 <see cref="UpdateAethernetHop"/> 重試。
+	/// 回 false＝沒有動身（附近找不到乙太之光、旁邊沒有可走的地面），呼叫端照原本的方式收尾。
+	/// </summary>
+	private bool TryStartAetheryteApproach(Vector3 playerPosition) {
+		if (!TryFindNearestAetheryte(playerPosition, out var aetheryte, out var baseId)) {
+			LogLeg("不走向乙太之光", $"{AetheryteSearchRadius:F0} 米內找不到乙太之光", playerPosition);
+			return false;
+		}
+
+		var stand = HuntAssistGeometry.StandPointNear(aetheryte, playerPosition, AetheryteStandOff);
+		var destination = Navmesh.PointOnFloor(stand + new Vector3(0.0f, FloorProbeLift, 0.0f))
+		                  ?? Navmesh.NearestPoint(stand)
+		                  ?? Navmesh.NearestPoint(aetheryte, 10.0f, 10.0f);
+
+		// 城裡短距離一律用走的：沒騎乘時要求飛行路徑，vnavmesh 會停在原地。
+		if (destination is null || !Navmesh.MoveTo(destination.Value)) {
+			LogLeg("不走向乙太之光", $"乙太之光 {baseId} 旁找不到可走的地面", playerPosition);
+			return false;
+		}
+
+		aetheryteApproaches++;
+		approachAetherytePosition = aetheryte;
+		approachAetheryteBaseId = baseId;
+		var distance = HuntAssistGeometry.HorizontalDistance(playerPosition, aetheryte);
+		LogLeg("走向乙太之光", $"離乙太之光 {baseId} 水平 {distance:F0} 米、身邊沒有可用的乙太之光，告示板又在別的區域；先走過去再試城內傳送" +
+		                  $"（第 {aetheryteApproaches}/{MaxAetheryteApproaches} 次，尋路終點 {FormatPosition(destination)}）", playerPosition);
+		EnterStep(HuntAssistStep.ApproachingAetheryte, Strings.HuntAssistStatusAethernet);
+		return true;
+	}
+
+	/// <summary>走到乙太之光旁、走太久或尋路停了，都回到城內傳送那一步重新判斷。次數上限在呼叫端。</summary>
+	private void UpdateApproachingAetheryte(Vector3 playerPosition) {
+		if (Service.Condition[ConditionFlag.InCombat]) {
+			StopMovement();
+			Fail(Strings.HuntAssistStoppedInCombat);
+			return;
+		}
+
+		var distance = HuntAssistGeometry.HorizontalDistance(playerPosition, approachAetherytePosition);
+		var why = distance <= AetheryteApproachRadius ? "已走到乙太之光旁"
+			: stepClock.Elapsed > AetheryteApproachTimeout ? $"走了 {AetheryteApproachTimeout.TotalSeconds:F0} 秒還沒到"
+			: stepClock.Elapsed >= MoveStartGrace && !Navmesh.PathfindInProgress && !Navmesh.IsPathRunning ? "尋路已停"
+			: null;
+
+		if (why is null) return;
+
+		Navmesh.Stop();
+		LogLeg("再試城內傳送", $"{why}（離乙太之光 {approachAetheryteBaseId} 水平 {distance:F0} 米）", playerPosition);
+		EnterStep(HuntAssistStep.AethernetHop, Strings.HuntAssistStatusAethernet);
+	}
+
+	/// <summary>物件表裡水平最近、可選取的乙太之光。只抄出座標與 BaseId，不留包裝；框架執行緒限定。</summary>
+	private static bool TryFindNearestAetheryte(Vector3 playerPosition, out Vector3 position, out uint baseId) {
+		position = default;
+		baseId = 0;
+		var found = false;
+		var best = AetheryteSearchRadius;
+
+		foreach (var gameObject in Service.ObjectTable) {
+			if (gameObject.ObjectKind is not ObjectKind.Aetheryte || !gameObject.IsTargetable) continue;
+
+			var candidate = gameObject.Position;
+			var distance = HuntAssistGeometry.HorizontalDistance(playerPosition, candidate);
+			if (distance > best) continue;
+
+			best = distance;
+			position = candidate;
+			baseId = gameObject.BaseId;
+			found = true;
+		}
+
+		return found;
 	}
 
 	/// <summary>
