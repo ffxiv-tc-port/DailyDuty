@@ -9,6 +9,10 @@ internal static class HuntAssistGeometry {
 	public static float HorizontalDistance(Vector3 a, Vector3 b)
 		=> Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
 
+	/// <summary>尋路落點離出現點水平超過偵測半徑＝飛到那裡也看不到這個點。</summary>
+	public static bool LandingMissesPoint(Vector3 spawnPoint, Vector3 landing, float detectionRadius)
+		=> HorizontalDistance(spawnPoint, landing) > detectionRadius;
+
 	/// <summary>
 	/// 乙太之光旁的站位：從乙太之光朝玩家的方向退 <paramref name="standOff"/> 米（水平），高度沿用乙太之光。
 	/// 玩家幾乎就在正上方時方向不可靠，回乙太之光本身、交給尋路找最近的地面。

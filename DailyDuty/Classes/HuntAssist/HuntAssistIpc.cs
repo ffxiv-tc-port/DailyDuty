@@ -50,6 +50,7 @@ public sealed class NavmeshIpc {
 	private readonly ICallGateSubscriber<object> pathfindCancelAll;
 	private readonly ICallGateSubscriber<object> pathStop;
 	private readonly ICallGateSubscriber<bool> pathIsRunning;
+	private readonly ICallGateSubscriber<bool> pathGetMovementAllowed;
 
 	public NavmeshIpc() {
 		navIsReady = Service.PluginInterface.GetIpcSubscriber<bool>($"{Prefix}.Nav.IsReady");
@@ -60,6 +61,7 @@ public sealed class NavmeshIpc {
 		pathfindCancelAll = Service.PluginInterface.GetIpcSubscriber<object>($"{Prefix}.Nav.PathfindCancelAll");
 		pathStop = Service.PluginInterface.GetIpcSubscriber<object>($"{Prefix}.Path.Stop");
 		pathIsRunning = Service.PluginInterface.GetIpcSubscriber<bool>($"{Prefix}.Path.IsRunning");
+		pathGetMovementAllowed = Service.PluginInterface.GetIpcSubscriber<bool>($"{Prefix}.Path.GetMovementAllowed");
 	}
 
 	/// <summary>True when vnavmesh is loaded and has registered its IPC.</summary>
@@ -91,6 +93,10 @@ public sealed class NavmeshIpc {
 	/// <summary>True while the character is actively following a path.</summary>
 	public bool IsPathRunning
 		=> IsInstalled && IpcGuard.Safe(() => pathIsRunning.InvokeFunc(), false, "Path.IsRunning");
+
+	/// <summary>vnavmesh 實際生效的「允許移動」（含別的插件的租約）。舊版沒有這個端點時當作允許。</summary>
+	public bool MovementAllowed
+		=> !IsInstalled || IpcGuard.Safe(() => !pathGetMovementAllowed.HasFunction || pathGetMovementAllowed.InvokeFunc(), true, "Path.GetMovementAllowed");
 
 	/// <summary>Cancels any in-progress movement. Safe to call when nothing is running.</summary>
 	public void Stop() {

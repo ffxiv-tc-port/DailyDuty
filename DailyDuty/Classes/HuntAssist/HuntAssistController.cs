@@ -89,6 +89,15 @@ public sealed class HuntAssistController {
 	/// <summary>Below this much travel, an idle navmesh means "no path", not "user took over".</summary>
 	private const float UnreachableMoveThreshold = 3.0f;
 
+	/// <summary>
+	/// 終點不可達時 vnavmesh 照樣飛到最近點、再對著地形推，路徑一直「在跑」。這段時間內移動不到這個距離就跳過該點；
+	/// 已巡／已跳過的點跨重按保留一段時間，筆數有上限。
+	/// </summary>
+	private static readonly TimeSpan PatrolStallWindow = TimeSpan.FromSeconds(6);
+	private const float PatrolStallMinimumMove = 2.0f;
+	private static readonly TimeSpan PatrolMemoryLifetime = TimeSpan.FromMinutes(10);
+	private const int PatrolMemoryCapacity = 512;
+
 	public NavmeshIpc Navmesh { get; } = new();
 
 	public LifestreamIpc Lifestream { get; } = new();
@@ -115,6 +124,9 @@ public sealed class HuntAssistController {
 	private int patrolTotal;
 	private Vector3? patrolWaypoint;
 	private bool patrolFlying;
+	private PatrolPointMemory.Key patrolKey;
+	private readonly PatrolPointMemory patrolMemory = new((long)PatrolMemoryLifetime.TotalMilliseconds, PatrolMemoryCapacity);
+	private readonly MovementStallWatch patrolStall = new(PatrolStallMinimumMove, (long)PatrolStallWindow.TotalMilliseconds);
 	private readonly Stopwatch mountClock = new();
 	private readonly Stopwatch mountRetryClock = new();
 
@@ -333,7 +345,22 @@ public sealed class HuntAssistController {
 		patrolRemaining.AddRange(spawnPoints);
 		patrolTotal = patrolRemaining.Count;
 
+		patrolKey = new PatrolPointMemory.Key(targetInfo.TerritoryId, targetInfo.BNpcBaseId, (int)targetInfo.Rank);
+		var (visited, skipped) = patrolMemory.Exclude(patrolKey, patrolRemaining, Environment.TickCount64);
+		var memoryNote = visited + skipped is 0
+			? $"沒有 {PatrolMemoryLifetime.TotalMinutes:F0} 分鐘內巡過或跳過的點"
+			: $"{visited} 個 {PatrolMemoryLifetime.TotalMinutes:F0} 分鐘內巡過、{skipped} 個跳過，這次不再去";
+		if (patrolRemaining.Count is 0) {
+			// 全部都記得＝使用者要再巡一輪，不是「已巡完」。
+			patrolMemory.Forget(patrolKey);
+			patrolRemaining.AddRange(spawnPoints);
+			memoryNote = $"{visited + skipped} 個全在 {PatrolMemoryLifetime.TotalMinutes:F0} 分鐘內巡過或跳過，重新巡一輪";
+		}
+
 		patrolFlying = System.HuntAssistConfig.UseFlying && HuntFlight.IsFlyingAvailable();
+
+		LogLeg("巡邏開始", $"目標 {targetInfo.Name}（{targetInfo.BNpcBaseId}，{targetInfo.Rank} 級），出現點共 {patrolTotal} 個；{memoryNote}；" +
+		                $"從第 {patrolTotal - patrolRemaining.Count + 1}/{patrolTotal} 點起，{(patrolFlying ? "飛行" : "步行")}，偵測半徑 {DetectionRadius:F0} 米");
 
 		// Coverage is only counted once we are actually under way - never during the mount and
 		// take-off, and never before the points exist.
@@ -365,12 +392,9 @@ public sealed class HuntAssistController {
 	/// detection range of it is the whole test.
 	/// </summary>
 	private void ConsumeCoveredPoints(Vector3 playerPosition) {
-		var radius = Math.Clamp(
-			System.HuntAssistConfig.DetectionRadius,
-			HuntAssistConfig.MinimumDetectionRadius,
-			HuntAssistConfig.MaximumDetectionRadius);
-
+		var radius = DetectionRadius;
 		var radiusSquared = radius * radius;
+		var now = Environment.TickCount64;
 		var playerXZ = new Vector2(playerPosition.X, playerPosition.Z);
 
 		for (var index = patrolRemaining.Count - 1; index >= 0; index--) {
@@ -382,12 +406,31 @@ public sealed class HuntAssistController {
 			if (Vector2.DistanceSquared(playerXZ, new Vector2(point.X, point.Z)) > radiusSquared) continue;
 
 			patrolRemaining.RemoveAt(index);
+			patrolMemory.Remember(patrolKey, point, false, now);
 		}
 
 		if (patrolWaypoint is { } waypoint && !patrolRemaining.Contains(waypoint)) {
 			patrolWaypoint = null;
 			moveIssued = false;
 		}
+	}
+
+	private static float DetectionRadius => Math.Clamp(
+		System.HuntAssistConfig.DetectionRadius,
+		HuntAssistConfig.MinimumDetectionRadius,
+		HuntAssistConfig.MaximumDetectionRadius);
+
+	/// <summary>從這趟巡邏拿掉一個到不了的點，並記住它，重按巡邏時不再挑它。</summary>
+	private void SkipPatrolPoint(Vector3 point, string reason, Vector3 playerPosition) {
+		patrolRemaining.Remove(point);
+		patrolMemory.Remember(patrolKey, point, true, Environment.TickCount64);
+		if (patrolWaypoint == point) {
+			patrolWaypoint = null;
+			moveIssued = false;
+		}
+
+		StatusText = PatrolStatusText;
+		LogLeg("巡邏跳過出現點", $"{FormatPosition(point)}：{reason}；剩 {patrolRemaining.Count}/{patrolTotal} 個", playerPosition);
 	}
 
 	/// <summary>Nearest remaining point to the player. Null when everything is covered.</summary>
@@ -990,27 +1033,67 @@ public sealed class HuntAssistController {
 			// A spawn point we cannot path to is skipped, not fatal. This is only a safe reading
 			// of the failure because the mesh was confirmed ready just above - otherwise every
 			// point looks like this one.
-			if (destination is null || !Navmesh.MoveTo(destination.Value, patrolFlying && HuntFlight.IsFlying)) {
-				patrolRemaining.Remove(waypoint);
+			if (destination is null) {
+				SkipPatrolPoint(waypoint, "導航網格上找不到靠近它的落點", playerPosition);
 				return;
 			}
+
+			var landingOffset = HuntAssistGeometry.HorizontalDistance(waypoint, destination.Value);
+			if (HuntAssistGeometry.LandingMissesPoint(waypoint, destination.Value, DetectionRadius)) {
+				SkipPatrolPoint(waypoint, $"尋路落點離它水平 {landingOffset:F0} 米，超過偵測半徑 {DetectionRadius:F0} 米", playerPosition);
+				return;
+			}
+
+			var fly = patrolFlying && HuntFlight.IsFlying;
+			if (!Navmesh.MoveTo(destination.Value, fly)) {
+				SkipPatrolPoint(waypoint, "vnavmesh 不受理移動", playerPosition);
+				return;
+			}
+
+			LogLeg("巡邏前往出現點", $"{FormatPosition(waypoint)}（第 {patrolTotal - patrolRemaining.Count + 1}/{patrolTotal} 點；" +
+			                       $"尋路終點 {FormatPosition(destination)}，水平差 {landingOffset:F0} 米，{(fly ? "飛行" : "步行")}）", playerPosition);
 
 			patrolWaypoint = waypoint;
 			moveIssued = true;
 			moveStartPosition = playerPosition;
+			patrolStall.Reset();
 			stepClock.Restart();
 			return;
 		}
 
 		if (stepClock.Elapsed > WaypointTimeout) {
-			if (patrolWaypoint is { } stale) patrolRemaining.Remove(stale);
+			if (patrolWaypoint is { } stale) {
+				SkipPatrolPoint(stale, $"{WaypointTimeout.TotalSeconds:F0} 秒內沒有巡到", playerPosition);
+			}
+
 			patrolWaypoint = null;
 			moveIssued = false;
 			return;
 		}
 
 		if (stepClock.Elapsed < MoveStartGrace) return;
-		if (Navmesh.PathfindInProgress || Navmesh.IsPathRunning) return;
+
+		if (Navmesh.PathfindInProgress) {
+			patrolStall.Reset();
+			return;
+		}
+
+		if (Navmesh.IsPathRunning) {
+			// 移動被別的插件的租約壓住時本來就不會動，不算卡住。
+			if (!Navmesh.MovementAllowed) {
+				patrolStall.Reset();
+				return;
+			}
+
+			var now = Environment.TickCount64;
+			if (patrolStall.Update(playerPosition, now) && patrolWaypoint is { } stuck) {
+				var stalledFor = patrolStall.StalledSeconds(now);
+				Navmesh.Stop();
+				SkipPatrolPoint(stuck, $"停在離它水平 {HuntAssistGeometry.HorizontalDistance(playerPosition, stuck):F0} 米處 {stalledFor:F0} 秒沒有前進（到不了）", playerPosition);
+			}
+
+			return;
+		}
 
 		// vnavmesh went idle without the point being covered. Two very different causes, told
 		// apart by whether the character actually went anywhere:
@@ -1018,7 +1101,7 @@ public sealed class HuntAssistController {
 		//  * moved -> the player took the controls back, so stop rather than fight them for
 		//    the character. Clicking patrol again re-plans from wherever they now are.
 		if (Vector3.Distance(playerPosition, moveStartPosition) < UnreachableMoveThreshold) {
-			if (patrolWaypoint is { } unreachable) patrolRemaining.Remove(unreachable);
+			if (patrolWaypoint is { } unreachable) SkipPatrolPoint(unreachable, "尋路停了而角色幾乎沒動（沒有路）", playerPosition);
 			patrolWaypoint = null;
 			moveIssued = false;
 			return;
