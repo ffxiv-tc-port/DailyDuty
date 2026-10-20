@@ -33,7 +33,8 @@ public enum HuntAssistStep {
 /// Drives the "take me to the hunt board" shortcut. User-triggered only: nothing here starts
 /// on its own, and one click does one leg of the trip and then stops.
 /// Interruptible at any moment (Cancel, combat, duty, logout, or the player simply walking off -
-/// vnavmesh drops the path on user input when its own option is enabled). Every external plugin is a
+/// vnavmesh drops the path on user input when its own option is enabled; with <see cref="HuntAssistConfig.YieldToManualInput"/>
+/// it pauses instead and only drops the path after 30 seconds of steering). Every external plugin is a
 /// soft dependency: no Lifestream falls back to the game's own teleport, no vnavmesh to a map flag.
 /// It never attacks, never targets, and never touches memory it does not own.
 /// </summary>
@@ -98,13 +99,28 @@ public sealed class HuntAssistController {
 	private static readonly TimeSpan PatrolMemoryLifetime = TimeSpan.FromMinutes(10);
 	private const int PatrolMemoryCapacity = 512;
 
+	/// <summary>
+	/// 手動操作讓位用的 vnavmesh 租約：只當讓位選項的載體、不壓住移動。漏放時最多 60 秒自動失效；
+	/// 心跳間隔要遠小於租期（vnavmesh 續約前先掃掉到期的）。讓位結束後這段時間內卡住判斷不計（接續可能在重新尋路）。
+	/// </summary>
+	private const string MoveLeaseOwner = "DailyDuty";
+	private const int MoveLeaseMilliseconds = 60_000;
+	private const long MoveLeaseRenewMilliseconds = 15_000;
+	private const long InputYieldSettleMilliseconds = 5_000;
+
 	public NavmeshIpc Navmesh { get; } = new();
 
 	public LifestreamIpc Lifestream { get; } = new();
 
 	public HuntAssistStep Step { get; private set; } = HuntAssistStep.Idle;
 
-	public string StatusText { get; private set; } = string.Empty;
+	private string statusText = string.Empty;
+
+	/// <summary>讓位中一律顯示「手動操作中」；其餘照各步驟寫入的文字。</summary>
+	public string StatusText {
+		get => inputYield.IsYielding ? Strings.HuntAssistStatusYielding : statusText;
+		private set => statusText = value;
+	}
 
 	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.ApproachingAetheryte or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling;
 
@@ -133,8 +149,14 @@ public sealed class HuntAssistController {
 	/// <summary>Runs only while we are waiting on the navmesh; see <see cref="NavmeshReadyOrWaiting"/>.</summary>
 	private readonly Stopwatch navmeshClock = new();
 	private Vector3 moveStartPosition;
-	private readonly Stopwatch stepClock = new();
+	private readonly PausableClock stepClock = new();
 	private bool teleportIssued;
+
+	// 讓位：租約只在送過移動之後才拿，所有結束路徑都放（EndMovementSupport）。
+	private Guid moveLease;
+	private long moveLeaseRenewAt;
+	private bool inputYieldUnavailableLogged;
+	private readonly InputYieldTracker inputYield = new(InputYieldSettleMilliseconds);
 	private bool moveIssued;
 
 	// The aethernet hop in flight. Ids and positions only - the player object is re-read every frame.
@@ -264,8 +286,8 @@ public sealed class HuntAssistController {
 	/// wherever the player is standing, and stops as soon as the mark shows up.
 	///
 	/// It never attacks and never targets: finding the mark ends the run and hands control
-	/// back. Any manual movement also ends it - clicking patrol again re-plans from the new
-	/// position.
+	/// back. Manual movement pauses it (or ends it, with the yield option off or an older vnavmesh) -
+	/// clicking patrol again re-plans from the new position.
 	/// </summary>
 	public bool StartPatrol(HuntTargetInfo targetInfo, uint orderTypeRowId) {
 		if (IsRunning) {
@@ -453,12 +475,16 @@ public sealed class HuntAssistController {
 
 	/// <summary>Stops everything this controller started. Safe to call at any time.</summary>
 	public void Cancel() {
-		if (!IsRunning) return;
+		if (!IsRunning) {
+			EndMovementSupport();
+			return;
+		}
 
 		// 巡邏與前往目標地圖沒有 target，用通用的說法。
 		var status = target is not null ? string.Format(Strings.TravelAssistStatusCancelledTo, targetLabel) : Strings.HuntAssistStatusCancelled;
 		LogEnd("取消", status);
 		StopMovement();
+		EndMovementSupport();
 		Step = HuntAssistStep.Stopped;
 		StatusText = status;
 		stepClock.Reset();
@@ -489,6 +515,8 @@ public sealed class HuntAssistController {
 			Fail(Strings.HuntAssistStoppedInDuty);
 			return;
 		}
+
+		UpdateMovementSupport();
 
 		if (Step is HuntAssistStep.TeleportingToZone) {
 			UpdateTeleportToZone();
@@ -675,7 +703,7 @@ public sealed class HuntAssistController {
 		                  ?? Navmesh.NearestPoint(aetheryte, 10.0f, 10.0f);
 
 		// 城裡短距離一律用走的：沒騎乘時要求飛行路徑，vnavmesh 會停在原地。
-		if (destination is null || !Navmesh.MoveTo(destination.Value)) {
+		if (destination is null || !MoveWithYield(destination.Value)) {
 			LogLeg("不走向乙太之光", $"乙太之光 {baseId} 旁找不到可走的地面", playerPosition);
 			return false;
 		}
@@ -832,7 +860,7 @@ public sealed class HuntAssistController {
 			var nearest = onFloor is null ? Navmesh.NearestPoint(board.Position, 10.0f, 10.0f) : null;
 			var destination = onFloor ?? nearest ?? board.Position;
 
-			if (!Navmesh.MoveTo(destination)) {
+			if (!MoveWithYield(destination)) {
 				PlaceMapFlag(board);
 				Finish(LabelStatus(Strings.HuntAssistNavmeshNotReady));
 				return;
@@ -1045,7 +1073,7 @@ public sealed class HuntAssistController {
 			}
 
 			var fly = patrolFlying && HuntFlight.IsFlying;
-			if (!Navmesh.MoveTo(destination.Value, fly)) {
+			if (!MoveWithYield(destination.Value, fly)) {
 				SkipPatrolPoint(waypoint, "vnavmesh 不受理移動", playerPosition);
 				return;
 			}
@@ -1099,7 +1127,7 @@ public sealed class HuntAssistController {
 		// apart by whether the character actually went anywhere:
 		//  * barely moved -> no path to that spawn point, skip it and carry on,
 		//  * moved -> the player took the controls back, so stop rather than fight them for
-		//    the character. Clicking patrol again re-plans from wherever they now are.
+		//    the character. While yielding the path stays running, so this only fires once vnavmesh really dropped it.
 		if (Vector3.Distance(playerPosition, moveStartPosition) < UnreachableMoveThreshold) {
 			if (patrolWaypoint is { } unreachable) SkipPatrolPoint(unreachable, "尋路停了而角色幾乎沒動（沒有路）", playerPosition);
 			patrolWaypoint = null;
@@ -1151,6 +1179,7 @@ public sealed class HuntAssistController {
 
 	private void Finish(string status) {
 		LogEnd("結束", status);
+		EndMovementSupport();
 		Step = HuntAssistStep.Finished;
 		StatusText = status;
 		stepClock.Reset();
@@ -1170,6 +1199,7 @@ public sealed class HuntAssistController {
 
 	private void Fail(string status) {
 		LogEnd("停止", status);
+		EndMovementSupport();
 		Step = HuntAssistStep.Stopped;
 		StatusText = status;
 		stepClock.Reset();
@@ -1190,6 +1220,80 @@ public sealed class HuntAssistController {
 	private void StopMovement() {
 		Navmesh.Stop();
 		if (Lifestream.IsInstalled && Lifestream.IsBusy) Lifestream.Abort();
+	}
+
+	/// <summary>所有 vnavmesh 移動都從這裡送：先照設定拿租約、設讓位選項，漏掉的呼叫點會靜默維持一碰就結束。</summary>
+	private bool MoveWithYield(Vector3 destination, bool fly = false) {
+		PrepareMoveLease();
+		return Navmesh.MoveTo(destination, fly);
+	}
+
+	/// <summary>vnavmesh 換區時會清掉讓位選項，所以每次送移動前都設一次（冪等）。租約已不在就重拿一次。</summary>
+	private void PrepareMoveLease() {
+		var wanted = System.HuntAssistConfig.YieldToManualInput;
+		if (moveLease == Guid.Empty && !wanted) return;
+
+		for (var attempt = 0; attempt < 2; attempt++) {
+			if (moveLease == Guid.Empty) {
+				moveLease = Navmesh.AcquireLease(MoveLeaseOwner, MoveLeaseMilliseconds);
+				if (moveLease == Guid.Empty) {
+					LogInputYieldUnavailable(Navmesh.SupportsInputYield ? "vnavmesh 沒有給租約" : "vnavmesh 沒有讓位用的端點（版本較舊或沒裝）");
+					return;
+				}
+
+				moveLeaseRenewAt = Environment.TickCount64 + MoveLeaseRenewMilliseconds;
+			}
+
+			if (Navmesh.SetLeasedYieldOnInput(moveLease, wanted)) return;
+			moveLease = Guid.Empty;
+		}
+	}
+
+	/// <summary>每幀：租約心跳，並把 vnavmesh 的讓位狀態轉成步驟時鐘暫停／狀態轉換 log。</summary>
+	private void UpdateMovementSupport() {
+		var now = Environment.TickCount64;
+		if (moveLease != Guid.Empty && now >= moveLeaseRenewAt) {
+			moveLeaseRenewAt = now + MoveLeaseRenewMilliseconds;
+			if (!Navmesh.RenewLease(moveLease)) {
+				Service.Log.Information($"[HuntAssist] 移動租約 {moveLease} 已失效（到期或 vnavmesh 重新載入），下一段移動前重新取得。");
+				moveLease = Guid.Empty;
+			}
+		}
+
+		var yielding = moveLease != Guid.Empty && Navmesh.IsYieldingToInput;
+		switch (inputYield.Observe(yielding, now)) {
+			case InputYieldTransition.Started:
+				stepClock.Paused = true;
+				LogLeg("手動操作，讓位", "vnavmesh 暫停跟隨、路徑保留，停手後接續；這段時間不計入時限");
+				break;
+
+			case InputYieldTransition.Ended:
+				stepClock.Paused = false;
+				var seconds = inputYield.YieldMilliseconds(now) / 1000.0;
+				LogLeg("讓位結束", Navmesh.IsPathRunning
+					? $"停手，vnavmesh 從目前位置接續（讓位 {seconds:F1} 秒）"
+					: $"vnavmesh 已停止路徑（讓位 {seconds:F1} 秒；操作太久或關掉了輸入取消）");
+				break;
+		}
+
+		if (inputYield.Unsettled(now)) patrolStall.Reset();
+	}
+
+	/// <summary>每個結束路徑（完成、停止、取消、插件卸載）都要走：放開租約、讓位狀態歸零。</summary>
+	private void EndMovementSupport() {
+		inputYield.Reset();
+		stepClock.Paused = false;
+		if (moveLease == Guid.Empty) return;
+
+		Navmesh.ReleaseLease(moveLease);
+		moveLease = Guid.Empty;
+	}
+
+	private void LogInputYieldUnavailable(string why) {
+		if (inputYieldUnavailableLogged) return;
+
+		inputYieldUnavailableLogged = true;
+		Service.Log.Information($"[HuntAssist] 手動操作讓位無法使用：{why}；照舊一偵測到手動移動就結束（本次載入只記這一次）。");
 	}
 
 	/// <summary>Fallback teleport for when Lifestream is not installed - the game's own Telepo.</summary>

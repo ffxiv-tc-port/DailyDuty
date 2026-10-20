@@ -51,6 +51,11 @@ public sealed class NavmeshIpc {
 	private readonly ICallGateSubscriber<object> pathStop;
 	private readonly ICallGateSubscriber<bool> pathIsRunning;
 	private readonly ICallGateSubscriber<bool> pathGetMovementAllowed;
+	private readonly ICallGateSubscriber<string, int, Guid> leaseAcquireFor;
+	private readonly ICallGateSubscriber<Guid, bool> leaseRenew;
+	private readonly ICallGateSubscriber<Guid, bool> leaseRelease;
+	private readonly ICallGateSubscriber<Guid, bool, bool> leaseSetYieldOnInput;
+	private readonly ICallGateSubscriber<bool> pathIsYieldingToInput;
 
 	public NavmeshIpc() {
 		navIsReady = Service.PluginInterface.GetIpcSubscriber<bool>($"{Prefix}.Nav.IsReady");
@@ -62,7 +67,39 @@ public sealed class NavmeshIpc {
 		pathStop = Service.PluginInterface.GetIpcSubscriber<object>($"{Prefix}.Path.Stop");
 		pathIsRunning = Service.PluginInterface.GetIpcSubscriber<bool>($"{Prefix}.Path.IsRunning");
 		pathGetMovementAllowed = Service.PluginInterface.GetIpcSubscriber<bool>($"{Prefix}.Path.GetMovementAllowed");
+		leaseAcquireFor = Service.PluginInterface.GetIpcSubscriber<string, int, Guid>($"{Prefix}.Path.AcquireSuppressionFor");
+		leaseRenew = Service.PluginInterface.GetIpcSubscriber<Guid, bool>($"{Prefix}.Path.RenewSuppression");
+		leaseRelease = Service.PluginInterface.GetIpcSubscriber<Guid, bool>($"{Prefix}.Path.ReleaseSuppression");
+		leaseSetYieldOnInput = Service.PluginInterface.GetIpcSubscriber<Guid, bool, bool>($"{Prefix}.Path.SetLeasedYieldOnInput");
+		pathIsYieldingToInput = Service.PluginInterface.GetIpcSubscriber<bool>($"{Prefix}.Path.IsYieldingToInput");
 	}
+
+	/// <summary>vnavmesh 有沒有「手動移動時讓位」需要的全部端點（舊版沒有）。</summary>
+	public bool SupportsInputYield => IsInstalled && IpcGuard.Safe(
+		() => leaseAcquireFor.HasFunction && leaseRenew.HasFunction && leaseRelease.HasFunction && leaseSetYieldOnInput.HasFunction && pathIsYieldingToInput.HasFunction,
+		false, "InputYield(probe)");
+
+	/// <summary>
+	/// 拿一把移動租約。只拿、不設 MovementAllowed＝不壓住移動，只當讓位選項的載體。
+	/// 回 <see cref="Guid.Empty"/>＝沒拿到；漏放時到期自動失效。
+	/// </summary>
+	public Guid AcquireLease(string owner, int milliseconds)
+		=> !SupportsInputYield ? Guid.Empty : IpcGuard.Safe(() => leaseAcquireFor.InvokeFunc(owner, milliseconds), Guid.Empty, "Path.AcquireSuppressionFor");
+
+	/// <summary>心跳；false＝這把已經不在了（到期、vnavmesh 重新載入）。</summary>
+	public bool RenewLease(Guid lease)
+		=> IsInstalled && IpcGuard.Safe(() => leaseRenew.HasFunction && leaseRenew.InvokeFunc(lease), false, "Path.RenewSuppression");
+
+	public bool ReleaseLease(Guid lease)
+		=> IsInstalled && IpcGuard.Safe(() => leaseRelease.HasFunction && leaseRelease.InvokeFunc(lease), false, "Path.ReleaseSuppression");
+
+	/// <summary>冪等；vnavmesh 換區時會清掉，所以每次送移動前都要設。false＝這把租約已經不在了。</summary>
+	public bool SetLeasedYieldOnInput(Guid lease, bool yieldOnInput)
+		=> IsInstalled && IpcGuard.Safe(() => leaseSetYieldOnInput.HasFunction && leaseSetYieldOnInput.InvokeFunc(lease, yieldOnInput), false, "Path.SetLeasedYieldOnInput");
+
+	/// <summary>vnavmesh 正因使用者手動移動而暫停跟隨（路徑保留、<see cref="IsPathRunning"/> 仍為 true）。</summary>
+	public bool IsYieldingToInput
+		=> IsInstalled && IpcGuard.Safe(() => pathIsYieldingToInput.HasFunction && pathIsYieldingToInput.InvokeFunc(), false, "Path.IsYieldingToInput");
 
 	/// <summary>True when vnavmesh is loaded and has registered its IPC.</summary>
 	public bool IsInstalled => IpcGuard.Safe(() => navIsReady.HasFunction, false, "Nav.IsReady(probe)");

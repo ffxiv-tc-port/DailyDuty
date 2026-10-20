@@ -1054,6 +1054,15 @@
     <data name="HuntAssistUseFlying" xml:space="preserve">
         <value>可飛行時自動騎乘並走飛行路徑</value>
     </data>
+    <data name="HuntAssistYieldToInput" xml:space="preserve">
+        <value>手動操作時讓位，停手後接續</value>
+    </data>
+    <data name="HuntAssistYieldToInputHelp" xml:space="preserve">
+        <value>趕路或巡邏途中自己操作角色時，改成暫停而不是整段結束；放開約 1 秒後從目前位置接續。一直操作超過 30 秒仍會停止。需要支援這項功能的 vnavmesh，且它的「玩家輸入移動時取消目前路徑」要開著；否則照舊一動就結束。</value>
+    </data>
+    <data name="HuntAssistStatusYielding" xml:space="preserve">
+        <value>手動操作中，停手後接續……</value>
+    </data>
     <data name="HuntAssistDetectionRadius" xml:space="preserve">
         <value>偵測半徑（米）</value>
     </data>

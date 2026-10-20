@@ -16,6 +16,12 @@ public class HuntAssistConfig {
 	/// <summary>Mount up and use flying paths when the zone allows it.</summary>
 	public bool UseFlying = true;
 
+	/// <summary>
+	/// 趕路／巡邏途中手動操作時讓位、停手後接續（需要支援的 vnavmesh）；false＝照舊一碰就結束。
+	/// 舊設定檔沒有這個鍵時沿用欄位初始值（System.Text.Json 先 new 再填有的鍵）。
+	/// </summary>
+	public bool YieldToManualInput = true;
+
 	public const float MinimumDetectionRadius = 10.0f;
 	public const float MaximumDetectionRadius = 100.0f;
 

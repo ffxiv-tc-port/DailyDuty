@@ -3212,6 +3212,33 @@ namespace DailyDuty.Localization {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Pause while I steer manually, continue when I stop.
+        /// </summary>
+        internal static string HuntAssistYieldToInput {
+            get {
+                return ResourceManager.GetString("HuntAssistYieldToInput", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to When you move the character yourself during travel or a patrol, the assistant pauses instead of ending the run, and continues from where you are about a second after you let go. Steering for more than 30 seconds still stops it. Needs a vnavmesh version that supports this, with its "Cancel current path on player movement input" option on; otherwise any manual movement ends the run as before..
+        /// </summary>
+        internal static string HuntAssistYieldToInputHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistYieldToInputHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Manual control - will continue when you stop moving....
+        /// </summary>
+        internal static string HuntAssistStatusYielding {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusYielding", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Detection radius (yalms).
         /// </summary>
         internal static string HuntAssistDetectionRadius {

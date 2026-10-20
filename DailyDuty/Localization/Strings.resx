@@ -1054,6 +1054,15 @@ Limited to once per 5 mins</value>
     <data name="HuntAssistUseFlying" xml:space="preserve">
         <value>Use flying mounts when available</value>
     </data>
+    <data name="HuntAssistYieldToInput" xml:space="preserve">
+        <value>Pause while I steer manually, continue when I stop</value>
+    </data>
+    <data name="HuntAssistYieldToInputHelp" xml:space="preserve">
+        <value>When you move the character yourself during travel or a patrol, the assistant pauses instead of ending the run, and continues from where you are about a second after you let go. Steering for more than 30 seconds still stops it. Needs a vnavmesh version that supports this, with its "Cancel current path on player movement input" option on; otherwise any manual movement ends the run as before.</value>
+    </data>
+    <data name="HuntAssistStatusYielding" xml:space="preserve">
+        <value>Manual control - will continue when you stop moving...</value>
+    </data>
     <data name="HuntAssistDetectionRadius" xml:space="preserve">
         <value>Detection radius (yalms)</value>
     </data>

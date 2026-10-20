@@ -36,6 +36,9 @@ public class HuntMarksWeekly : HuntMarksBase {
 
 		configChanged |= ImGui.Checkbox(Strings.HuntAssistUseFlying, ref config.UseFlying);
 
+		configChanged |= ImGui.Checkbox(Strings.HuntAssistYieldToInput, ref config.YieldToManualInput);
+		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntAssistYieldToInputHelp);
+
 		ImGui.TextUnformatted(Strings.HuntAssistDetectionRadius);
 		ImGuiComponents.HelpMarker(Strings.HuntAssistDetectionRadiusHelp);
 
