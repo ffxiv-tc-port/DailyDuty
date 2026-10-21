@@ -155,6 +155,9 @@ public sealed class HuntAssistController {
 	// 讓位：租約只在送過移動之後才拿，所有結束路徑都放（EndMovementSupport）。
 	private Guid moveLease;
 	private long moveLeaseRenewAt;
+
+	/// <summary>這把租約目前押著「讓位」＝true；只在自己送路徑的步驟押（vnavmesh 對所有租約取 OR，押著會改到別的插件的路徑）。</summary>
+	private bool leaseYieldOn;
 	private bool inputYieldUnavailableLogged;
 	private readonly InputYieldTracker inputYield = new(InputYieldSettleMilliseconds);
 	private bool moveIssued;
@@ -1107,8 +1110,8 @@ public sealed class HuntAssistController {
 		}
 
 		if (Navmesh.IsPathRunning) {
-			// 移動被別的插件的租約壓住時本來就不會動，不算卡住。
-			if (!Navmesh.MovementAllowed) {
+			// 移動被別的插件的租約壓住、或遊戲本身讓角色停著時本來就不會動，不算卡住。
+			if (!Navmesh.MovementAllowed || HeldInPlaceByGame()) {
 				patrolStall.Reset();
 				return;
 			}
@@ -1136,6 +1139,19 @@ public sealed class HuntAssistController {
 		}
 
 		Finish(Strings.HuntAssistStatusStopped);
+	}
+
+	/// <summary>
+	/// 詠唱、上下坐騎、被強制移動、無法行動時路徑照樣「在跑」但角色停著；卡住計時在這段重新起算。
+	/// 跳躍只在沒在飛時算：飛行中若也亮著跳躍旗標，原本要抓的「飛到最近點後對著地形推」會永遠判不出來。
+	/// </summary>
+	private static bool HeldInPlaceByGame() {
+		var condition = Service.Condition;
+		return condition[ConditionFlag.Casting] || condition[ConditionFlag.Casting87]
+		       || condition[ConditionFlag.Mounting] || condition[ConditionFlag.Mounting71] || condition[ConditionFlag.MountOrOrnamentTransition]
+		       || condition[ConditionFlag.BeingMoved]
+		       || condition[ConditionFlag.SufferingStatusAffliction] || condition[ConditionFlag.SufferingStatusAffliction2]
+		       || (!HuntFlight.IsFlying && (condition[ConditionFlag.Jumping] || condition[ConditionFlag.Jumping61]));
 	}
 
 	/// <summary>Read-only object table scan for the mark. Never targets or attacks anything.</summary>
@@ -1244,9 +1260,23 @@ public sealed class HuntAssistController {
 				moveLeaseRenewAt = Environment.TickCount64 + MoveLeaseRenewMilliseconds;
 			}
 
-			if (Navmesh.SetLeasedYieldOnInput(moveLease, wanted)) return;
+			if (Navmesh.SetLeasedYieldOnInput(moveLease, wanted)) {
+				leaseYieldOn = wanted;
+				return;
+			}
+
 			moveLease = Guid.Empty;
+			leaseYieldOn = false;
 		}
+	}
+
+	/// <summary>DailyDuty 自己用 <see cref="MoveWithYield"/> 送路徑的步驟。其餘（傳送、城內傳送、上坐騎）是 Lifestream 或遊戲在動。</summary>
+	private bool StepOwnsMovement => Step is HuntAssistStep.ApproachingAetheryte or HuntAssistStep.Walking or HuntAssistStep.Patrolling;
+
+	/// <summary>放下讓位、保留租約（下一段 <see cref="PrepareMoveLease"/> 再押）。租約已不在就丟掉憑證。</summary>
+	private void DropYieldOnInput() {
+		leaseYieldOn = false;
+		if (!Navmesh.SetLeasedYieldOnInput(moveLease, false)) moveLease = Guid.Empty;
 	}
 
 	/// <summary>每幀：租約心跳，並把 vnavmesh 的讓位狀態轉成步驟時鐘暫停／狀態轉換 log。</summary>
@@ -1257,10 +1287,14 @@ public sealed class HuntAssistController {
 			if (!Navmesh.RenewLease(moveLease)) {
 				Service.Log.Information($"[HuntAssist] 移動租約 {moveLease} 已失效（到期或 vnavmesh 重新載入），下一段移動前重新取得。");
 				moveLease = Guid.Empty;
+				leaseYieldOn = false;
 			}
 		}
 
-		var yielding = moveLease != Guid.Empty && Navmesh.IsYieldingToInput;
+		if (leaseYieldOn && !StepOwnsMovement) DropYieldOnInput();
+
+		// 沒押讓位時，vnavmesh 的讓位是別人的租約造成的，不算我們的。
+		var yielding = moveLease != Guid.Empty && leaseYieldOn && Navmesh.IsYieldingToInput;
 		switch (inputYield.Observe(yielding, now)) {
 			case InputYieldTransition.Started:
 				stepClock.Paused = true;
@@ -1283,6 +1317,7 @@ public sealed class HuntAssistController {
 	private void EndMovementSupport() {
 		inputYield.Reset();
 		stepClock.Paused = false;
+		leaseYieldOn = false;
 		if (moveLease == Guid.Empty) return;
 
 		Navmesh.ReleaseLease(moveLease);
