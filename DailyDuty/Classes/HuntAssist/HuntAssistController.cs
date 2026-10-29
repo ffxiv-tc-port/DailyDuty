@@ -25,13 +25,15 @@ public enum HuntAssistStep {
 	PreparingPatrol,
 	MountingForPatrol,
 	Patrolling,
+	ApproachingTarget,
 	Finished,
 	Stopped,
 }
 
 /// <summary>
 /// Drives the "take me to the hunt board" shortcut. User-triggered only: nothing here starts
-/// on its own, and one click does one leg of the trip and then stops.
+/// on its own, and one click does one leg of the trip and then stops (the zone teleport may run on
+/// into the patrol, see <see cref="HuntAssistConfig.PatrolAfterZoneTeleport"/>).
 /// Interruptible at any moment (Cancel, combat, duty, logout, or the player simply walking off -
 /// vnavmesh drops the path on user input when its own option is enabled; with <see cref="HuntAssistConfig.YieldToManualInput"/>
 /// it pauses instead and only drops the path after 30 seconds of steering). Every external plugin is a
@@ -108,6 +110,15 @@ public sealed class HuntAssistController {
 	private const long MoveLeaseRenewMilliseconds = 15_000;
 	private const long InputYieldSettleMilliseconds = 5_000;
 
+	/// <summary>
+	/// 發現目標後的接近：整段時限（讓位時暫停）；目標離上次規劃時的位置水平超過這個距離、且距上次送路徑夠久才重新尋路；
+	/// 尋路停下時角色離尋路終點這個距離內＝走完了那一段（否則是使用者接手或沒有路）。
+	/// </summary>
+	private static readonly TimeSpan ApproachTimeout = TimeSpan.FromSeconds(60);
+	private const float ApproachRepathMove = 5.0f;
+	private const long ApproachRepathMilliseconds = 2_000;
+	private const float ApproachLegEndRadius = 5.0f;
+
 	public NavmeshIpc Navmesh { get; } = new();
 
 	public LifestreamIpc Lifestream { get; } = new();
@@ -122,7 +133,7 @@ public sealed class HuntAssistController {
 		private set => statusText = value;
 	}
 
-	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.ApproachingAetheryte or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling;
+	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.ApproachingAetheryte or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling or HuntAssistStep.ApproachingTarget;
 
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
@@ -135,6 +146,9 @@ public sealed class HuntAssistController {
 	/// <summary>這趟是從通緝令的告示板按鈕出發的（資料缺漏時要講「告示板資料」而不是「目的地資料」）。</summary>
 	private bool targetIsHuntBoard;
 	private HuntTargetInfo? zoneTarget;
+
+	/// <summary>這趟「前往目標地圖」抵達後接著巡邏；按下當時從設定抄來，中途改設定不影響這一趟。</summary>
+	private bool patrolAfterZone;
 	private HuntTargetInfo? patrolTarget;
 	private readonly List<Vector3> patrolRemaining = [];
 	private int patrolTotal;
@@ -174,6 +188,14 @@ public sealed class HuntAssistController {
 	private int aetheryteApproaches;
 	private Vector3 approachAetherytePosition;
 	private uint approachAetheryteBaseId;
+
+	// 接近目標：只記發現當下抄下的 GameObjectId 與座標，每幀從物件表重查（物件表的包裝會就地換人）。
+	private ulong approachObjectId;
+	private Vector3 approachLastSeen;
+	private Vector3 approachPlannedFor;
+	private Vector3 approachDestination;
+	private long approachIssuedAt;
+	private int approachRepaths;
 
 	/// <summary>
 	/// Starts the trip to a hunt board. Returns false (and says why via
@@ -232,7 +254,8 @@ public sealed class HuntAssistController {
 	/// simply the nearest one - <see cref="HuntTargets"/> picks whichever makes the following
 	/// patrol shortest, so this step already sets up the next one.
 	/// </summary>
-	public bool GoToTargetZone(HuntTargetInfo targetInfo, uint orderTypeRowId) {
+	/// <param name="patrolOnArrival">抵達後直接進巡邏（前置條件與 <see cref="StartPatrol"/> 相同，不成立就照它的訊息停下）。</param>
+	public bool GoToTargetZone(HuntTargetInfo targetInfo, uint orderTypeRowId, bool patrolOnArrival) {
 		if (IsRunning) {
 			StatusText = Strings.HuntAssistAlreadyRunning;
 			return false;
@@ -274,6 +297,7 @@ public sealed class HuntAssistController {
 		}
 
 		zoneTarget = targetInfo;
+		patrolAfterZone = patrolOnArrival;
 		target = null;
 		ActiveOrderTypeRowId = orderTypeRowId;
 		teleportIssued = true;
@@ -288,8 +312,8 @@ public sealed class HuntAssistController {
 	/// Walks the zone's known spawn points for the mark's rank, in a short greedy route from
 	/// wherever the player is standing, and stops as soon as the mark shows up.
 	///
-	/// It never attacks and never targets: finding the mark ends the run and hands control
-	/// back. Manual movement pauses it (or ends it, with the yield option off or an older vnavmesh) -
+	/// It never attacks and never targets: finding the mark ends the run (after moving closer, see
+	/// <see cref="HuntAssistConfig.ApproachFoundTarget"/>) and hands control back. Manual movement pauses it (or ends it, with the yield option off or an older vnavmesh) -
 	/// clicking patrol again re-plans from the new position.
 	/// </summary>
 	public bool StartPatrol(HuntTargetInfo targetInfo, uint orderTypeRowId) {
@@ -317,6 +341,12 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
+		BeginPreparingPatrol(targetInfo, orderTypeRowId);
+		return true;
+	}
+
+	/// <summary>呼叫端已確認：在目標地圖、角色在、vnavmesh 有裝。</summary>
+	private void BeginPreparingPatrol(HuntTargetInfo targetInfo, uint orderTypeRowId) {
 		// The point list is deliberately NOT resolved here. Building it needs the zone's Map
 		// row, which can still be settling right after a zone change, and nothing about "not
 		// ready yet" should look like "there is nothing to patrol". Prepare, with a timeout.
@@ -326,6 +356,7 @@ public sealed class HuntAssistController {
 		patrolTarget = targetInfo;
 		target = null;
 		zoneTarget = null;
+		patrolAfterZone = false;
 		ActiveOrderTypeRowId = orderTypeRowId;
 		moveIssued = false;
 		patrolFlying = false;
@@ -334,7 +365,6 @@ public sealed class HuntAssistController {
 		Step = HuntAssistStep.PreparingPatrol;
 		StatusText = Strings.HuntAssistStatusPreparing;
 		stepClock.Restart();
-		return true;
 	}
 
 	/// <summary>
@@ -493,7 +523,9 @@ public sealed class HuntAssistController {
 		stepClock.Reset();
 		target = null;
 		zoneTarget = null;
+		patrolAfterZone = false;
 		patrolTarget = null;
+		approachObjectId = 0;
 		patrolRemaining.Clear();
 		patrolTotal = 0;
 		patrolWaypoint = null;
@@ -538,6 +570,11 @@ public sealed class HuntAssistController {
 
 		if (Step is HuntAssistStep.Patrolling) {
 			if (Service.ObjectTable.LocalPlayer is { } patrolPlayer) UpdatePatrol(patrolPlayer.Position);
+			return;
+		}
+
+		if (Step is HuntAssistStep.ApproachingTarget) {
+			if (Service.ObjectTable.LocalPlayer is { } approachPlayer) UpdateApproachingTarget(approachPlayer.Position);
 			return;
 		}
 
@@ -904,13 +941,32 @@ public sealed class HuntAssistController {
 		}
 
 		if (Service.ClientState.TerritoryType == targetInfo.TerritoryId && !Service.Condition[ConditionFlag.BetweenAreas]) {
-			Finish(Strings.HuntAssistStatusArrivedZone);
-			return;
+			if (!patrolAfterZone) {
+				Finish(Strings.HuntAssistStatusArrivedZone);
+				return;
+			}
+
+			// 巡邏要角色可操作、Lifestream 已收手；等不到就照傳送逾時停。
+			if (PlayerSettled() && !Lifestream.IsBusy) {
+				ContinueWithPatrol(targetInfo);
+				return;
+			}
 		}
 
 		if (stepClock.Elapsed > TeleportTimeout) {
 			Fail(Strings.HuntAssistStoppedTimeout);
 		}
+	}
+
+	/// <summary>抵達目標地圖後接著巡邏。前置條件不成立就用 <see cref="StartPatrol"/> 的訊息停下；生成點與網格的等待在準備步驟裡。</summary>
+	private void ContinueWithPatrol(HuntTargetInfo targetInfo) {
+		if (!Navmesh.IsInstalled) {
+			Fail(Strings.HuntAssistPatrolNeedsNavmesh);
+			return;
+		}
+
+		LogLeg("抵達目標地圖，接著巡邏", $"傳送共 {stepClock.Elapsed.TotalSeconds:F1} 秒；目標 {targetInfo.Name}（{targetInfo.BNpcBaseId}）");
+		BeginPreparingPatrol(targetInfo, ActiveOrderTypeRowId);
 	}
 
 	/// <summary>
@@ -997,11 +1053,17 @@ public sealed class HuntAssistController {
 			return;
 		}
 
-		// Finding the mark is the whole point - stop the moment it is in range. We only read
-		// the object table; nothing is targeted and nothing is attacked.
+		// Finding the mark is the whole point - stop (or move closer) the moment it is in range. We
+		// only read the object table; nothing is targeted and nothing is attacked.
 		if (FindTargetObject(targetInfo) is { } found) {
+			var foundPosition = found.Position;
+			if (System.HuntAssistConfig.ApproachFoundTarget) {
+				BeginApproach(targetInfo, found.GameObjectId, foundPosition, playerPosition);
+				return;
+			}
+
 			StopMovement();
-			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, found.Position, true);
+			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, foundPosition, true);
 			Finish(string.Format(Strings.HuntAssistTargetFound, targetInfo.Name));
 			return;
 		}
@@ -1169,6 +1231,175 @@ public sealed class HuntAssistController {
 		return null;
 	}
 
+	private static float ApproachDistance => Math.Clamp(
+		System.HuntAssistConfig.ApproachDistance,
+		HuntAssistConfig.MinimumApproachDistance,
+		HuntAssistConfig.MaximumApproachDistance);
+
+	/// <summary>發現目標後改走接近步驟。巡邏那段路徑不先停：下一幀送的路徑會直接取代它。</summary>
+	private void BeginApproach(HuntTargetInfo targetInfo, ulong objectId, Vector3 position, Vector3 playerPosition) {
+		approachObjectId = objectId;
+		approachLastSeen = position;
+		approachRepaths = 0;
+		moveIssued = false;
+		patrolStall.Reset();
+		LogLeg("發現目標，開始接近", $"{targetInfo.Name}（{targetInfo.BNpcBaseId}，物件 {objectId:X}）在 {FormatPosition(position)}，" +
+		                     $"直線 {Vector3.Distance(playerPosition, position):F0} 米；接近到 {ApproachDistance:F0} 米內再停", playerPosition);
+		EnterStep(HuntAssistStep.ApproachingTarget, string.Format(Strings.HuntAssistStatusApproaching, targetInfo.Name));
+	}
+
+	/// <summary>
+	/// 每幀用發現當下抄下的 GameObjectId 重查目標，不見、不可選或倒下就停。只移動，不選取、不攻擊；
+	/// 戰鬥、時限（讓位時暫停）、卡住與巡邏同一套判斷。
+	/// </summary>
+	private void UpdateApproachingTarget(Vector3 playerPosition) {
+		if (patrolTarget is not { } targetInfo) {
+			Cancel();
+			return;
+		}
+
+		if (Service.ClientState.TerritoryType != targetInfo.TerritoryId) {
+			StopMovement();
+			Fail(Strings.HuntAssistPatrolWrongZone);
+			return;
+		}
+
+		var state = ReadApproachTarget(approachObjectId, targetInfo.BNpcBaseId, out var position);
+		if (state is not ApproachTargetState.Present) {
+			var defeated = state is ApproachTargetState.Defeated;
+			StopMovement();
+			LogLeg("接近中止", $"{(defeated ? "目標已倒下" : "物件表裡找不到目標或它無法選取")}；最後看到在 {FormatPosition(approachLastSeen)}", playerPosition);
+			if (!defeated) PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, approachLastSeen, true);
+			Finish(string.Format(defeated ? Strings.HuntAssistApproachDefeated : Strings.HuntAssistApproachLost, targetInfo.Name));
+			return;
+		}
+
+		approachLastSeen = position;
+		var distance = Vector3.Distance(playerPosition, position);
+		if (distance <= ApproachDistance) {
+			StopMovement();
+			LogLeg("接近完成", $"離目標 {distance:F1} 米（門檻 {ApproachDistance:F0} 米），重新尋路 {approachRepaths} 次，共 {stepClock.Elapsed.TotalSeconds:F1} 秒", playerPosition);
+			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, position, true);
+			Finish(string.Format(Strings.HuntAssistTargetReached, targetInfo.Name, distance));
+			return;
+		}
+
+		if (Service.Condition[ConditionFlag.InCombat]) {
+			StopMovement();
+			SetMapFlag(targetInfo.TerritoryId, targetInfo.MapId, position);
+			Fail(Strings.HuntAssistStoppedInCombat);
+			return;
+		}
+
+		if (stepClock.Elapsed > ApproachTimeout) {
+			StopApproachShort(targetInfo, position, distance, $"{ApproachTimeout.TotalSeconds:F0} 秒內沒接近到", playerPosition);
+			return;
+		}
+
+		var now = Environment.TickCount64;
+		if (!moveIssued) {
+			if (!IssueApproachMove(position, playerPosition, now)) {
+				StopApproachShort(targetInfo, position, distance, "vnavmesh 不受理移動", playerPosition);
+				return;
+			}
+
+			LogLeg("接近目標", $"尋路終點 {FormatPosition(approachDestination)}，{(patrolFlying && HuntFlight.IsFlying ? "飛行" : "步行")}，直線 {distance:F0} 米", playerPosition);
+			return;
+		}
+
+		if (now - approachIssuedAt < (long)MoveStartGrace.TotalMilliseconds) return;
+
+		if (Navmesh.PathfindInProgress) {
+			patrolStall.Reset();
+			return;
+		}
+
+		var targetMoved = HuntAssistGeometry.HorizontalDistance(approachPlannedFor, position) > ApproachRepathMove;
+
+		if (Navmesh.IsPathRunning) {
+			if (!Navmesh.MovementAllowed || HeldInPlaceByGame()) {
+				patrolStall.Reset();
+			}
+			else if (patrolStall.Update(playerPosition, now)) {
+				StopApproachShort(targetInfo, position, distance, $"{patrolStall.StalledSeconds(now):F0} 秒沒有前進", playerPosition);
+				return;
+			}
+
+			// 讓位中或剛停手不換路徑：重送會蓋掉 vnavmesh 正在接續的那一條。
+			if (targetMoved && now - approachIssuedAt >= ApproachRepathMilliseconds && !inputYield.Unsettled(now)) {
+				approachRepaths++;
+				if (!IssueApproachMove(position, playerPosition, now)) StopApproachShort(targetInfo, position, distance, "重新尋路不受理", playerPosition);
+			}
+
+			return;
+		}
+
+		// 尋路停了還沒到：重送只在走完那一段而目標移動過時；使用者接手讓 vnavmesh 停掉時不重送，免得跟他搶。
+		var idle = HuntAssistGeometry.ClassifyApproachIdle(playerPosition, approachDestination, moveStartPosition, approachPlannedFor, position,
+			ApproachLegEndRadius, ApproachRepathMove, UnreachableMoveThreshold);
+		if (idle is ApproachIdleAction.Repath) {
+			approachRepaths++;
+			if (!IssueApproachMove(position, playerPosition, now)) StopApproachShort(targetInfo, position, distance, "重新尋路不受理", playerPosition);
+			return;
+		}
+
+		var why = idle switch {
+			ApproachIdleAction.StopAtLegEnd => "走到尋路終點仍不夠近",
+			ApproachIdleAction.StopNoPath => "尋路停了而角色幾乎沒動（沒有路）",
+			_ => "尋路在半途停了（手動接手或 vnavmesh 取消）",
+		};
+		StopApproachShort(targetInfo, position, distance, why, playerPosition);
+	}
+
+	/// <summary>朝目標目前的位置送一段路徑：終點先貼到網格地面，貼不到就用原座標交給 vnavmesh。飛不飛沿用巡邏。</summary>
+	private bool IssueApproachMove(Vector3 position, Vector3 playerPosition, long now) {
+		var destination = Navmesh.PointOnFloor(position + new Vector3(0.0f, FloorProbeLift, 0.0f))
+		                  ?? Navmesh.NearestPoint(position, 10.0f, 10.0f)
+		                  ?? position;
+
+		if (!MoveWithYield(destination, patrolFlying && HuntFlight.IsFlying)) return false;
+
+		approachPlannedFor = position;
+		approachDestination = destination;
+		approachIssuedAt = now;
+		moveStartPosition = playerPosition;
+		moveIssued = true;
+		patrolStall.Reset();
+		return true;
+	}
+
+	/// <summary>到不了更近（卡住、沒有路、逾時、使用者接手）：停下、插旗，告訴使用者停在多遠。</summary>
+	private void StopApproachShort(HuntTargetInfo targetInfo, Vector3 position, float distance, string why, Vector3 playerPosition) {
+		StopMovement();
+		LogLeg("接近停止", $"{why}；離目標 {distance:F1} 米，重新尋路 {approachRepaths} 次", playerPosition);
+		PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, position, true);
+		Finish(string.Format(Strings.HuntAssistApproachStopped, targetInfo.Name, distance));
+	}
+
+	private enum ApproachTargetState {
+		Gone,
+		Present,
+		Defeated,
+	}
+
+	/// <summary>框架執行緒限定；只回值，物件表的包裝不離開這一幀。BaseId 也比，防 id 被別的物件沿用。</summary>
+	private static ApproachTargetState ReadApproachTarget(ulong objectId, uint baseId, out Vector3 position) {
+		position = default;
+		if (objectId is 0) return ApproachTargetState.Gone;
+
+		foreach (var gameObject in Service.ObjectTable) {
+			if (gameObject.GameObjectId != objectId) continue;
+			if (gameObject.BaseId != baseId) return ApproachTargetState.Gone;
+			if (gameObject.IsDead || gameObject is IBattleChara { CurrentHp: 0 }) return ApproachTargetState.Defeated;
+			if (!gameObject.IsTargetable) return ApproachTargetState.Gone;
+
+			position = gameObject.Position;
+			return ApproachTargetState.Present;
+		}
+
+		return ApproachTargetState.Gone;
+	}
+
 	private void EnterStep(HuntAssistStep step, string status) {
 		Step = step;
 		StatusText = status;
@@ -1201,7 +1432,9 @@ public sealed class HuntAssistController {
 		stepClock.Reset();
 		target = null;
 		zoneTarget = null;
+		patrolAfterZone = false;
 		patrolTarget = null;
+		approachObjectId = 0;
 		patrolRemaining.Clear();
 		patrolTotal = 0;
 		patrolWaypoint = null;
@@ -1221,7 +1454,9 @@ public sealed class HuntAssistController {
 		stepClock.Reset();
 		target = null;
 		zoneTarget = null;
+		patrolAfterZone = false;
 		patrolTarget = null;
+		approachObjectId = 0;
 		patrolRemaining.Clear();
 		patrolTotal = 0;
 		patrolWaypoint = null;
@@ -1271,7 +1506,7 @@ public sealed class HuntAssistController {
 	}
 
 	/// <summary>DailyDuty 自己用 <see cref="MoveWithYield"/> 送路徑的步驟。其餘（傳送、城內傳送、上坐騎）是 Lifestream 或遊戲在動。</summary>
-	private bool StepOwnsMovement => Step is HuntAssistStep.ApproachingAetheryte or HuntAssistStep.Walking or HuntAssistStep.Patrolling;
+	private bool StepOwnsMovement => Step is HuntAssistStep.ApproachingAetheryte or HuntAssistStep.Walking or HuntAssistStep.Patrolling or HuntAssistStep.ApproachingTarget;
 
 	/// <summary>放下讓位、保留租約（下一段 <see cref="PrepareMoveLease"/> 再押）。租約已不在就丟掉憑證。</summary>
 	private void DropYieldOnInput() {
@@ -1354,6 +1589,19 @@ public sealed class HuntAssistController {
 
 			if (withFlag) agentMap->SetFlagMapMarker(territoryId, mapId, position);
 			agentMap->OpenMap(mapId, territoryId);
+		}
+		catch (Exception ex) {
+			Service.Log.Error(ex, "[HuntAssist] Failed to place map flag");
+		}
+	}
+
+	/// <summary>只插旗、不開地圖：戰鬥中開地圖會擋住畫面。</summary>
+	private static unsafe void SetMapFlag(uint territoryId, uint mapId, Vector3 position) {
+		try {
+			var agentMap = AgentMap.Instance();
+			if (agentMap is null) return;
+
+			agentMap->SetFlagMapMarker(territoryId, mapId, position);
 		}
 		catch (Exception ex) {
 			Service.Log.Error(ex, "[HuntAssist] Failed to place map flag");

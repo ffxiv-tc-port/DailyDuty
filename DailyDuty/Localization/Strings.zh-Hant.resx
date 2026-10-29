@@ -1222,4 +1222,40 @@
     <data name="TravelAssistStatusCancelledTo" xml:space="preserve">
         <value>已取消前往{0}。</value>
     </data>
+    <data name="HuntAssistStatusApproaching" xml:space="preserve">
+        <value>發現目標：{0}，正在接近……</value>
+    </data>
+    <data name="HuntAssistTargetReached" xml:space="preserve">
+        <value>發現目標：{0}，已接近到約 {1:F0} 米處。</value>
+    </data>
+    <data name="HuntAssistApproachStopped" xml:space="preserve">
+        <value>發現目標：{0}，接近到約 {1:F0} 米處停下（到不了更近，或你接手了操作），已在地圖上標出位置。</value>
+    </data>
+    <data name="HuntAssistApproachLost" xml:space="preserve">
+        <value>發現目標：{0}，但接近途中它消失或無法選取，已在地圖上標出最後看到的位置。</value>
+    </data>
+    <data name="HuntAssistApproachDefeated" xml:space="preserve">
+        <value>發現目標：{0}，但它已被擊倒。</value>
+    </data>
+    <data name="HuntAssistApproachTarget" xml:space="preserve">
+        <value>發現目標後先接近它</value>
+    </data>
+    <data name="HuntAssistApproachTargetHelp" xml:space="preserve">
+        <value>巡邏發現目標時，先用 vnavmesh 移動到下面設定的距離內再停下（飛行或步行沿用巡邏）。只會接近，不會選取或攻擊；進入戰鬥、目標消失或被擊倒、卡住，或 60 秒內沒接近到都會停下。關掉＝一發現就原地停下。</value>
+    </data>
+    <data name="HuntAssistApproachDistance" xml:space="preserve">
+        <value>接近距離（米）</value>
+    </data>
+    <data name="HuntAssistApproachDistanceHelp" xml:space="preserve">
+        <value>與目標中心的直線距離（含高度差）在此範圍內就停下。遠程攻擊的射程約 25 米。</value>
+    </data>
+    <data name="HuntAssistPatrolAfterZone" xml:space="preserve">
+        <value>傳送到目標地圖後接著巡邏</value>
+    </data>
+    <data name="HuntAssistPatrolAfterZoneHelp" xml:space="preserve">
+        <value>按「前往目標地圖」抵達後，自動接著巡邏重生點（需要 vnavmesh）。關掉＝抵達就停下，要巡邏再按「巡邏重生點」。</value>
+    </data>
+    <data name="HuntAssistGoToTargetThenPatrol" xml:space="preserve">
+        <value>抵達後會接著巡邏重生點（可在巡邏設定關閉）。</value>
+    </data>
 </root>

@@ -24,4 +24,24 @@ internal static class HuntAssistGeometry {
 		direction = Vector2.Normalize(direction) * standOff;
 		return new Vector3(aetheryte.X + direction.X, aetheryte.Y, aetheryte.Z + direction.Y);
 	}
+
+	/// <summary>
+	/// 接近目標時尋路停了、還沒進到接近距離：走完那一段（離終點水平 <paramref name="legEndRadius"/> 內）且目標從規劃時
+	/// 水平移動超過 <paramref name="repathMove"/>＝重新規劃；其餘都停，只分辨原因（從起點移動不到 <paramref name="noPathMove"/>＝沒有路）。
+	/// </summary>
+	public static ApproachIdleAction ClassifyApproachIdle(Vector3 player, Vector3 legDestination, Vector3 moveStart, Vector3 plannedFor, Vector3 targetNow,
+		float legEndRadius, float repathMove, float noPathMove) {
+		if (HorizontalDistance(player, legDestination) <= legEndRadius) {
+			return HorizontalDistance(plannedFor, targetNow) > repathMove ? ApproachIdleAction.Repath : ApproachIdleAction.StopAtLegEnd;
+		}
+
+		return Vector3.Distance(player, moveStart) < noPathMove ? ApproachIdleAction.StopNoPath : ApproachIdleAction.StopInterrupted;
+	}
+}
+
+internal enum ApproachIdleAction {
+	Repath,
+	StopAtLegEnd,
+	StopNoPath,
+	StopInterrupted,
 }

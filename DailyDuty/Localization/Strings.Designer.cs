@@ -3633,5 +3633,113 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("TravelAssistStatusCancelledTo", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark found: {0} - moving closer...
+        /// </summary>
+        internal static string HuntAssistStatusApproaching {
+            get {
+                return ResourceManager.GetString("HuntAssistStatusApproaching", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark found: {0} - now about {1:F0} yalms away.
+        /// </summary>
+        internal static string HuntAssistTargetReached {
+            get {
+                return ResourceManager.GetString("HuntAssistTargetReached", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark found: {0} - stopped about {1:F0} yalms away (could not get closer, or you took over). Its position is flagged on the map.
+        /// </summary>
+        internal static string HuntAssistApproachStopped {
+            get {
+                return ResourceManager.GetString("HuntAssistApproachStopped", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark found: {0} - but it vanished or became untargetable on the way. Its last known position is flagged on the map.
+        /// </summary>
+        internal static string HuntAssistApproachLost {
+            get {
+                return ResourceManager.GetString("HuntAssistApproachLost", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark found: {0} - but it has already been defeated.
+        /// </summary>
+        internal static string HuntAssistApproachDefeated {
+            get {
+                return ResourceManager.GetString("HuntAssistApproachDefeated", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Move closer to the mark once it is found
+        /// </summary>
+        internal static string HuntAssistApproachTarget {
+            get {
+                return ResourceManager.GetString("HuntAssistApproachTarget", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to When the patrol finds the mark, vnavmesh first moves you within the distance below (flying or on foot, same as the patrol). It only moves - it never targets or attacks. It stops on combat, when the mark vanishes or is defeated, when stuck, or after 60 seconds. Off: stop where the mark was spotted.
+        /// </summary>
+        internal static string HuntAssistApproachTargetHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistApproachTargetHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Approach distance (yalms)
+        /// </summary>
+        internal static string HuntAssistApproachDistance {
+            get {
+                return ResourceManager.GetString("HuntAssistApproachDistance", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stops once the straight-line distance to the mark's centre (height included) is within this. Ranged attacks reach about 25 yalms.
+        /// </summary>
+        internal static string HuntAssistApproachDistanceHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistApproachDistanceHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Start patrolling after teleporting to the mark's zone
+        /// </summary>
+        internal static string HuntAssistPatrolAfterZone {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolAfterZone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to After "Go to Target Zone" arrives, the spawn point patrol starts on its own (needs vnavmesh). Off: stop on arrival, and press "Patrol Spawn Points" to patrol.
+        /// </summary>
+        internal static string HuntAssistPatrolAfterZoneHelp {
+            get {
+                return ResourceManager.GetString("HuntAssistPatrolAfterZoneHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to On arrival the spawn point patrol starts automatically (can be turned off in Patrol Settings).
+        /// </summary>
+        internal static string HuntAssistGoToTargetThenPatrol {
+            get {
+                return ResourceManager.GetString("HuntAssistGoToTargetThenPatrol", resourceCulture);
+            }
+        }
     }
 }

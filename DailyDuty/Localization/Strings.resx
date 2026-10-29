@@ -1222,4 +1222,40 @@ Limited to once per 5 mins</value>
     <data name="TravelAssistStatusCancelledTo" xml:space="preserve">
         <value>Trip to {0} cancelled.</value>
     </data>
+    <data name="HuntAssistStatusApproaching" xml:space="preserve">
+        <value>Mark found: {0} - moving closer...</value>
+    </data>
+    <data name="HuntAssistTargetReached" xml:space="preserve">
+        <value>Mark found: {0} - now about {1:F0} yalms away.</value>
+    </data>
+    <data name="HuntAssistApproachStopped" xml:space="preserve">
+        <value>Mark found: {0} - stopped about {1:F0} yalms away (could not get closer, or you took over). Its position is flagged on the map.</value>
+    </data>
+    <data name="HuntAssistApproachLost" xml:space="preserve">
+        <value>Mark found: {0} - but it vanished or became untargetable on the way. Its last known position is flagged on the map.</value>
+    </data>
+    <data name="HuntAssistApproachDefeated" xml:space="preserve">
+        <value>Mark found: {0} - but it has already been defeated.</value>
+    </data>
+    <data name="HuntAssistApproachTarget" xml:space="preserve">
+        <value>Move closer to the mark once it is found</value>
+    </data>
+    <data name="HuntAssistApproachTargetHelp" xml:space="preserve">
+        <value>When the patrol finds the mark, vnavmesh first moves you within the distance below (flying or on foot, same as the patrol). It only moves - it never targets or attacks. It stops on combat, when the mark vanishes or is defeated, when stuck, or after 60 seconds. Off: stop where the mark was spotted.</value>
+    </data>
+    <data name="HuntAssistApproachDistance" xml:space="preserve">
+        <value>Approach distance (yalms)</value>
+    </data>
+    <data name="HuntAssistApproachDistanceHelp" xml:space="preserve">
+        <value>Stops once the straight-line distance to the mark's centre (height included) is within this. Ranged attacks reach about 25 yalms.</value>
+    </data>
+    <data name="HuntAssistPatrolAfterZone" xml:space="preserve">
+        <value>Start patrolling after teleporting to the mark's zone</value>
+    </data>
+    <data name="HuntAssistPatrolAfterZoneHelp" xml:space="preserve">
+        <value>After "Go to Target Zone" arrives, the spawn point patrol starts on its own (needs vnavmesh). Off: stop on arrival, and press "Patrol Spawn Points" to patrol.</value>
+    </data>
+    <data name="HuntAssistGoToTargetThenPatrol" xml:space="preserve">
+        <value>On arrival the spawn point patrol starts automatically (can be turned off in Patrol Settings).</value>
+    </data>
 </root>

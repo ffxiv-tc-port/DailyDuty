@@ -319,7 +319,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 			// shown up front.
 			if (Service.ClientState.TerritoryType != targetInfo.TerritoryId) {
 				if (ImGui.Button($"{Strings.HuntAssistGoToTarget}##hunt_target_{config.RowId}")) {
-					controller.GoToTargetZone(targetInfo, config.RowId);
+					controller.GoToTargetZone(targetInfo, config.RowId, System.HuntAssistConfig.PatrolAfterZoneTeleport);
 				}
 
 				if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
@@ -332,6 +332,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 					var tooltip = $"{targetInfo.Name} ({rankLabel})\n{targetInfo.ZoneName}";
 					if (targetInfo.AetheryteName.Length > 0) tooltip += $" - {targetInfo.AetheryteName}";
 					if (targetInfo.AetheryteChosenFromRoute) tooltip += $"\n{Strings.HuntAssistTargetTooltip}";
+					if (System.HuntAssistConfig.PatrolAfterZoneTeleport) tooltip += $"\n{Strings.HuntAssistGoToTargetThenPatrol}";
 
 					SetTooltipInDisabled(tooltip);
 				}

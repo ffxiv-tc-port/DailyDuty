@@ -51,6 +51,23 @@ public class HuntMarksWeekly : HuntMarksBase {
 		// SliderFloat reports true every frame while dragging - only persist once it settles.
 		if (ImGui.IsItemDeactivatedAfterEdit()) configChanged = true;
 
+		configChanged |= ImGui.Checkbox(Strings.HuntAssistPatrolAfterZone, ref config.PatrolAfterZoneTeleport);
+		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntAssistPatrolAfterZoneHelp);
+
+		configChanged |= ImGui.Checkbox(Strings.HuntAssistApproachTarget, ref config.ApproachFoundTarget);
+		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntAssistApproachTargetHelp);
+
+		ImGui.TextUnformatted(Strings.HuntAssistApproachDistance);
+		ImGuiComponents.HelpMarker(Strings.HuntAssistApproachDistanceHelp);
+
+		var approachDistance = config.ApproachDistance;
+		ImGuiTweaks.SetFullWidth();
+		if (ImGui.SliderFloat("##ApproachDistance", ref approachDistance, HuntAssistConfig.MinimumApproachDistance, HuntAssistConfig.MaximumApproachDistance, "%.0f")) {
+			config.ApproachDistance = approachDistance;
+		}
+
+		if (ImGui.IsItemDeactivatedAfterEdit()) configChanged = true;
+
 		if (configChanged) config.Save();
 	}
 }
