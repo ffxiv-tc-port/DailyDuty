@@ -1067,7 +1067,7 @@
         <value>偵測半徑（米）</value>
     </data>
     <data name="HuntAssistDetectionRadiusHelp" xml:space="preserve">
-        <value>與重生點的水平距離在此範圍內就算已檢查，不必真的走到座標上。遊戲大約只在 100 米內才會載入標的，因此以此為上限；預設值刻意保守，因為它同時要吸收飛行時拉開的高度差。</value>
+        <value>與重生點的水平距離在此範圍內就算已檢查，不必真的走到座標上。實測 300 米外也發現過標的、約 200 米內穩定，因此上限 300；半徑越大一趟能涵蓋越多出現點，但超過遊戲實際載入的距離會漏掉標的，建議設在你實際看得到的範圍內。</value>
     </data>
     <data name="HuntAssistPatrolSettings" xml:space="preserve">
         <value>巡邏設定</value>

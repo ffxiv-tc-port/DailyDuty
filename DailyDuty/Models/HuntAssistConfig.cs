@@ -5,13 +5,11 @@ namespace DailyDuty.Models;
 public class HuntAssistConfig {
 	/// <summary>
 	/// How close the patrol has to get to a spawn point before it counts as checked.
-	/// Upper bound comes from what the client will actually let us see: Hunt Helper's radar
-	/// draws its detection circle at 2 map coordinate units, and one map coordinate unit is
-	/// 50 yalms, so ~100y is the furthest a mark can realistically be in the object table.
-	/// The default is deliberately half of that - missing the mark costs the player the run,
-	/// while re-checking a point they already covered only costs a few seconds.
+	/// Marks are in the object table well beyond 100y on TC (patrol has spotted them at 311/338/507y),
+	/// so the ceiling is 300y. The default stays below the player's observed ~200y - missing the
+	/// mark costs the run, re-checking a covered point only costs a few seconds.
 	/// </summary>
-	public float DetectionRadius = 50.0f;
+	public float DetectionRadius = 150.0f;
 
 	/// <summary>Mount up and use flying paths when the zone allows it.</summary>
 	public bool UseFlying = true;
@@ -32,7 +30,7 @@ public class HuntAssistConfig {
 	public float ApproachDistance = 20.0f;
 
 	public const float MinimumDetectionRadius = 10.0f;
-	public const float MaximumDetectionRadius = 100.0f;
+	public const float MaximumDetectionRadius = 300.0f;
 	public const float MinimumApproachDistance = 5.0f;
 	public const float MaximumApproachDistance = 50.0f;
 

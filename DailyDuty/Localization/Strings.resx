@@ -1067,7 +1067,7 @@ Limited to once per 5 mins</value>
         <value>Detection radius (yalms)</value>
     </data>
     <data name="HuntAssistDetectionRadiusHelp" xml:space="preserve">
-        <value>Horizontal distance at which a spawn point counts as checked - the patrol never has to reach the exact spot. The game only keeps marks loaded within about 100 yalms, so that is the ceiling; the default is deliberately conservative because it also has to absorb the altitude gained while flying.</value>
+        <value>Horizontal distance at which a spawn point counts as checked - the patrol never has to reach the exact spot. Marks have been spotted 300+ yalms away and about 200 yalms is reliable, so the ceiling is 300; a larger radius covers more points per pass but a mark beyond what the game has loaded would be missed, so stay below the range you actually see.</value>
     </data>
     <data name="HuntAssistPatrolSettings" xml:space="preserve">
         <value>Patrol Settings</value>
