@@ -119,6 +119,13 @@ public sealed class HuntAssistController {
 	private const long ApproachRepathMilliseconds = 2_000;
 	private const float ApproachLegEndRadius = 5.0f;
 
+	/// <summary>
+	/// 遠處的怪遊戲標成不可選取，不能當成消失。只有離目標「接近距離＋這個餘量」內仍連續不可選取超過寬限才算消失；
+	/// 預設接近距離時這圈是 30 米＝遠程技能射程，遊戲在這距離內一定讓人選得到怪；接近距離上限 50 時這圈 60 米是未實測的推估。
+	/// </summary>
+	private const float NearUntargetableMargin = 10.0f;
+	private const long NearUntargetableGraceMilliseconds = 3_000;
+
 	public NavmeshIpc Navmesh { get; } = new();
 
 	public LifestreamIpc Lifestream { get; } = new();
@@ -196,6 +203,8 @@ public sealed class HuntAssistController {
 	private Vector3 approachDestination;
 	private long approachIssuedAt;
 	private int approachRepaths;
+	private long approachNearUntargetableSince;
+	private bool approachTargetableSeen;
 
 	/// <summary>
 	/// Starts the trip to a hunt board. Returns false (and says why via
@@ -1058,7 +1067,7 @@ public sealed class HuntAssistController {
 		if (FindTargetObject(targetInfo) is { } found) {
 			var foundPosition = found.Position;
 			if (System.HuntAssistConfig.ApproachFoundTarget) {
-				BeginApproach(targetInfo, found.GameObjectId, foundPosition, playerPosition);
+				BeginApproach(targetInfo, found.GameObjectId, foundPosition, found.IsTargetable, playerPosition);
 				return;
 			}
 
@@ -1237,20 +1246,22 @@ public sealed class HuntAssistController {
 		HuntAssistConfig.MaximumApproachDistance);
 
 	/// <summary>發現目標後改走接近步驟。巡邏那段路徑不先停：下一幀送的路徑會直接取代它。</summary>
-	private void BeginApproach(HuntTargetInfo targetInfo, ulong objectId, Vector3 position, Vector3 playerPosition) {
+	private void BeginApproach(HuntTargetInfo targetInfo, ulong objectId, Vector3 position, bool targetable, Vector3 playerPosition) {
 		approachObjectId = objectId;
 		approachLastSeen = position;
 		approachRepaths = 0;
+		approachNearUntargetableSince = 0;
+		approachTargetableSeen = targetable;
 		moveIssued = false;
 		patrolStall.Reset();
 		LogLeg("發現目標，開始接近", $"{targetInfo.Name}（{targetInfo.BNpcBaseId}，物件 {objectId:X}）在 {FormatPosition(position)}，" +
-		                     $"直線 {Vector3.Distance(playerPosition, position):F0} 米；接近到 {ApproachDistance:F0} 米內再停", playerPosition);
+		                     $"直線 {Vector3.Distance(playerPosition, position):F0} 米，{(targetable ? "可選取" : "目前不可選取")}；接近到 {ApproachDistance:F0} 米內再停", playerPosition);
 		EnterStep(HuntAssistStep.ApproachingTarget, string.Format(Strings.HuntAssistStatusApproaching, targetInfo.Name));
 	}
 
 	/// <summary>
-	/// 每幀用發現當下抄下的 GameObjectId 重查目標，不見、不可選或倒下就停。只移動，不選取、不攻擊；
-	/// 戰鬥、時限（讓位時暫停）、卡住與巡邏同一套判斷。
+	/// 每幀用發現當下抄下的 GameObjectId 重查目標：物件表裡不見、倒下、或近距離仍持續不可選取就停（遠處不可選取照常接近）。
+	/// 只移動，不選取、不攻擊；戰鬥、時限（讓位時暫停）、卡住與巡邏同一套判斷。
 	/// </summary>
 	private void UpdateApproachingTarget(Vector3 playerPosition) {
 		if (patrolTarget is not { } targetInfo) {
@@ -1264,21 +1275,37 @@ public sealed class HuntAssistController {
 			return;
 		}
 
-		var state = ReadApproachTarget(approachObjectId, targetInfo.BNpcBaseId, out var position);
-		if (state is not ApproachTargetState.Present) {
-			var defeated = state is ApproachTargetState.Defeated;
+		var now = Environment.TickCount64;
+		var state = ReadApproachTarget(approachObjectId, targetInfo.BNpcBaseId, out var position, out var targetable);
+		var distance = state is ApproachTargetState.Missing ? 0.0f : Vector3.Distance(playerPosition, position);
+		var nearRange = ApproachDistance + NearUntargetableMargin;
+		var verdict = HuntAssistGeometry.JudgeApproachTarget(state is not ApproachTargetState.Missing, state is ApproachTargetState.Defeated, targetable,
+			distance, nearRange, now, NearUntargetableGraceMilliseconds, ref approachNearUntargetableSince);
+
+		if (verdict is not ApproachTargetVerdict.Present) {
+			var defeated = verdict is ApproachTargetVerdict.Defeated;
+			var lostWhy = verdict switch {
+				ApproachTargetVerdict.Defeated => "目標已倒下",
+				ApproachTargetVerdict.NearUntargetable => $"離目標 {distance:F1} 米（{nearRange:F0} 米內）仍連續 {NearUntargetableGraceMilliseconds / 1000.0:F0} 秒無法選取",
+				_ => "物件表裡找不到目標（或物件編號已換成別的怪）",
+			};
 			StopMovement();
-			LogLeg("接近中止", $"{(defeated ? "目標已倒下" : "物件表裡找不到目標或它無法選取")}；最後看到在 {FormatPosition(approachLastSeen)}", playerPosition);
+			LogLeg("接近中止", $"{lostWhy}；最後看到在 {FormatPosition(approachLastSeen)}", playerPosition);
 			if (!defeated) PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, approachLastSeen, true);
 			Finish(string.Format(defeated ? Strings.HuntAssistApproachDefeated : Strings.HuntAssistApproachLost, targetInfo.Name));
 			return;
 		}
 
 		approachLastSeen = position;
-		var distance = Vector3.Distance(playerPosition, position);
+		if (targetable && !approachTargetableSeen) {
+			approachTargetableSeen = true;
+			LogLeg("目標變成可選取", $"離目標 {distance:F1} 米", playerPosition);
+		}
+
 		if (distance <= ApproachDistance) {
 			StopMovement();
-			LogLeg("接近完成", $"離目標 {distance:F1} 米（門檻 {ApproachDistance:F0} 米），重新尋路 {approachRepaths} 次，共 {stepClock.Elapsed.TotalSeconds:F1} 秒", playerPosition);
+			LogLeg("接近完成", $"離目標 {distance:F1} 米（門檻 {ApproachDistance:F0} 米，{(targetable ? "可選取" : "目前不可選取")}），" +
+			                   $"重新尋路 {approachRepaths} 次，共 {stepClock.Elapsed.TotalSeconds:F1} 秒", playerPosition);
 			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, position, true);
 			Finish(string.Format(Strings.HuntAssistTargetReached, targetInfo.Name, distance));
 			return;
@@ -1296,7 +1323,6 @@ public sealed class HuntAssistController {
 			return;
 		}
 
-		var now = Environment.TickCount64;
 		if (!moveIssued) {
 			if (!IssueApproachMove(position, playerPosition, now)) {
 				StopApproachShort(targetInfo, position, distance, "vnavmesh 不受理移動", playerPosition);
@@ -1377,27 +1403,32 @@ public sealed class HuntAssistController {
 	}
 
 	private enum ApproachTargetState {
-		Gone,
+		Missing,
 		Present,
 		Defeated,
 	}
 
-	/// <summary>框架執行緒限定；只回值，物件表的包裝不離開這一幀。BaseId 也比，防 id 被別的物件沿用。</summary>
-	private static ApproachTargetState ReadApproachTarget(ulong objectId, uint baseId, out Vector3 position) {
+	/// <summary>
+	/// 框架執行緒限定；只回值，物件表的包裝不離開這一幀。BaseId 也比，防 id 被別的物件沿用。
+	/// 可不可選取只回報、不在這裡判消失：遠處的怪本來就不可選取（見 <see cref="NearUntargetableMargin"/>）。
+	/// </summary>
+	private static ApproachTargetState ReadApproachTarget(ulong objectId, uint baseId, out Vector3 position, out bool targetable) {
 		position = default;
-		if (objectId is 0) return ApproachTargetState.Gone;
+		targetable = false;
+		if (objectId is 0) return ApproachTargetState.Missing;
 
 		foreach (var gameObject in Service.ObjectTable) {
 			if (gameObject.GameObjectId != objectId) continue;
-			if (gameObject.BaseId != baseId) return ApproachTargetState.Gone;
-			if (gameObject.IsDead || gameObject is IBattleChara { CurrentHp: 0 }) return ApproachTargetState.Defeated;
-			if (!gameObject.IsTargetable) return ApproachTargetState.Gone;
+			if (gameObject.BaseId != baseId) return ApproachTargetState.Missing;
 
 			position = gameObject.Position;
+			if (gameObject.IsDead || gameObject is IBattleChara { CurrentHp: 0 }) return ApproachTargetState.Defeated;
+
+			targetable = gameObject.IsTargetable;
 			return ApproachTargetState.Present;
 		}
 
-		return ApproachTargetState.Gone;
+		return ApproachTargetState.Missing;
 	}
 
 	private void EnterStep(HuntAssistStep step, string status) {

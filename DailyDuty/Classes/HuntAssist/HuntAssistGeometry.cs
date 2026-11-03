@@ -37,6 +37,32 @@ internal static class HuntAssistGeometry {
 
 		return Vector3.Distance(player, moveStart) < noPathMove ? ApproachIdleAction.StopNoPath : ApproachIdleAction.StopInterrupted;
 	}
+
+	/// <summary>
+	/// 接近途中目標還在不在。遊戲把太遠（沒畫出來）的怪標成不可選取，所以不可選取只在離目標 <paramref name="nearRange"/> 米內
+	/// 連續 <paramref name="graceMilliseconds"/> 毫秒才算消失。<paramref name="nearUntargetableSince"/> 是這段的起點（0＝沒在計），
+	/// 由呼叫端跨幀保存、這裡更新。
+	/// </summary>
+	public static ApproachTargetVerdict JudgeApproachTarget(bool inTable, bool defeated, bool targetable, float distance, float nearRange,
+		long now, long graceMilliseconds, ref long nearUntargetableSince) {
+		if (!inTable) return ApproachTargetVerdict.Missing;
+		if (defeated) return ApproachTargetVerdict.Defeated;
+
+		if (targetable || distance > nearRange) {
+			nearUntargetableSince = 0;
+			return ApproachTargetVerdict.Present;
+		}
+
+		if (nearUntargetableSince is 0) nearUntargetableSince = now;
+		return now - nearUntargetableSince >= graceMilliseconds ? ApproachTargetVerdict.NearUntargetable : ApproachTargetVerdict.Present;
+	}
+}
+
+internal enum ApproachTargetVerdict {
+	Present,
+	Missing,
+	Defeated,
+	NearUntargetable,
 }
 
 internal enum ApproachIdleAction {
