@@ -2824,7 +2824,7 @@ namespace DailyDuty.Localization {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to One click performs one step. Movement stops when you enter combat or a duty, and when you take the controls back..
+        ///   Looks up a localized string similar to One click runs the whole trip (teleport, then travel there). &quot;Go to Target Zone&quot; also patrols the spawn points on arrival and moves up to the mark once it is found (both can be turned off in Patrol Settings). Stops when you enter combat or a duty; steering yourself pauses it and it carries on once you let go (Patrol Settings can make it stop instead)..
         /// </summary>
         internal static string HuntAssistHelp {
             get {
@@ -3104,7 +3104,7 @@ namespace DailyDuty.Localization {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Walks the known spawn points on a short route and stops when the mark appears. It never attacks - moving yourself ends the patrol..
+        ///   Looks up a localized string similar to Walks the known spawn points on a short route; once the mark appears it moves up to the set distance and stops (Patrol Settings can make it stop on sight instead). It only moves - it never targets or attacks. Steering yourself pauses it and it carries on once you let go..
         /// </summary>
         internal static string HuntAssistPatrolTooltip {
             get {

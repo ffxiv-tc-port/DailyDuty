@@ -932,7 +932,7 @@ Limited to once per 5 mins</value>
         <value>Hunt Board Shortcuts</value>
     </data>
     <data name="HuntAssistHelp" xml:space="preserve">
-        <value>One click performs one step. Movement stops when you enter combat or a duty, and when you take the controls back.</value>
+        <value>One click runs the whole trip (teleport, then travel there). "Go to Target Zone" also patrols the spawn points on arrival and moves up to the mark once it is found (both can be turned off in Patrol Settings). Stops when you enter combat or a duty; steering yourself pauses it and it carries on once you let go (Patrol Settings can make it stop instead).</value>
     </data>
     <data name="HuntAssistGoToBoard" xml:space="preserve">
         <value>Go to Board</value>
@@ -1025,7 +1025,7 @@ Limited to once per 5 mins</value>
         <value>Patrol Spawn Points</value>
     </data>
     <data name="HuntAssistPatrolTooltip" xml:space="preserve">
-        <value>Walks the known spawn points on a short route and stops when the mark appears. It never attacks - moving yourself ends the patrol.</value>
+        <value>Walks the known spawn points on a short route; once the mark appears it moves up to the set distance and stops (Patrol Settings can make it stop on sight instead). It only moves - it never targets or attacks. Steering yourself pauses it and it carries on once you let go.</value>
     </data>
     <data name="HuntAssistStatusPatrolling" xml:space="preserve">
         <value>Patrolling spawn points</value>
