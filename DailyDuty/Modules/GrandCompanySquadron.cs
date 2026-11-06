@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using DailyDuty.Classes;
 using DailyDuty.Localization;
@@ -67,27 +69,97 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	// The mission is no longer in progress when the window closes
 	private void GcArmyExpeditionResultPreFinalize(AddonEvent eventType, AddonArgs addonInfo) {
 		var addon = (AtkUnitBase*) addonInfo.Addon.Address;
-                
+
 		Data.MissionStarted = false;
 		DataChanged = true;
 
-		if (addon->AtkValues[4].Type is not ValueType.String) throw new Exception("Type Mismatch Exception");
-		if (addon->AtkValues[2].Type is not ValueType.Int) throw new Exception("Type Mismatch Exception");
-                
-		// 🔴 用 CStringPointer.ExtractText() 而不是 GetValueAsString():後者走 ToString(),把整段位元組當 UTF-8
-		//    直接解碼、不剝 SeString payload,而比對的另一端 GcArmyExpedition.Name.ToString() 是 Lumina 的
-		//    ExtractText()(payload 已剝掉)。同一行的 Alphanumeric() 只濾掉非「字母或數字」,擋不住 payload 位元組。
-		//    比不中的後果是靜默的:missionInfo 為 null → 週常「部隊小隊任務」永遠不會被標成已完成。
-		var missionText = Alphanumeric().Replace(addon->AtkValues[4].String.ExtractText().ToLower(), string.Empty);
-		var missionSuccessful = addon->AtkValues[2].Int == 1;
+		if (addon is null || addon->AtkValues is null) return;
+		var values = addon->AtkValuesSpan;
 
-		var missionInfo = Service.DataManager.GetExcelSheet<GcArmyExpedition>()
-			.FirstOrDefault(mission => Alphanumeric().Replace(mission.Name.ToString().ToLower(), string.Empty) == missionText);
+		// 名稱比對的兩端都要剝 payload:AtkValue 端用 CStringPointer.ExtractText()(ToString() 不剝),表端整欄無巨集。
+		// 先看上游的索引 4,比不中再掃其餘字串值:整串等於某個任務名稱才算,不做子字串比對以免串錯任務。
+		var missions = Service.DataManager.GetExcelSheet<GcArmyExpedition>()
+			.Select(row => (Key: NormalizeMissionName(row.Name.ExtractText()), Row: row))
+			.Where(entry => entry.Key.Length > 0)
+			.ToList();
 
-		if (missionInfo is { GcArmyExpeditionType.RowId: 3 } && missionSuccessful) {
+		var nameIndex = FindMissionNameIndex(values, missions, out var missionInfo);
+		if (missionInfo is not { } mission) {
+			LogResultValues(values, "找不到任務名稱");
+			return;
+		}
+
+		if (values.Length <= 2 || values[2].Type is not ValueType.Int) {
+			LogResultValues(values, $"任務名稱在索引 {nameIndex}，但索引 2 不是成功旗標");
+			return;
+		}
+
+		if (nameIndex != 4) {
+			LogResultValues(values, $"任務名稱在索引 {nameIndex}，不在預期的索引 4");
+		}
+
+		if (mission.GcArmyExpeditionType.RowId is 3 && values[2].Int == 1) {
 			Data.MissionCompleted = true;
 			DataChanged = true;
 		}
+	}
+
+	private static string NormalizeMissionName(string text)
+		=> Alphanumeric().Replace(text.ToLowerInvariant(), string.Empty);
+
+	private static int FindMissionNameIndex(Span<AtkValue> values, List<(string Key, GcArmyExpedition Row)> missions, out GcArmyExpedition? mission) {
+		if (values.Length > 4 && TryMatchMission(values[4], missions, out mission)) return 4;
+
+		for (var index = 0; index < values.Length; index++) {
+			if (index != 4 && TryMatchMission(values[index], missions, out mission)) return index;
+		}
+
+		mission = null;
+		return -1;
+	}
+
+	private static bool TryMatchMission(in AtkValue value, List<(string Key, GcArmyExpedition Row)> missions, out GcArmyExpedition? mission) {
+		mission = null;
+		if ((value.Type & ValueType.TypeMask) is not ValueType.String || !value.String.HasValue) return false;
+
+		var text = NormalizeMissionName(value.String.ExtractText());
+		if (text.Length == 0) return false;
+
+		foreach (var entry in missions) {
+			if (entry.Key != text) continue;
+			mission = entry.Row;
+			return true;
+		}
+
+		return false;
+	}
+
+	// 只在結算視窗關閉時呼叫(一次一行),讓使用者回報的 log 直接帶出台服這個視窗的實際索引與格式。
+	private static void LogResultValues(Span<AtkValue> values, string reason) {
+		var builder = new StringBuilder();
+		for (var index = 0; index < values.Length; index++) {
+			ref var value = ref values[index];
+			builder.Append(" [").Append(index).Append("] ").Append(value.Type).Append('=');
+
+			switch (value.Type & ValueType.TypeMask) {
+				case ValueType.Bool: builder.Append(value.Byte); break;
+				case ValueType.Int: builder.Append(value.Int); break;
+				case ValueType.UInt: builder.Append(value.UInt); break;
+				case ValueType.Int64: builder.Append(value.Int64); break;
+				case ValueType.UInt64: builder.Append(value.UInt64); break;
+				case ValueType.Float: builder.Append(value.Float.ToString(CultureInfo.InvariantCulture)); break;
+				case ValueType.String when value.String.HasValue:
+					var span = value.String.AsReadOnlySeStringSpan();
+					var text = span.ExtractText();
+					builder.Append('"').Append(text).Append('"');
+					var macro = span.ToMacroString();
+					if (macro != text) builder.Append(" macro=\"").Append(macro).Append('"');
+					break;
+				default: builder.Append('-'); break;
+			}
+		}
+
+		Service.Log.Information($"[GrandCompanySquadron] 軍隊分隊任務結算視窗{reason}；AtkValues 共 {values.Length} 個:{builder}");
 	}
 
 	public override void Unload() {
