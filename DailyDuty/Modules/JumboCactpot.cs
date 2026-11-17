@@ -190,6 +190,9 @@ public unsafe class JumboCactpot : BaseModules.Modules.Special<JumboCactpotData,
 		var result = onReceiveEventHook!.OriginalDisposeSafe(agent, returnValue, args, argCount, sender);
         
 		HookSafety.ExecuteSafe(() => {
+			// 沒有參數的事件不可解參 args（越界讀，AVE 攔不到）。
+			if (args is null || argCount == 0) return;
+
 			var data = args->Int;
 
 			switch (sender) {

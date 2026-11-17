@@ -105,7 +105,8 @@ public class ChallengeLogConfig : ModuleTaskConfig<ContentsNote> {
             });
         }
         
-        var enabledWarnings = WarningEntries.Select(warning => Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(warning)).ToList();
+        // 跨版本殘留、表裡已沒有的列以「?<id>」顯示，仍可刪除；不擲例外。
+        var enabledWarnings = WarningEntries.Select(warning => (RowId: warning, Name: Service.DataManager.GetExcelSheet<ContentsNote>().GetRowOrDefault(warning)?.Name.ToString() ?? $"?{warning}")).ToList();
         
         foreach (var task in enabledWarnings) {
             if (ImGuiTweaks.IconButtonWithSize(Service.PluginInterface.UiBuilder.IconFontFixedWidthHandle, FontAwesomeIcon.Trash, $"remove_task##{task.RowId}", ImGuiHelpers.ScaledVector2(24.0f))) {
@@ -115,7 +116,7 @@ public class ChallengeLogConfig : ModuleTaskConfig<ContentsNote> {
             
             ImGui.SameLine();
             
-            ImGui.Text(task.Name.ToString());
+            ImGui.Text(task.Name);
         }
 
         if (enabledWarnings.Count == 0) {
@@ -177,9 +178,9 @@ public unsafe class ChallengeLog : BaseModules.Modules.WeeklyTask<ModuleTaskData
             if (matchingTaskData == null) continue;
 
             if (!matchingTaskData.Complete) {
-                var taskInfo = Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(warningId);
+                var taskName = Service.DataManager.GetExcelSheet<ContentsNote>().GetRowOrDefault(warningId)?.Name.ToString() ?? $"?{warningId}";
                 
-                StatusMessage.PrintTaggedMessage(string.Format(Strings.TaskStillIncomplete, taskInfo.Name.ToString()), ModuleName.ChallengeLog);
+                StatusMessage.PrintTaggedMessage(string.Format(Strings.TaskStillIncomplete, taskName), ModuleName.ChallengeLog);
                 anyWarningGenerated = true;
             }
         }

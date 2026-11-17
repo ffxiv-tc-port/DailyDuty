@@ -215,16 +215,13 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     private static void OnFrameworkUpdate(IFramework framework) {
         if (!Service.ClientState.IsLoggedIn) return;
 
-        // Check for reset, and reset modules that need it 
-        System.ModuleController.ResetModules();
-        
-        // Update All Modules
-        System.ModuleController.UpdateModules();
-        
-        System.TodoListController.Update();
-        System.TimersController.Update();
-        System.HuntAssistController.Update();
-        System.StatusIpc.Update();
+        // 逐步隔離：一步擲例外不可以讓同幀後面的步驟（尤其討伐輔助的停止判斷）整幀跳過。
+        FrameStepGuard.Run("ResetModules", static () => System.ModuleController.ResetModules());
+        FrameStepGuard.Run("UpdateModules", static () => System.ModuleController.UpdateModules());
+        FrameStepGuard.Run("TodoList", static () => System.TodoListController.Update());
+        FrameStepGuard.Run("Timers", static () => System.TimersController.Update());
+        FrameStepGuard.Run("HuntAssist", static () => System.HuntAssistController.Update());
+        FrameStepGuard.Run("StatusIpc", static () => System.StatusIpc.Update());
     }
     
     // 每一步各自隔離:任何一步擲例外只賠掉它自己,後面幾步照跑。

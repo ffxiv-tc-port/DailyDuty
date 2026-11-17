@@ -85,7 +85,8 @@ public class LuminaTaskConfigList<T> : ICollection<LuminaTaskConfig<T>> where T 
 				using var indent = ImRaii.PushIndent();
 				
 				foreach (var option in ConfigList) {
-					var luminaData = Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(option.RowId);
+					// 跨版本殘留、表裡已沒有的列沒有分類可歸，這裡不列（資料頁仍以「?<id>」顯示）。
+					if (Service.DataManager.GetExcelSheet<ContentsNote>().GetRowOrDefault(option.RowId) is not { } luminaData) continue;
 					if (luminaData.ContentType.RowId != category.RowId) continue;
 
 					// GetRow 查得到列時，Label() 與 Name.ToString() 是同一個字。
@@ -116,7 +117,7 @@ public class LuminaTaskConfigList<T> : ICollection<LuminaTaskConfig<T>> where T 
                         
 		if (ConfigList.Count > 0) {
 			foreach (var data in ConfigList) {
-				var luminaData = Service.DataManager.GetExcelSheet<ContentFinderCondition>().GetRow(data.RowId);
+				var luminaName = Service.DataManager.GetExcelSheet<ContentFinderCondition>().GetRowOrDefault(data.RowId)?.Name.ToString() ?? $"?{data.RowId}";
 
 				ImGui.TableNextColumn();
 				var enabled = data.Enabled;
@@ -127,7 +128,7 @@ public class LuminaTaskConfigList<T> : ICollection<LuminaTaskConfig<T>> where T 
                         
 				ImGui.TableNextColumn();
 				var count = data.TargetCount;
-				ImGui.InputInt($"##TrackedItemCount{luminaData.Name}", ref count, 0, 0);
+				ImGui.InputInt($"##TrackedItemCount{luminaName}", ref count, 0, 0);
 				if (ImGui.IsItemDeactivatedAfterEdit()) {
 					data.TargetCount = count;
 					result = true;

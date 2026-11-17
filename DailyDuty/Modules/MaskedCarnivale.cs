@@ -90,9 +90,22 @@ public unsafe class MaskedCarnivale : BaseModules.Modules.WeeklyTask<ModuleTaskD
 		base.Update();
 	}
 
+	// 結算視窗值數不足時直接索引會讀到陣列後面的記憶體（AVE 攔不到），先判長度；只記一次。
+	private const int ResultMinValueCount = 115;
+	private bool loggedResultLayoutMismatch;
+
 	private void AozContentResultPostSetup(AddonEvent eventType, AddonArgs addonInfo) {
 		var addon = (AtkUnitBase*) addonInfo.Addon.Address;
-        
+
+		if (addon is null || addon->AtkValues is null || addon->AtkValuesCount < ResultMinValueCount) {
+			if (!loggedResultLayoutMismatch) {
+				loggedResultLayoutMismatch = true;
+				var count = addon is null ? -1 : addon->AtkValuesCount;
+				Service.Log.Information($"[MaskedCarnivale] 假面狂歡結算視窗的值數不足（{count} 個，需要 {ResultMinValueCount} 個以上），不更新本次完成狀態。");
+			}
+			return;
+		}
+
 		if (addon->AtkValues[112] is not { Type: ValueType.UInt, UInt: var completionIndex }) throw new Exception("Type Mismatch Exception");
 		if (addon->AtkValues[114] is not { Type: ValueType.Bool, Byte: var completionStatus }) throw new Exception("Type Mismatch Exception");
         

@@ -69,31 +69,35 @@ public class LuminaTaskDataList<T> : ICollection<LuminaTaskData<T>> where T : st
 		}
 	}
     
-	// 查不到列時照舊擲例外（不記住），與每幀現查的行為相同。
+	// 資料清單只增不減，跨版本殘留的列號可能已不在表裡：查不到就顯示「?<id>」（與 LuminaTaskConfig.Label() 同一套退路），不擲例外。
 	private string? GetRowLabel(uint rowId) {
+		var missing = $"?{rowId}";
+
 		switch (this) {
 			case LuminaTaskDataList<ContentsNote>:
-				return Service.DataManager.GetExcelSheet<ContentsNote>().GetRow(rowId).Name.ToString();
+				return Service.DataManager.GetExcelSheet<ContentsNote>().GetRowOrDefault(rowId)?.Name.ToString() ?? missing;
 
 			case LuminaTaskDataList<ContentRoulette>:
-				return Service.DataManager.GetExcelSheet<ContentRoulette>().GetRow(rowId).Name.ToString();
+				return Service.DataManager.GetExcelSheet<ContentRoulette>().GetRowOrDefault(rowId)?.Name.ToString() ?? missing;
 
 			case LuminaTaskDataList<ClassJob>:
-				var classJob = Service.DataManager.GetExcelSheet<ClassJob>().GetRow(rowId);
+				if (Service.DataManager.GetExcelSheet<ClassJob>().GetRowOrDefault(rowId) is not { } classJob) return missing;
 				return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(classJob.Name.ToString());
 
 			case LuminaTaskDataList<MobHuntOrderType>:
-				var mobHuntOrderType = Service.DataManager.GetExcelSheet<MobHuntOrderType>().GetRow(rowId);
-				var eventItemName = mobHuntOrderType.EventItem.Value.Name.ToString();
-				if (eventItemName == string.Empty) eventItemName = mobHuntOrderType.EventItem.Value.Singular.ToString();
+				if (Service.DataManager.GetExcelSheet<MobHuntOrderType>().GetRowOrDefault(rowId) is not { } mobHuntOrderType) return missing;
+				if (mobHuntOrderType.EventItem.ValueNullable is not { } eventItem) return missing;
+
+				var eventItemName = eventItem.Name.ToString();
+				if (eventItemName == string.Empty) eventItemName = eventItem.Singular.ToString();
 
 				return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(eventItemName);
 
 			case LuminaTaskDataList<Addon>:
-				return Service.DataManager.GetExcelSheet<Addon>().GetRow(rowId).Text.ToString();
+				return Service.DataManager.GetExcelSheet<Addon>().GetRowOrDefault(rowId)?.Text.ToString() ?? missing;
 
 			case LuminaTaskDataList<ContentFinderCondition>:
-				return Service.DataManager.GetExcelSheet<ContentFinderCondition>().GetRow(rowId).Name.ToString();
+				return Service.DataManager.GetExcelSheet<ContentFinderCondition>().GetRowOrDefault(rowId)?.Name.ToString() ?? missing;
 
 			default:
 				return null;

@@ -208,6 +208,9 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 		var result = onReceiveEventHook!.OriginalDisposeSafe(thisPtr, returnValue, args, argCount, sender);
                 
 		HookSafety.ExecuteSafe(() => {
+			// 沒有參數的事件不可解參 args[0]（越界讀，AVE 攔不到）。
+			if (args is null || argCount == 0) return;
+
 			if (sender == 1 && args[0].Int == 0) {
 				Data.MissionStarted = true;
 				var missionCompleteDateTime = DateTime.UtcNow + TimeSpan.FromHours(18);

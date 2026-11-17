@@ -152,6 +152,8 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
             return;
         }
 
+        // 連續兩次 PostSetup 中間沒有 PreFinalize 時，舊 hook 還啟用著；先釋放再掛，不留第二個。
+        onDutyListPopulate?.Dispose();
         onDutyListPopulate = Service.Hooker.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod, OnPopulateHook);
         onDutyListPopulate?.Enable();
     }
@@ -168,7 +170,7 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
         //    而比對的另一端 roulette.Category.ExtractText() 是 Lumina 的解析器(payload 已剝掉)。
         //    兩端基準不同時比不中的後果是靜默的:dutyInfo 為 null → 該列不上色、也不會被當成隨機任務追蹤。
         var dutyName = listItemInfo->ListItem->StringValues[0].ExtractText();
-        var dutyInfo = Service.DataManager.GetExcelSheet<ContentRoulette>().FirstOrNull(roulette => string.Equals(dutyName, roulette.Category.ExtractText(), StringComparison.OrdinalIgnoreCase));
+        ContentRoulette? dutyInfo = GetRouletteByCategory().TryGetValue(dutyName, out var matched) ? matched : null;
 
         var dutyNameTextNode = (AtkTextNode*) nodeList[3];
         var levelTextNode = (AtkTextNode*) nodeList[4];
@@ -210,6 +212,20 @@ public unsafe class DutyRoulette : BaseModules.Modules.DailyTask<DutyRouletteDat
     
         onDutyListPopulate!.OriginalDisposeSafe(unitBase, listItemInfo, nodeList);
     }, Service.Log);
+
+    // 表在一次遊戲執行中不變：建一次。TryAdd 依列序保留第一筆，與原本 FirstOrNull 整表掃描的命中結果相同。
+    private static Dictionary<string, ContentRoulette>? rouletteByCategory;
+
+    private static Dictionary<string, ContentRoulette> GetRouletteByCategory() {
+        if (rouletteByCategory is not null) return rouletteByCategory;
+
+        var map = new Dictionary<string, ContentRoulette>(StringComparer.OrdinalIgnoreCase);
+        foreach (var roulette in Service.DataManager.GetExcelSheet<ContentRoulette>()) {
+            map.TryAdd(roulette.Category.ExtractText(), roulette);
+        }
+
+        return rouletteByCategory = map;
+    }
 
     private void TryResetEntry(uint index, AtkTextNode* nameNode, AtkTextNode* levelNode) {
         if (modifiedIndexes.Contains(index)) {

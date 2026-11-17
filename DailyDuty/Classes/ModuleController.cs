@@ -65,7 +65,12 @@ public class ModuleController : IDisposable {
         foreach (var module in Modules) {
             if (!module.IsLoaded) continue;
 
-            module.Update();
+            try {
+                module.Update();
+            }
+            catch (Exception ex) {
+                FrameStepGuard.Report($"{module.ModuleName}.Update", ex);
+            }
         }
     }
 
@@ -156,21 +161,28 @@ public class ModuleController : IDisposable {
         foreach (var module in Modules) {
             if (!module.IsLoaded) continue;
 
-            if (module.ShouldReset()) {
+            // 一顆模組重置失敗只賠掉它自己（下一幀會再判一次），其餘模組照常重置。
+            try {
+                if (!module.ShouldReset()) continue;
+
                 module.Reset();
+            }
+            catch (Exception ex) {
+                FrameStepGuard.Report($"{module.ModuleName}.Reset", ex);
+                continue;
+            }
 
-                if (module.PendingTrayNotification) {
-                    trayNames ??= [];
-                    trayNames.Add(module.ModuleName.GetDescription());
-                }
+            if (module.PendingTrayNotification) {
+                trayNames ??= [];
+                trayNames.Add(module.ModuleName.GetDescription());
+            }
 
-                // ⚠️ Reset() 會把 Config.Suppressed 清掉,但不會動 ModuleEnabled —— 所以這個判斷
-                // 在 Reset() 之後讀仍然是對的,不需要像 PendingTrayNotification 那樣先閂起來。
-                if (module.IsEnabled) {
-                    activeModuleReset = true;
-                    activeResetNames ??= [];
-                    activeResetNames.Add(module.ModuleName.ToString());
-                }
+            // ⚠️ Reset() 會把 Config.Suppressed 清掉,但不會動 ModuleEnabled —— 所以這個判斷
+            // 在 Reset() 之後讀仍然是對的,不需要像 PendingTrayNotification 那樣先閂起來。
+            if (module.IsEnabled) {
+                activeModuleReset = true;
+                activeResetNames ??= [];
+                activeResetNames.Add(module.ModuleName.ToString());
             }
         }
 

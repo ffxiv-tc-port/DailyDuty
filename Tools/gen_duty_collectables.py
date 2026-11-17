@@ -3,14 +3,18 @@
 Duty Finder annotation feature.
 
 Sources: LuminaSupplemental community drop CSVs (already downloaded to
-lumisup/) intersected with TC 7.20 EXD (authoritative for what exists on
+lumisup/) intersected with the TC EXD dump given by --exd (authoritative for what exists on
 this client). Faded orchestrion copies map to the roll(s) they craft into,
 since the unlock state lives on the roll, not the faded copy.
 
 Output: duty_collectables.json  {"<cfcId>": [[itemId, type, unlockId...], ...]}
 type: 1=mount 2=minion 3=orchestrion 4=faded 5=card 6=barding 7=other
 unlockId list only present for faded copies (crafted roll ids).
+
+Usage: gen_duty_collectables.py [--exd D:/ffxiv-tc-port/exd-tc/<version>]
+(default stays exd-tc/7.20, the dump the shipped JSON was built from)
 """
+import argparse
 import csv
 import json
 import sys
@@ -18,7 +22,9 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-E = Path(r"D:\ffxiv-tc-port\exd-tc\7.20")
+_ap = argparse.ArgumentParser()
+_ap.add_argument("--exd", default=r"D:\ffxiv-tc-port\exd-tc\7.20", help="TC EXD CSV dump directory")
+E = Path(_ap.parse_args().exd)
 L = Path(__file__).with_name("lumisup")
 
 def rows(p):

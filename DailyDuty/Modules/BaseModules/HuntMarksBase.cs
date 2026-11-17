@@ -35,7 +35,8 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 			var obtainedMarkId = HuntData->GetObtainedHuntOrderRowId((byte) task.RowId);
                 
 			if (availableMarkId == obtainedMarkId && !task.Complete) {
-				var orderData = Service.DataManager.GetExcelSheet<MobHuntOrderType>().GetRow(task.RowId);
+				// 跨版本殘留、表裡已沒有的列：當作未完成跳過，不擲例外。
+				if (Service.DataManager.GetExcelSheet<MobHuntOrderType>().GetRowOrDefault(task.RowId) is not { } orderData) continue;
 				var targetRow = orderData.OrderStart.RowId + HuntData->ObtainedMarkId[(int) task.RowId] - 1;
                 
 				// Elite
@@ -55,14 +56,14 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 	}
 
 	private bool IsEliteMarkComplete(uint targetRow, uint markId) {
-		var eliteTargetInfo = Service.DataManager.GetSubrowExcelSheet<MobHuntOrder>().GetSubrow(targetRow, 0);
+		if (!Service.DataManager.GetSubrowExcelSheet<MobHuntOrder>().TryGetSubrow(targetRow, 0, out var eliteTargetInfo)) return false;
 
 		return HuntData->CurrentKills[(int) markId][0] == eliteTargetInfo.NeededKills;
 	}
 
 	private bool IsNormalMarkComplete(uint targetRow, uint markId) {
 		for (var index = 0; index < 5; index++) {
-			var huntData = Service.DataManager.GetSubrowExcelSheet<MobHuntOrder>().GetSubrow(targetRow, (ushort) index);
+			if (!Service.DataManager.GetSubrowExcelSheet<MobHuntOrder>().TryGetSubrow(targetRow, (ushort) index, out var huntData)) return false;
 
 			if (HuntData->CurrentKills[(int) markId][index] != huntData.NeededKills) return false;
 		}

@@ -191,6 +191,13 @@ public sealed class HuntAssistController {
 	private bool hopTransitionSeen;
 	private readonly Stopwatch hopIdleClock = new();
 
+	// 只中止自己請 Lifestream 做的傳送：發出後看過它忙、再看到它閒＝已結束；一直沒看到它忙也不久留，
+	// 以免之後中止到別人（使用者或別的插件）發起的 Lifestream 工作。
+	private static readonly TimeSpan LifestreamOwnershipGrace = TimeSpan.FromSeconds(5);
+	private bool lifestreamOwned;
+	private bool lifestreamSeenBusy;
+	private readonly Stopwatch lifestreamOwnedClock = new();
+
 	// 走向乙太之光時只記座標與 BaseId（值），不留物件表的包裝。
 	private int aetheryteApproaches;
 	private Vector3 approachAetherytePosition;
@@ -296,7 +303,8 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
-		var started = Lifestream.IsInstalled
+		var viaLifestream = Lifestream.IsInstalled;
+		var started = viaLifestream
 			? Lifestream.Teleport(targetInfo.AetheryteId)
 			: TeleportWithGameFunction(targetInfo.AetheryteId);
 
@@ -304,6 +312,8 @@ public sealed class HuntAssistController {
 			Fail(Strings.HuntAssistTeleportFailed);
 			return false;
 		}
+
+		if (viaLifestream) MarkLifestreamRequested();
 
 		zoneTarget = targetInfo;
 		patrolAfterZone = patrolOnArrival;
@@ -554,6 +564,8 @@ public sealed class HuntAssistController {
 			return;
 		}
 
+		TrackLifestreamOwnership();
+
 		if (FrameConditions.IsBoundByDuty(Service.Condition)) {
 			StopMovement();
 			Fail(Strings.HuntAssistStoppedInDuty);
@@ -649,7 +661,8 @@ public sealed class HuntAssistController {
 				return;
 			}
 
-			var started = Lifestream.IsInstalled
+			var viaLifestream = Lifestream.IsInstalled;
+			var started = viaLifestream
 				? Lifestream.Teleport(board.PrimaryAetheryteId)
 				: TeleportWithGameFunction(board.PrimaryAetheryteId);
 
@@ -657,6 +670,8 @@ public sealed class HuntAssistController {
 				Fail(Strings.HuntAssistTeleportFailed);
 				return;
 			}
+
+			if (viaLifestream) MarkLifestreamRequested();
 
 			teleportIssued = true;
 			stepClock.Restart();
@@ -725,6 +740,8 @@ public sealed class HuntAssistController {
 			EnterStep(HuntAssistStep.Walking, WalkingStatus);
 			return;
 		}
+
+		MarkLifestreamRequested();
 
 		hopOriginTerritory = Service.ClientState.TerritoryType;
 		hopShardId = board.NearestAetheryteId;
@@ -1457,6 +1474,7 @@ public sealed class HuntAssistController {
 
 	private void Finish(string status) {
 		LogEnd("結束", status);
+		lifestreamOwned = false;
 		EndMovementSupport();
 		Step = HuntAssistStep.Finished;
 		StatusText = status;
@@ -1479,6 +1497,7 @@ public sealed class HuntAssistController {
 
 	private void Fail(string status) {
 		LogEnd("停止", status);
+		lifestreamOwned = false;
 		EndMovementSupport();
 		Step = HuntAssistStep.Stopped;
 		StatusText = status;
@@ -1501,7 +1520,25 @@ public sealed class HuntAssistController {
 
 	private void StopMovement() {
 		Navmesh.Stop();
-		if (Lifestream.IsInstalled && Lifestream.IsBusy) Lifestream.Abort();
+		if (lifestreamOwned && Lifestream.IsInstalled && Lifestream.IsBusy) Lifestream.Abort();
+		lifestreamOwned = false;
+	}
+
+	private void MarkLifestreamRequested() {
+		lifestreamOwned = true;
+		lifestreamSeenBusy = false;
+		lifestreamOwnedClock.Restart();
+	}
+
+	private void TrackLifestreamOwnership() {
+		if (!lifestreamOwned) return;
+
+		if (Lifestream.IsBusy) {
+			lifestreamSeenBusy = true;
+			return;
+		}
+
+		if (lifestreamSeenBusy || lifestreamOwnedClock.Elapsed > LifestreamOwnershipGrace) lifestreamOwned = false;
 	}
 
 	/// <summary>所有 vnavmesh 移動都從這裡送：先照設定拿租約、設讓位選項，漏掉的呼叫點會靜默維持一碰就結束。</summary>
