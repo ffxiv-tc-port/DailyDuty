@@ -19,6 +19,8 @@
 
     <ItemGroup>
         <PackageReference Include="NotificationMasterAPI" Version="1.0.0.1" />
+        <!-- KamiLib 的 NetStone 會把 Newtonsoft.Json 帶進輸出目錄；只取編譯期參考，執行期用 Dalamud 那份（版本 13.0.3 相同）。 -->
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="runtime" />
     </ItemGroup>
 
     <ItemGroup>
