@@ -73,7 +73,11 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 		Data.MissionStarted = false;
 		DataChanged = true;
 
-		if (addon is null || addon->AtkValues is null) return;
+		if (addon is null || addon->AtkValues is null) {
+			Service.Log.Information("[GrandCompanySquadron] 軍隊分隊任務結算視窗關閉時取不到 AtkValues，本次不判斷是否完成。");
+			return;
+		}
+
 		var values = addon->AtkValuesSpan;
 
 		// 名稱比對的兩端都要剝 payload:AtkValue 端用 CStringPointer.ExtractText()(ToString() 不剝),表端整欄無巨集。
@@ -98,10 +102,16 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 			LogResultValues(values, $"任務名稱在索引 {nameIndex}，不在預期的索引 4");
 		}
 
-		if (mission.GcArmyExpeditionType.RowId is 3 && values[2].Int == 1) {
+		var successFlag = values[2].Int;
+		var markCompleted = mission.GcArmyExpeditionType.RowId is 3 && successFlag == 1;
+		if (markCompleted) {
 			Data.MissionCompleted = true;
 			DataChanged = true;
 		}
+
+		// 比中也記一行（結算視窗關閉一次一行）：分得出「比中了但沒標」與「視窗根本沒處理到」。
+		Service.Log.Information($"[GrandCompanySquadron] 軍隊分隊任務結算視窗比中任務「{mission.Name.ExtractText()}」（列 {mission.RowId}，類型 {mission.GcArmyExpeditionType.RowId}，名稱在索引 {nameIndex}），" +
+		                        $"成功旗標 [2]={successFlag}；{(markCompleted ? "標記本週特殊任務已完成" : "不標記完成（只有類型 3 且成功旗標＝1 才標）")}。");
 	}
 
 	private static string NormalizeMissionName(string text)
