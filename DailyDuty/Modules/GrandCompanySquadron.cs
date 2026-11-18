@@ -16,6 +16,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiLib.Classes;
 using Lumina.Excel.Sheets;
+using Lumina.Text.ReadOnly;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace DailyDuty.Modules;
@@ -215,15 +216,32 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 	}
             
 	private AtkValue* OnReceiveEvent(AgentGcArmyExpedition* thisPtr, AtkValue* returnValue, AtkValue* args, uint argCount, ulong sender) {
-		var result = onReceiveEventHook!.OriginalDisposeSafe(thisPtr, returnValue, args, argCount, sender);
-                
+		// 選中的任務在呼叫原函式「之前」讀：原函式開始任務後代理人的資料可能被重建，之後再讀不保證還是同一筆。
+		(string Name, uint RowId, TimeSpan Duration)? selectedMission = null;
+		var missionReadFailure = string.Empty;
 		HookSafety.ExecuteSafe(() => {
-			// 沒有參數的事件不可解參 args[0]（越界讀，AVE 攔不到）。
-			if (args is null || argCount == 0) return;
+			if (IsMissionStartEvent(args, argCount, sender)) {
+				selectedMission = TryReadSelectedMission(thisPtr, out missionReadFailure);
+			}
+		}, Service.Log);
 
-			if (sender == 1 && args[0].Int == 0) {
+		var result = onReceiveEventHook!.OriginalDisposeSafe(thisPtr, returnValue, args, argCount, sender);
+
+		HookSafety.ExecuteSafe(() => {
+			if (IsMissionStartEvent(args, argCount, sender)) {
 				Data.MissionStarted = true;
-				var missionCompleteDateTime = DateTime.UtcNow + TimeSpan.FromHours(18);
+
+				TimeSpan missionDuration;
+				if (selectedMission is { } mission) {
+					missionDuration = mission.Duration;
+					Service.Log.Information($"[GrandCompanySquadron] 軍隊分隊任務開始：「{mission.Name}」（列 {mission.RowId}），{mission.Duration.TotalHours:0} 小時後歸隊。");
+				}
+				else {
+					missionDuration = TimeSpan.FromHours(18);
+					Service.Log.Debug($"[GrandCompanySquadron] 軍隊分隊任務開始，但讀不到選中的任務（{missionReadFailure}），完成時間沿用 18 小時。");
+				}
+
+				var missionCompleteDateTime = DateTime.UtcNow + missionDuration;
 				Data.MissionCompleteTime = new DateTime(
 					missionCompleteDateTime.Year,
 					missionCompleteDateTime.Month,
@@ -239,6 +257,43 @@ public unsafe partial class GrandCompanySquadron : BaseModules.Modules.Weekly<Gr
 		}, Service.Log);
 
 		return result;
+	}
+
+	// 沒有參數的事件不可解參 args[0]（越界讀，AVE 攔不到）。
+	private static bool IsMissionStartEvent(AtkValue* args, uint argCount, ulong sender)
+		=> args is not null && argCount > 0 && sender == 1 && args[0].Int == 0;
+
+	// 表上沒有時長欄；遊戲確認框的「N小時後」由任務 id 決定：id 1（巡邏城內）1 小時、其餘 18 小時。
+	private static TimeSpan MissionDuration(uint rowId)
+		=> rowId == 1 ? TimeSpan.FromHours(1) : TimeSpan.FromHours(18);
+
+	// 選中列＝代理人 SelectedRow 指到的本頁 MissionInfo；名稱整串比對任務表，同名多列時長不一致就放棄。
+	private static (string Name, uint RowId, TimeSpan Duration)? TryReadSelectedMission(AgentGcArmyExpedition* agent, out string failure) {
+		failure = string.Empty;
+		if (agent is null) { failure = "代理人為 null"; return null; }
+
+		var expeditionData = agent->ExpeditionData;
+		if (expeditionData is null) { failure = "ExpeditionData 為 null"; return null; }
+
+		var row = agent->SelectedRow;
+		var missionInfos = expeditionData->MissionInfo;
+		var entryCount = Math.Min(expeditionData->NumEntries, missionInfos.Length);
+		if (row < 0 || row >= entryCount) { failure = $"選中列 {row} 不在 0～{entryCount - 1}"; return null; }
+
+		var rawName = new ReadOnlySeStringSpan(missionInfos[row].Name.AsSpan()).ExtractText();
+		var key = NormalizeMissionName(rawName);
+		if (key.Length == 0) { failure = $"選中列 {row} 的任務名稱是空的"; return null; }
+
+		var matches = Service.DataManager.GetExcelSheet<GcArmyExpedition>()
+			.Where(sheetRow => NormalizeMissionName(sheetRow.Name.ExtractText()) == key)
+			.Select(sheetRow => sheetRow.RowId)
+			.ToList();
+		if (matches.Count == 0) { failure = $"任務表找不到「{rawName}」"; return null; }
+
+		var duration = MissionDuration(matches[0]);
+		if (matches.Any(rowId => MissionDuration(rowId) != duration)) { failure = $"「{rawName}」對到多列且時長不同"; return null; }
+
+		return (rawName, matches[0], duration);
 	}
 
 	protected override ModuleStatus GetModuleStatus() {
