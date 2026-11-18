@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DailyDuty.Classes;
@@ -209,6 +211,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         Task.Run(() => {
             SerializerWarmup.Run(types, token);
             StyleContractWarmup.Run(token);
+            LoginWarmup.Run(token);
         }, token);
     }
 
@@ -227,6 +230,16 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
     // 每一步各自隔離:任何一步擲例外只賠掉它自己,後面幾步照跑。
     // 三個設定檔讀取失敗時,欄位留在建構子放的預設實例,不會變成 null。
     private static void OnLogin() {
+        var start = Stopwatch.GetTimestamp();
+        var mark = start;
+        var steps = new List<(string Step, double Milliseconds)>(8);
+
+        void Lap(string step) {
+            var now = Stopwatch.GetTimestamp();
+            steps.Add((step, Stopwatch.GetElapsedTime(mark, now).TotalMilliseconds));
+            mark = now;
+        }
+
         // 必須在任何讀寫角色檔之前:背景還開著檔時,這個角色的存檔會失敗。
         try {
             System.CharacterFileWarmup.Stop();
@@ -234,6 +247,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         catch (Exception ex) {
             Service.Log.Warning(ex, "[CharacterFileWarmup] Login step failed, continuing with the rest.");
         }
+        Lap("CharacterFileWarmup");
 
         try {
             System.SystemConfig = SystemConfig.Load();
@@ -241,6 +255,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         catch (Exception ex) {
             Service.Log.Warning(ex, "[SystemConfig] Login step failed, continuing with the rest.");
         }
+        Lap("SystemConfig");
 
         try {
             System.CollectableConfig = CollectableConfig.Load();
@@ -248,6 +263,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         catch (Exception ex) {
             Service.Log.Warning(ex, "[CollectableConfig] Login step failed, continuing with the rest.");
         }
+        Lap("CollectableConfig");
 
         // 收藏品解鎖狀態是逐角色的,而總表快取沒有時間到期 —— 換角後不清掉,
         // 新角色會看到上一個角色的收藏進度。剛載入的 CollectableConfig 也會改變
@@ -258,6 +274,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         catch (Exception ex) {
             Service.Log.Warning(ex, "[CollectableCache] Login step failed, continuing with the rest.");
         }
+        Lap("CollectableCache");
 
         try {
             System.HuntAssistConfig = HuntAssistConfig.Load();
@@ -265,6 +282,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         catch (Exception ex) {
             Service.Log.Warning(ex, "[HuntAssistConfig] Login step failed, continuing with the rest.");
         }
+        Lap("HuntAssistConfig");
 
         try {
             System.ModuleController.LoadModules();
@@ -272,6 +290,7 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         catch (Exception ex) {
             Service.Log.Warning(ex, "[LoadModules] Login step failed, continuing with the rest.");
         }
+        Lap("LoadModules");
 
         try {
             System.ContentsFinderController.Enable();
@@ -279,12 +298,43 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         catch (Exception ex) {
             Service.Log.Warning(ex, "[ContentsFinder] Login step failed, continuing with the rest.");
         }
+        Lap("ContentsFinder");
 
         try {
             System.OverlayController.Enable();
         }
         catch (Exception ex) {
             Service.Log.Warning(ex, "[Overlay] Login step failed, continuing with the rest.");
+        }
+        Lap("Overlay");
+
+        LogFirstLoginTiming(start, steps);
+    }
+
+    private static bool firstLoginTimingLogged;
+
+    // 只記這一場第一次登入：JIT 與第一次開表都付在那一次；之後換角的總耗時 Dalamud 的 PerfDiag 就看得到。
+    private static void LogFirstLoginTiming(long start, List<(string Step, double Milliseconds)> steps) {
+        if (firstLoginTimingLogged) return;
+        firstLoginTimingLogged = true;
+
+        try {
+            var total = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            var stepText = string.Join(", ", steps.Select(step => $"{step.Step} {step.Milliseconds:F1}"));
+            var slowest = string.Join(", ", System.ModuleController.LastLoadTimings
+                .OrderByDescending(timing => timing.Milliseconds)
+                .Take(6)
+                .Select(timing => $"{timing.Module} {timing.Milliseconds:F1}"));
+
+            var warmed = LoginWarmup.FinishedTimestamp;
+            var warmupText = warmed is 0 ? "not finished (still running, failed or cancelled)"
+                : warmed > start ? "finished during login"
+                : $"finished {Stopwatch.GetElapsedTime(warmed, start).TotalMilliseconds:F0} ms before login";
+
+            Service.Log.Information($"[LoginTiming] First login this session took {total:F1} ms: {stepText}; slowest modules: {slowest}; login warmup {warmupText}");
+        }
+        catch (Exception ex) {
+            Service.Log.Warning(ex, "[LoginTiming] Failed to write the first-login timing line.");
         }
     }
     

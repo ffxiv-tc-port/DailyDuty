@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using DailyDuty.Modules.BaseModules;
 using KamiLib.Classes;
@@ -26,6 +27,9 @@ public class ModuleController : IDisposable {
     private static readonly TimeSpan DailyResetWindow = TimeSpan.FromMinutes(5);
 
     private DateTime lastNonDailySkipLogUtc = DateTime.MinValue;
+
+    /// <summary>上一次 <see cref="LoadModules"/> 每顆模組 Load() 花的毫秒數（失敗的也算），依載入順序。只在框架執行緒讀寫。</summary>
+    public List<(ModuleName Module, double Milliseconds)> LastLoadTimings { get; } = [];
 
     public ModuleController() {
         Modules = Reflection.ActivateOfType<Module>().ToList();
@@ -84,9 +88,11 @@ public class ModuleController : IDisposable {
     public void LoadModules() {
         var loaded = 0;
         List<string>? failed = null;
+        LastLoadTimings.Clear();
 
         foreach (var module in Modules) {
             module.LoadFailed = false;
+            var start = Stopwatch.GetTimestamp();
 
             try {
                 module.Load();
@@ -102,6 +108,8 @@ public class ModuleController : IDisposable {
 
                 Service.Log.Warning(ex, $"[{module.ModuleName}] Failed to load module, skipping it for this session.");
             }
+
+            LastLoadTimings.Add((module.ModuleName, Stopwatch.GetElapsedTime(start).TotalMilliseconds));
         }
 
         // 契約:至少一顆載入成功才算「已載入」。零成功時每幀更新與重置本來就會被逐模組的
