@@ -55,11 +55,12 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         System.WindowManager = new WindowManager(Service.PluginInterface);
         System.WindowManager.AddWindow(System.ConfigurationWindow, WindowFlags.IsConfigWindow | WindowFlags.RequireLoggedIn);
 
-        StartSerializerWarmup();
+        var loggedInAtLoad = Service.ClientState.IsLoggedIn;
+        StartSerializerWarmup(loggedInAtLoad);
 
         System.CharacterFileWarmup = new CharacterFileWarmup(Service.PluginInterface.ConfigDirectory.FullName);
 
-        if (Service.ClientState.IsLoggedIn) {
+        if (loggedInAtLoad) {
             Service.Framework.RunOnFrameworkThread(() => {
                 OnLogin();
 
@@ -200,7 +201,16 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
         }
     }
     
-    private void StartSerializerWarmup() {
+    private static bool warmupSkippedLoggedIn;
+
+    // 已登入時建構子緊接著就在框架執行緒上跑 OnLogin，三個背景暖身準備的東西它當場就要用，
+    // 背景來不及先跑完，只會跟它搶 JIT 與 CPU。
+    private void StartSerializerWarmup(bool loggedInAtLoad) {
+        if (loggedInAtLoad) {
+            warmupSkippedLoggedIn = true;
+            return;
+        }
+
         List<Type> types = [typeof(SystemConfig), typeof(CollectableConfig), typeof(HuntAssistConfig), typeof(TodoConfig), typeof(TimersConfig)];
         foreach (var module in System.ModuleController.Modules) {
             types.Add(module.GetData().GetType());
@@ -327,7 +337,8 @@ public sealed class DailyDutyPlugin : IDalamudPlugin {
                 .Select(timing => $"{timing.Module} {timing.Milliseconds:F1}"));
 
             var warmed = LoginWarmup.FinishedTimestamp;
-            var warmupText = warmed is 0 ? "not finished (still running, failed or cancelled)"
+            var warmupText = warmupSkippedLoggedIn ? "skipped (already logged in when the plugin loaded)"
+                : warmed is 0 ? "not finished (still running, failed or cancelled)"
                 : warmed > start ? "finished during login"
                 : $"finished {Stopwatch.GetElapsedTime(warmed, start).TotalMilliseconds:F0} ms before login";
 
