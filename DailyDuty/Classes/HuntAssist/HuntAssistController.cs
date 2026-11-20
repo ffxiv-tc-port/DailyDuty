@@ -145,6 +145,17 @@ public sealed class HuntAssistController {
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
 
+	/// <summary>每次成功出發 +1：自動接續用它分辨「這一趟是不是自己或使用者在討伐頁按的」。</summary>
+	public int TripSerial { get; private set; }
+
+	/// <summary>每次結束（含沒在跑時的取消）+1，結束方式在 <see cref="LastEnd"/>。</summary>
+	public int EndSerial { get; private set; }
+
+	public HuntTripEnd LastEnd { get; private set; }
+
+	/// <summary>結束那一刻角色在戰鬥中。</summary>
+	public bool LastEndInCombat { get; private set; }
+
 	private HuntBoardLocation? target;
 
 	/// <summary>狀態文字裡怎麼稱呼 <see cref="target"/>：告示板或 NPC 的遊戲名稱，沒有名稱時是通用說法。</summary>
@@ -262,6 +273,7 @@ public sealed class HuntAssistController {
 			PrintMessage(Strings.HuntAssistLifestreamMissing);
 		}
 
+		TripSerial++;
 		return true;
 	}
 
@@ -324,6 +336,7 @@ public sealed class HuntAssistController {
 		Step = HuntAssistStep.TeleportingToZone;
 		StatusText = Strings.HuntAssistStatusTeleportingZone;
 		stepClock.Restart();
+		TripSerial++;
 		return true;
 	}
 
@@ -361,6 +374,7 @@ public sealed class HuntAssistController {
 		}
 
 		BeginPreparingPatrol(targetInfo, orderTypeRowId);
+		TripSerial++;
 		return true;
 	}
 
@@ -527,6 +541,8 @@ public sealed class HuntAssistController {
 
 	/// <summary>Stops everything this controller started. Safe to call at any time.</summary>
 	public void Cancel() {
+		NoteEnd(HuntTripEnd.Cancelled);
+
 		if (!IsRunning) {
 			EndMovementSupport();
 			return;
@@ -957,7 +973,7 @@ public sealed class HuntAssistController {
 		if (stepClock.Elapsed < MoveStartGrace) return;
 		if (Navmesh.PathfindInProgress || Navmesh.IsPathRunning) return;
 
-		Finish(Strings.HuntAssistStatusStopped);
+		Finish(Strings.HuntAssistStatusStopped, HuntTripEnd.UserTookOver);
 	}
 
 	private void UpdateTeleportToZone() {
@@ -1226,7 +1242,7 @@ public sealed class HuntAssistController {
 			return;
 		}
 
-		Finish(Strings.HuntAssistStatusStopped);
+		Finish(Strings.HuntAssistStatusStopped, HuntTripEnd.UserTookOver);
 	}
 
 	/// <summary>
@@ -1472,7 +1488,8 @@ public sealed class HuntAssistController {
 	private static string FormatPosition(Vector3? position)
 		=> position is { } value ? $"<{value.X:F1}, {value.Y:F1}, {value.Z:F1}>" : "?";
 
-	private void Finish(string status) {
+	private void Finish(string status, HuntTripEnd kind = HuntTripEnd.Finished) {
+		NoteEnd(kind);
 		LogEnd("結束", status);
 		lifestreamOwned = false;
 		EndMovementSupport();
@@ -1496,6 +1513,7 @@ public sealed class HuntAssistController {
 	}
 
 	private void Fail(string status) {
+		NoteEnd(HuntTripEnd.Stopped);
 		LogEnd("停止", status);
 		lifestreamOwned = false;
 		EndMovementSupport();
@@ -1516,6 +1534,12 @@ public sealed class HuntAssistController {
 		navmeshClock.Reset();
 		ActiveOrderTypeRowId = 0;
 		PrintMessage(status);
+	}
+
+	private void NoteEnd(HuntTripEnd kind) {
+		LastEnd = kind;
+		LastEndInCombat = Service.Condition[ConditionFlag.InCombat];
+		EndSerial++;
 	}
 
 	private void StopMovement() {

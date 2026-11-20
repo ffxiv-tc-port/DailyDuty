@@ -3741,5 +3741,86 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntAssistGoToTargetThenPatrol", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Go to the next bill after each mark is done.
+        /// </summary>
+        internal static string HuntChainToggle {
+            get {
+                return ResourceManager.GetString("HuntChainToggle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to After you start from this page (a board, Go to Target Zone or Patrol), each time a mark is done DailyDuty waits for combat to end and the character to stand still for 3 seconds, then heads to the next bill: a held bill's target zone first, otherwise the next board - the same as pressing the button yourself. Moving, Cancel, Stop, another fight or a duty ends it; loading, logging in or changing zones never starts it..
+        /// </summary>
+        internal static string HuntChainToggleHelp {
+            get {
+                return ResourceManager.GetString("HuntChainToggleHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Auto-continue is on: the next bill starts once this mark is done..
+        /// </summary>
+        internal static string HuntChainActive {
+            get {
+                return ResourceManager.GetString("HuntChainActive", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark done - leaving for the next bill once the character stands still....
+        /// </summary>
+        internal static string HuntChainSettling {
+            get {
+                return ResourceManager.GetString("HuntChainSettling", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stop Auto-continue.
+        /// </summary>
+        internal static string HuntChainStop {
+            get {
+                return ResourceManager.GetString("HuntChainStop", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark done, heading to the next bill..
+        /// </summary>
+        internal static string HuntChainDeparting {
+            get {
+                return ResourceManager.GetString("HuntChainDeparting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to All tracked weekly bills are done; auto-continue has stopped..
+        /// </summary>
+        internal static string HuntChainAllDone {
+            get {
+                return ResourceManager.GetString("HuntChainAllDone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Some bills are not done, but none has a destination to go to; auto-continue has stopped..
+        /// </summary>
+        internal static string HuntChainNoNext {
+            get {
+                return ResourceManager.GetString("HuntChainNoNext", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Mark done, but you moved, fought, talked or changed zones before it could leave; not heading to the next bill this time (auto-continue has stopped)..
+        /// </summary>
+        internal static string HuntChainNotContinued {
+            get {
+                return ResourceManager.GetString("HuntChainNotContinued", resourceCulture);
+            }
+        }
     }
 }

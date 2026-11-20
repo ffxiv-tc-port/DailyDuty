@@ -1258,4 +1258,31 @@
     <data name="HuntAssistGoToTargetThenPatrol" xml:space="preserve">
         <value>抵達後會接著巡邏重生點（可在巡邏設定關閉）。</value>
     </data>
+    <data name="HuntChainToggle" xml:space="preserve">
+        <value>打完自動前往下一張通緝令</value>
+    </data>
+    <data name="HuntChainToggleHelp" xml:space="preserve">
+        <value>在這一頁按過出發（告示板、前往目標地圖或巡邏重生點）之後，每打完一張通緝目標，等戰鬥結束、角色停穩 3 秒就前往下一張：已接的通緝令先去目標地圖，沒有的話去下一張的告示板，和自己按按鈕一樣。手動移動、按取消或停止、又進入戰鬥或副本就停止接續；載入、登入、換區都不會自己開始。</value>
+    </data>
+    <data name="HuntChainActive" xml:space="preserve">
+        <value>自動接續中：打完這張會自動前往下一張。</value>
+    </data>
+    <data name="HuntChainSettling" xml:space="preserve">
+        <value>通緝目標已完成，角色停穩後前往下一張…</value>
+    </data>
+    <data name="HuntChainStop" xml:space="preserve">
+        <value>停止自動接續</value>
+    </data>
+    <data name="HuntChainDeparting" xml:space="preserve">
+        <value>通緝目標已完成，前往下一張。</value>
+    </data>
+    <data name="HuntChainAllDone" xml:space="preserve">
+        <value>追蹤中的每週通緝令都完成了，自動接續已停止。</value>
+    </data>
+    <data name="HuntChainNoNext" xml:space="preserve">
+        <value>還有沒完成的通緝令，但都沒有可前往的目的地，自動接續已停止。</value>
+    </data>
+    <data name="HuntChainNotContinued" xml:space="preserve">
+        <value>通緝目標已完成，但出發前偵測到移動、戰鬥、對話或換區，這次不自動前往下一張（自動接續已停止）。</value>
+    </data>
 </root>

@@ -8,6 +8,8 @@ using DailyDuty.Classes.HuntAssist;
 using DailyDuty.Localization;
 using DailyDuty.Models;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Plugin.Services;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
@@ -26,6 +28,11 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 	private readonly List<HuntBoardLocation> rowBoards = [];
 	private readonly Dictionary<uint, (string Record, string Clear)> recordButtonLabels = [];
 	private static readonly Comparison<LuminaTaskConfig<MobHuntOrderType>> ByRowId = static (left, right) => left.RowId.CompareTo(right.RowId);
+
+	// 打完自動前往下一張：狀態只在記憶體裡，載入、登入都從 Off 開始。
+	private readonly HuntChainMachine chain = new();
+	private readonly HashSet<uint> chainCompleteSeen = [];
+	private uint chainCompletedRow;
     
 	public override void Update() {
 		// 直接走底下的 List：經 TaskData 自己的 GetEnumerator() 每次都會裝箱一個列舉器。
@@ -51,6 +58,8 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 				}
 			}
 		}
+
+		if (SupportsAutoContinue) UpdateChain();
         
 		base.Update();
 	}
@@ -101,6 +110,9 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 	/// <summary>Weekly elite bills also get "go to the mark" and the patrol; daily bills do not.</summary>
 	protected virtual bool SupportsTargetAssist => false;
 
+	/// <summary>打完一張自動前往下一張（<see cref="HuntAssistConfig.AutoContinueNextBill"/>）；只有每週通緝令有。</summary>
+	protected virtual bool SupportsAutoContinue => false;
+
 	/// <summary>
 	/// 模組層級的「帶我去」＝追蹤中、還沒完成、也還沒接的第一張單（表格順序）的告示板，
 	/// 目的地是表格那一列按鈕的其中一個。已經接了的單要去的是標的不是告示板，不算。
@@ -109,7 +121,13 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 
 	public override bool StartTravel() {
 		if (!TryGetTravelBill(out var orderTypeRowId, out var boardGroupKey)) return false;
+		if (!StartBoardTrip(orderTypeRowId, boardGroupKey)) return false;
 
+		ArmChain("帶我去", orderTypeRowId);
+		return true;
+	}
+
+	private bool StartBoardTrip(uint orderTypeRowId, uint boardGroupKey) {
 		var controller = System.HuntAssistController;
 
 		// A recorded spot wins over the sheets, same as the table.
@@ -129,6 +147,199 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 		var board = boards.FirstOrDefault(entry => entry.TerritoryId == territory || entry.PrimaryTerritoryId == territory) ?? boards[0];
 
 		return controller.GoToHuntBoard(board, orderTypeRowId);
+	}
+
+	/// <summary>使用者在這一頁按的出發成功了：開始（或延續）自動接續。<paramref name="what"/> 只給 log。</summary>
+	private void ArmChain(string what, uint orderTypeRowId) {
+		if (!SupportsAutoContinue || !System.HuntAssistConfig.AutoContinueNextBill) return;
+
+		var controller = System.HuntAssistController;
+		if (!chain.Arm(controller.TripSerial, controller.EndSerial, Environment.TickCount64)) return;
+
+		// 只有開始之後才變成完成的那一張算數；按下之前就完成的不觸發。
+		chainCompleteSeen.Clear();
+		foreach (var task in Data.TaskData.DataList) {
+			if (task.Complete) chainCompleteSeen.Add(task.RowId);
+		}
+
+		Service.Log.Information($"[HuntAssist] 自動接續開始：使用者按下「{what}」（通緝令 {orderTypeRowId}）；之後每打完一張通緝目標，戰鬥結束並停穩 " +
+		                        $"{HuntChainMachine.CalmMilliseconds / 1000} 秒就前往下一張。");
+	}
+
+	private void StopChainByUser() {
+		if (!chain.IsActive) return;
+
+		chain.Stop();
+		Service.Log.Information("[HuntAssist] 自動接續中止：使用者按了「停止自動接續」。");
+	}
+
+	private void UpdateChain() {
+		if (!chain.IsActive) return;
+
+		var newlyCompleted = TrackChainCompletions();
+		var wasSettling = chain.Phase is HuntChainPhase.Settling || newlyCompleted;
+		var controller = System.HuntAssistController;
+		var condition = Service.Condition;
+		var player = Service.ObjectTable.LocalPlayer;
+
+		var frame = new HuntChainFrame(
+			Environment.TickCount64,
+			System.HuntAssistConfig.AutoContinueNextBill,
+			Service.ClientState.IsLoggedIn,
+			FrameConditions.IsBoundByDuty(condition),
+			controller.TripSerial,
+			controller.IsRunning,
+			controller.EndSerial,
+			controller.LastEnd,
+			controller.LastEndInCombat,
+			newlyCompleted,
+			condition[ConditionFlag.InCombat],
+			IsOccupiedElsewhere(condition),
+			player is not { IsTargetable: true, IsDead: false } || IsTransient(condition),
+			Service.ClientState.TerritoryType,
+			player?.Position ?? Vector3.Zero);
+
+		var depart = chain.Observe(frame, out var stop);
+		if (stop is not HuntChainStop.None) {
+			OnChainStopped(stop, wasSettling, controller.StatusText);
+			return;
+		}
+
+		if (depart) DepartChain();
+	}
+
+	private bool TrackChainCompletions() {
+		var newly = false;
+		foreach (var task in Data.TaskData.DataList) {
+			if (!task.Complete) {
+				chainCompleteSeen.Remove(task.RowId);
+				continue;
+			}
+
+			if (chainCompleteSeen.Add(task.RowId)) {
+				newly = true;
+				chainCompletedRow = task.RowId;
+			}
+		}
+
+		return newly;
+	}
+
+	/// <summary>戰鬥結束後才出現的這些狀態＝使用者自己在做別的事。</summary>
+	private static bool IsOccupiedElsewhere(ICondition condition)
+		=> condition[ConditionFlag.Occupied] || condition[ConditionFlag.Occupied30] || condition[ConditionFlag.OccupiedInEvent]
+		   || condition[ConditionFlag.OccupiedInQuestEvent] || condition[ConditionFlag.Occupied33] || condition[ConditionFlag.OccupiedInCutSceneEvent]
+		   || condition[ConditionFlag.Occupied38] || condition[ConditionFlag.Occupied39] || condition[ConditionFlag.OccupiedSummoningBell]
+		   || condition[ConditionFlag.WatchingCutscene] || condition[ConditionFlag.WatchingCutscene78] || condition[ConditionFlag.Crafting]
+		   || condition[ConditionFlag.Gathering] || condition[ConditionFlag.ExecutingGatheringAction] || condition[ConditionFlag.Fishing]
+		   || condition[ConditionFlag.UsingHousingFunctions];
+
+	/// <summary>一下子就會結束的狀態：等它過去再算停穩。</summary>
+	private static bool IsTransient(ICondition condition)
+		=> condition[ConditionFlag.BetweenAreas] || condition[ConditionFlag.BetweenAreas51] || condition[ConditionFlag.Casting]
+		   || condition[ConditionFlag.Jumping] || condition[ConditionFlag.Mounting] || condition[ConditionFlag.Mounting71]
+		   || condition[ConditionFlag.BeingMoved] || condition[ConditionFlag.Unconscious];
+
+	private void OnChainStopped(HuntChainStop stop, bool wasSettling, string tripStatus) {
+		var reason = stop switch {
+			HuntChainStop.Disabled => "已關閉「打完自動前往下一張」",
+			HuntChainStop.LoggedOut => "已登出",
+			HuntChainStop.Duty => "進入副本",
+			HuntChainStop.Cancelled => "按了取消或停止",
+			HuntChainStop.UserTookOver => "趕路或巡邏途中手動操作，行程已交還",
+			HuntChainStop.TripStopped => $"行程中止（{tripStatus}）",
+			HuntChainStop.OtherTrip => "改去別的目的地（不是每週討伐頁發起的行程）",
+			HuntChainStop.CombatAgain => "戰鬥結束後又進入戰鬥",
+			HuntChainStop.CombatTooLong => $"完成後仍在戰鬥超過 {HuntChainMachine.CombatLimitMilliseconds / 1000} 秒",
+			HuntChainStop.Moved => "完成後手動移動或換區",
+			HuntChainStop.Busy => "完成後開始做別的事（對話、雇員鈴、過場等）",
+			HuntChainStop.NotSettled => $"戰鬥結束後 {HuntChainMachine.SettleLimitMilliseconds / 1000} 秒仍無法行動（詠唱、讀取、倒地等）",
+			HuntChainStop.Idle => $"{HuntChainMachine.IdleLimitMilliseconds / 60000} 分鐘沒有新進度",
+			_ => stop.ToString(),
+		};
+
+		Service.Log.Information($"[HuntAssist] 自動接續中止：{reason}{(wasSettling ? $"；通緝令 {chainCompletedRow} 已完成、正等出發" : string.Empty)}。");
+
+		// 已經打完、使用者在等它出發時才說；其餘情況行程自己的訊息已經講過。
+		if (wasSettling) HuntAssistController.PrintMessage(Strings.HuntChainNotContinued);
+	}
+
+	/// <summary>先去已接通緝令的目標（同「前往目標地圖」／「巡邏重生點」），沒有才去下一張的告示板（同「帶我去」）。</summary>
+	private void DepartChain() {
+		var controller = System.HuntAssistController;
+		var settledFor = (Environment.TickCount64 - chain.CombatEndedAt) / 1000.0;
+
+		if (!HasIncompleteTrackedBill()) {
+			chain.Stop();
+			Service.Log.Information($"[HuntAssist] 自動接續結束：通緝令 {chainCompletedRow} 已完成，追蹤中的每週通緝令全部完成。");
+			HuntAssistController.PrintMessage(Strings.HuntChainAllDone);
+			return;
+		}
+
+		string leg;
+		uint orderTypeRowId;
+		bool started;
+
+		if (TryGetHeldTarget(out var heldRowId, out var targetInfo)) {
+			orderTypeRowId = heldRowId;
+			if (Service.ClientState.TerritoryType == targetInfo.TerritoryId) {
+				leg = "巡邏重生點";
+				started = controller.StartPatrol(targetInfo, orderTypeRowId);
+			}
+			else {
+				leg = "前往目標地圖";
+				started = controller.GoToTargetZone(targetInfo, orderTypeRowId, System.HuntAssistConfig.PatrolAfterZoneTeleport);
+			}
+		}
+		else if (TryGetTravelBill(out orderTypeRowId, out var boardGroupKey)) {
+			leg = "告示板";
+			started = StartBoardTrip(orderTypeRowId, boardGroupKey);
+		}
+		else {
+			chain.Stop();
+			Service.Log.Information("[HuntAssist] 自動接續中止：還有沒完成的通緝令，但都沒有可前往的目的地（未接的沒有告示板資料，已接的認不出目標）。");
+			HuntAssistController.PrintMessage(Strings.HuntChainNoNext);
+			return;
+		}
+
+		if (!started) {
+			chain.Stop();
+			Service.Log.Information($"[HuntAssist] 自動接續中止：下一張（通緝令 {orderTypeRowId}，{leg}）沒有出發：{controller.StatusText}");
+			return;
+		}
+
+		chain.DepartStarted(controller.TripSerial, controller.EndSerial, Environment.TickCount64);
+		Service.Log.Information($"[HuntAssist] 自動接續下一張：通緝令 {chainCompletedRow} 已完成，戰鬥結束後 {settledFor:F1} 秒出發；{leg}（通緝令 {orderTypeRowId}）。");
+		HuntAssistController.PrintMessage(Strings.HuntChainDeparting);
+	}
+
+	private bool HasIncompleteTrackedBill() {
+		foreach (var config in Config.TaskConfig.ConfigList) {
+			if (config.Enabled && !(FindTaskData(config.RowId)?.Complete ?? false)) return true;
+		}
+
+		return false;
+	}
+
+	/// <summary>已接、還沒完成、認得出目標的第一張（表格順序）。</summary>
+	private bool TryGetHeldTarget(out uint orderTypeRowId, out HuntTargetInfo targetInfo) {
+		var huntData = MobHunt.Instance();
+		if (huntData is not null) {
+			foreach (var config in Config.TaskConfig.ConfigList.OrderBy(entry => entry.RowId)) {
+				if (!config.Enabled) continue;
+				if (FindTaskData(config.RowId)?.Complete ?? false) continue;
+				if (!huntData->IsMarkBillObtained((int) config.RowId)) continue;
+				if (HuntTargets.GetCurrentTarget(config.RowId) is not { } found) continue;
+
+				orderTypeRowId = config.RowId;
+				targetInfo = found;
+				return true;
+			}
+		}
+
+		orderTypeRowId = 0;
+		targetInfo = null!;
+		return false;
 	}
 
 	private bool TryGetTravelBill(out uint orderTypeRowId, out uint boardGroupKey) {
@@ -192,6 +403,13 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 		if (controller.IsRunning) {
 			if (ImGui.Button(Strings.HuntAssistCancel, new Vector2(ImGui.GetContentRegionAvail().X, 23.0f * ImGuiHelpers.GlobalScale))) {
 				controller.Cancel();
+			}
+		}
+
+		if (SupportsAutoContinue && chain.IsActive) {
+			ImGui.TextColored(KnownColor.Orange.Vector(), chain.Phase is HuntChainPhase.Settling ? Strings.HuntChainSettling : Strings.HuntChainActive);
+			if (ImGui.Button(Strings.HuntChainStop, new Vector2(ImGui.GetContentRegionAvail().X, 23.0f * ImGuiHelpers.GlobalScale))) {
+				StopChainByUser();
 			}
 		}
 
@@ -278,7 +496,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 				if (recorded is not null) {
 					if (ImGui.Button($"{Strings.HuntAssistRecordedPosition}##hunt_recorded_{config.RowId}")) {
 						var destination = HuntBoards.BuildFromPosition(recorded.TerritoryId, recorded.ToVector3());
-						controller.GoToLocation(destination, Strings.TravelAssistStatusTeleporting, Strings.HuntAssistBoard);
+						if (controller.GoToLocation(destination, Strings.TravelAssistStatusTeleporting, Strings.HuntAssistBoard)) ArmChain("告示板（記錄的位置）", config.RowId);
 					}
 
 					if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
@@ -291,7 +509,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 
 						// Several daily rows share one board, so the row has to be part of the id.
 						if (ImGui.Button($"{label}##hunt_board_{config.RowId}_{board.EObjectId}")) {
-							controller.GoToHuntBoard(board, config.RowId);
+							if (controller.GoToHuntBoard(board, config.RowId)) ArmChain("告示板", config.RowId);
 						}
 
 						if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
@@ -320,7 +538,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 			// shown up front.
 			if (Service.ClientState.TerritoryType != targetInfo.TerritoryId) {
 				if (ImGui.Button($"{Strings.HuntAssistGoToTarget}##hunt_target_{config.RowId}")) {
-					controller.GoToTargetZone(targetInfo, config.RowId, System.HuntAssistConfig.PatrolAfterZoneTeleport);
+					if (controller.GoToTargetZone(targetInfo, config.RowId, System.HuntAssistConfig.PatrolAfterZoneTeleport)) ArmChain("前往目標地圖", config.RowId);
 				}
 
 				if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
@@ -342,7 +560,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 			}
 
 			if (ImGui.Button($"{Strings.HuntAssistPatrol}##hunt_patrol_{config.RowId}")) {
-				controller.StartPatrol(targetInfo, config.RowId);
+				if (controller.StartPatrol(targetInfo, config.RowId)) ArmChain("巡邏重生點", config.RowId);
 			}
 
 			if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {

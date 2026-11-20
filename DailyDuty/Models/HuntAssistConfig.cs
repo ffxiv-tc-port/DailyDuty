@@ -29,6 +29,12 @@ public class HuntAssistConfig {
 	/// <summary>與目標中心的直線距離（含高度）；超出上下限時以上下限為準。</summary>
 	public float ApproachDistance = 20.0f;
 
+	/// <summary>
+	/// 使用者在每週討伐頁按過出發後，每打完一張通緝目標就自動前往下一張。缺鍵時同上沿用欄位初始值（開）；
+	/// 只在本次登入、使用者自己起頭的接續裡有效，不存任何「接續中」狀態。
+	/// </summary>
+	public bool AutoContinueNextBill = true;
+
 	public const float MinimumDetectionRadius = 10.0f;
 	public const float MaximumDetectionRadius = 300.0f;
 	public const float MinimumApproachDistance = 5.0f;

@@ -19,6 +19,8 @@ public class HuntMarksWeekly : HuntMarksBase {
 	/// <summary>Only the elite bill names a single mark, so only it can offer the patrol.</summary>
 	protected override bool SupportsTargetAssist => true;
 
+	protected override bool SupportsAutoContinue => true;
+
 	public override DateTime GetNextReset() => Time.NextWeeklyReset() + TimeSpan.FromMinutes(1);
 
 	protected override void UpdateTaskLists() {
@@ -33,6 +35,9 @@ public class HuntMarksWeekly : HuntMarksBase {
 
 		ImGuiTweaks.Header(Strings.HuntAssistPatrolSettings);
 		using var indent = ImRaii.PushIndent();
+
+		configChanged |= ImGui.Checkbox(Strings.HuntChainToggle, ref config.AutoContinueNextBill);
+		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntChainToggleHelp);
 
 		configChanged |= ImGui.Checkbox(Strings.HuntAssistUseFlying, ref config.UseFlying);
 

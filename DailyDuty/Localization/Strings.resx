@@ -1258,4 +1258,31 @@ Limited to once per 5 mins</value>
     <data name="HuntAssistGoToTargetThenPatrol" xml:space="preserve">
         <value>On arrival the spawn point patrol starts automatically (can be turned off in Patrol Settings).</value>
     </data>
+    <data name="HuntChainToggle" xml:space="preserve">
+        <value>Go to the next bill after each mark is done</value>
+    </data>
+    <data name="HuntChainToggleHelp" xml:space="preserve">
+        <value>After you start from this page (a board, Go to Target Zone or Patrol), each time a mark is done DailyDuty waits for combat to end and the character to stand still for 3 seconds, then heads to the next bill: a held bill's target zone first, otherwise the next board - the same as pressing the button yourself. Moving, Cancel, Stop, another fight or a duty ends it; loading, logging in or changing zones never starts it.</value>
+    </data>
+    <data name="HuntChainActive" xml:space="preserve">
+        <value>Auto-continue is on: the next bill starts once this mark is done.</value>
+    </data>
+    <data name="HuntChainSettling" xml:space="preserve">
+        <value>Mark done - leaving for the next bill once the character stands still...</value>
+    </data>
+    <data name="HuntChainStop" xml:space="preserve">
+        <value>Stop Auto-continue</value>
+    </data>
+    <data name="HuntChainDeparting" xml:space="preserve">
+        <value>Mark done, heading to the next bill.</value>
+    </data>
+    <data name="HuntChainAllDone" xml:space="preserve">
+        <value>All tracked weekly bills are done; auto-continue has stopped.</value>
+    </data>
+    <data name="HuntChainNoNext" xml:space="preserve">
+        <value>Some bills are not done, but none has a destination to go to; auto-continue has stopped.</value>
+    </data>
+    <data name="HuntChainNotContinued" xml:space="preserve">
+        <value>Mark done, but you moved, fought, talked or changed zones before it could leave; not heading to the next bill this time (auto-continue has stopped).</value>
+    </data>
 </root>
