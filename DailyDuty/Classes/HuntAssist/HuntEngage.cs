@@ -8,6 +8,7 @@ internal enum EngageTargetState {
 
 internal enum EngageAction {
 	None,
+	Request,
 	Engage,
 	Done,
 	HandBack,
@@ -27,7 +28,7 @@ internal enum EngageStop {
 
 /// <summary>
 /// 每幀從遊戲讀好的值。<see cref="InRange"/>：遊戲對自動攻擊的射程與視線判定，null＝問不到；
-/// <see cref="OtherTargetSelected"/>：目前選著的目標存在、而且不是這隻通緝目標。
+/// <see cref="OtherTargetSelected"/>：目前選著的目標存在、而且不是這隻通緝目標；<see cref="Casting"/>：自己正在詠唱。
 /// </summary>
 internal readonly record struct EngageFrame(
 	long Now,
@@ -36,28 +37,42 @@ internal readonly record struct EngageFrame(
 	bool InCombat,
 	bool OtherTargetSelected,
 	bool? InRange,
-	bool AutoAttacking);
+	bool AutoAttacking,
+	bool Casting = false);
 
 /// <summary>
-/// 接近完成後「選取通緝目標並開自動攻擊」的判斷。只出手一次；已在戰鬥中（不論誰開的）就收手交給戰鬥插件。
-/// 使用者選了別的目標、目標不可選取或在射程外都不出手；出手後自動攻擊沒開起來或沒進戰鬥就交還。只依賴 System，離線探針直接編譯。
+/// 接近完成後的開打判斷。只出手一次；已在戰鬥中（不論誰開的）就收手交給戰鬥插件。
+/// 有戰鬥插件可接手時先 <see cref="EngageAction.Request"/>（選取並發出開打請求），等不到戰鬥才改開自動攻擊；
+/// 使用者選了別的目標、目標不可選取或在射程外都不出手；自動攻擊沒開起來或沒進戰鬥就交還。只依賴 System，離線探針直接編譯。
 /// </summary>
 internal sealed class EngageMachine {
 	public const long TargetableGraceMilliseconds = 5_000;
 	public const long AutoAttackStartMilliseconds = 1_500;
 	public const long CombatTimeoutMilliseconds = 5_000;
+	public const long CombatPluginHandoffMilliseconds = 4_000;
+
+	/// <summary>請求後一直在詠唱（戰鬥插件的第一招還在讀）最多等到這裡。</summary>
+	public const long CombatPluginCastingMilliseconds = 8_000;
 
 	private long startedAt;
 	private long actedAt;
+	private long requestedAt;
+	private bool waitForCombatPlugin;
 
 	public bool Active { get; private set; }
 
 	public bool Acted { get; private set; }
 
-	public void Begin(long now) {
+	/// <summary>已選取目標並請戰鬥插件開打（之後若改開自動攻擊，<see cref="Acted"/> 也會成立）。</summary>
+	public bool Requested { get; private set; }
+
+	/// <param name="waitForCombatPlugin">有戰鬥插件可接手：先請它開打，等不到才開自動攻擊。</param>
+	public void Begin(long now, bool waitForCombatPlugin = false) {
 		Active = true;
 		Acted = false;
+		Requested = false;
 		startedAt = now;
+		this.waitForCombatPlugin = waitForCombatPlugin;
 	}
 
 	public void Reset() => Active = false;
@@ -81,12 +96,23 @@ internal sealed class EngageMachine {
 			return f.Now - actedAt > CombatTimeoutMilliseconds ? HandBack(EngageStop.NoCombat, out stop) : EngageAction.None;
 		}
 
+		if (Requested) {
+			var waited = f.Now - requestedAt;
+			if (waited <= CombatPluginHandoffMilliseconds || f.Casting && waited <= CombatPluginCastingMilliseconds) return EngageAction.None;
+		}
+
 		if (!f.Targetable) {
 			return f.Now - startedAt > TargetableGraceMilliseconds ? HandBack(EngageStop.Untargetable, out stop) : EngageAction.None;
 		}
 
 		if (f.InRange is null) return HandBack(EngageStop.RangeUnknown, out stop);
 		if (f.InRange is false) return HandBack(EngageStop.OutOfRange, out stop);
+
+		if (waitForCombatPlugin && !Requested) {
+			Requested = true;
+			requestedAt = f.Now;
+			return EngageAction.Request;
+		}
 
 		Acted = true;
 		actedAt = f.Now;
@@ -98,4 +124,26 @@ internal sealed class EngageMachine {
 		Active = false;
 		return EngageAction.HandBack;
 	}
+}
+
+/// <summary>
+/// 對外的開打請求（IPC <c>DailyDuty.HuntAssist.EngageTargetId</c> 讀這裡）：要求開打的 GameObjectId 與到期時刻。
+/// 框架執行緒寫、任何執行緒讀；已發佈的那份不就地修改，整份換參考。沒有請求或已到期一律讀成 0。
+/// </summary>
+internal sealed class EngageRequestSlot {
+	public const long LifetimeMilliseconds = 10_000;
+
+	private sealed record Request(ulong ObjectId, long ExpiresAt);
+
+	private volatile Request? current;
+
+	public void Set(ulong objectId, long now)
+		=> current = objectId is 0 ? null : new Request(objectId, now + LifetimeMilliseconds);
+
+	public void Clear() => current = null;
+
+	public bool IsSet => current is not null;
+
+	public ulong Read(long now)
+		=> current is { } request && now < request.ExpiresAt ? request.ObjectId : 0;
 }

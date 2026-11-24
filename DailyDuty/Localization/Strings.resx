@@ -1295,7 +1295,7 @@ Limited to once per 5 mins</value>
         <value>Start the fight when the mark is reached</value>
     </data>
     <data name="HuntAutoEngageToggleHelp" xml:space="preserve">
-        <value>When the approach to the mark finishes, DailyDuty targets that mark and turns on auto-attack; once combat starts, the rest is up to your combat plugin. It only acts on this bill's mark, only once, and only when the mark can be targeted and is within auto-attack range. If you already have another target or are already in combat, it leaves it to you. Some plugins block auto-attack outside combat (for example BossModReborn's auto-attack management); in that case it stops and tells you.</value>
+        <value>When the approach to the mark finishes, DailyDuty targets that mark and turns on auto-attack; once combat starts, the rest is up to your combat plugin. It only acts on this bill's mark, only once, and only when the mark can be targeted and is within auto-attack range. If you already have another target or are already in combat, it leaves it to you. With WrathCombo's Auto-Rotation on, it first selects the mark and asks WrathCombo to engage (tick "Bypass Only in Combat for DailyDuty Hunt Marks" in WrathCombo's Auto-Rotation settings); only if combat has not started a few seconds later does it turn on auto-attack instead. Some plugins block auto-attack outside combat (for example BossModReborn's auto-attack management); in that case it stops and tells you.</value>
     </data>
     <data name="HuntAcceptStatus" xml:space="preserve">
         <value>Accepting the hunt bill...</value>
@@ -1362,5 +1362,14 @@ Limited to once per 5 mins</value>
     </data>
     <data name="HuntEngageReasonNoCombat" xml:space="preserve">
         <value>combat did not start</value>
+    </data>
+    <data name="HuntEngageStartedByWrath" xml:space="preserve">
+        <value>Asked WrathCombo to engage {0} and combat started; the rest is up to your combat plugin.</value>
+    </data>
+    <data name="HuntEngageReasonWrathNoTakeover" xml:space="preserve">
+        <value>WrathCombo did not take over within {0} seconds (check that its Auto-Rotation is on and "Bypass Only in Combat for DailyDuty Hunt Marks" is ticked), and auto-attack did not work either: {1}</value>
+    </data>
+    <data name="HuntEngageReasonNoWrath" xml:space="preserve">
+        <value>there is no WrathCombo Auto-Rotation to hand over to (not loaded, or Auto-Rotation is off), and auto-attack did not work either: {0}</value>
     </data>
 </root>

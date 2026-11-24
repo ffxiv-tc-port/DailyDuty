@@ -26,8 +26,8 @@ namespace DailyDuty.Classes;
 /// </para>
 /// </remarks>
 public sealed class StatusIpc : IDisposable {
-    /// <summary>消費端用 <c>&gt;=</c> 判相容。新增端點時 +1（2＝多了名稱、類型與「帶我去」；3＝多了「不知道」清單）；只加狀態碼不動它。</summary>
-    public const int ApiVersion = 3;
+    /// <summary>消費端用 <c>&gt;=</c> 判相容。新增端點時 +1（2＝多了名稱、類型與「帶我去」；3＝多了「不知道」清單；4＝多了通緝目標開打請求）；只加狀態碼不動它。</summary>
+    public const int ApiVersion = 4;
 
     // 🔴 對外狀態碼。0 必須是「問不到」——消費端把 default(int) 讀成「已完成」會是災難。
     // 這組數字與內部的 ModuleStatus 列舉「刻意不同」：那個的 0 是 Unknown、4 是 Complete。
@@ -60,6 +60,7 @@ public sealed class StatusIpc : IDisposable {
     private const string TagTravelToModule = "DailyDuty.TravelToModule";
     private const string TagIsTravelRunning = "DailyDuty.IsTravelRunning";
     private const string TagCancelTravel = "DailyDuty.CancelTravel";
+    private const string TagEngageTargetId = "DailyDuty.HuntAssist.EngageTargetId";
 
     /// <summary>重拍快照的間隔。模組狀態以分鐘為單位變動，每幀重算只是白燒 CPU。</summary>
     private const int RefreshIntervalFrames = 30;
@@ -74,6 +75,7 @@ public sealed class StatusIpc : IDisposable {
     private readonly ICallGateProvider<string, int> travelToModuleProvider;
     private readonly ICallGateProvider<bool> isTravelRunningProvider;
     private readonly ICallGateProvider<bool> cancelTravelProvider;
+    private readonly ICallGateProvider<ulong> engageTargetIdProvider;
 
     // 🔴 這三個欄位被兩種執行緒碰：framework 執行緒寫（整份換參考）、IPC 端點從呼叫端執行緒讀。
     // volatile 保證讀得到的一定是某一次完整發佈的值，不會是半份。
@@ -103,6 +105,7 @@ public sealed class StatusIpc : IDisposable {
         travelToModuleProvider = Service.PluginInterface.GetIpcProvider<string, int>(TagTravelToModule);
         isTravelRunningProvider = Service.PluginInterface.GetIpcProvider<bool>(TagIsTravelRunning);
         cancelTravelProvider = Service.PluginInterface.GetIpcProvider<bool>(TagCancelTravel);
+        engageTargetIdProvider = Service.PluginInterface.GetIpcProvider<ulong>(TagEngageTargetId);
 
         apiVersionProvider.RegisterFunc(GetApiVersion);
         incompleteModulesProvider.RegisterFunc(GetIncompleteModules);
@@ -114,6 +117,7 @@ public sealed class StatusIpc : IDisposable {
         travelToModuleProvider.RegisterFunc(TravelToModule);
         isTravelRunningProvider.RegisterFunc(IsTravelRunning);
         cancelTravelProvider.RegisterFunc(CancelTravel);
+        engageTargetIdProvider.RegisterFunc(GetEngageTargetId);
     }
 
     public void Dispose() {
@@ -131,6 +135,7 @@ public sealed class StatusIpc : IDisposable {
         travelToModuleProvider.UnregisterFunc();
         isTravelRunningProvider.UnregisterFunc();
         cancelTravelProvider.UnregisterFunc();
+        engageTargetIdProvider.UnregisterFunc();
 
         Clear();
     }
@@ -226,6 +231,19 @@ public sealed class StatusIpc : IDisposable {
     private List<string> GetTravelModules() => [..snapshot.TravelNames];
 
     private bool IsTravelRunning() => travelRunning;
+
+    /// <summary>
+    /// 通緝令自動開打此刻要求開打的目標 GameObjectId；沒有要求、已過期、沒在開打步驟或「自動開打」關著一律回 0。
+    /// 消費端（WrathCombo）只在目前目標的 id 與它相同時，才在戰鬥外對那一隻出手。
+    /// </summary>
+    private ulong GetEngageTargetId() {
+        if (disposed) return 0;
+
+        var controller = System.HuntAssistController;
+        if (controller is null || controller.Step is not HuntAssistStep.EngagingTarget || System.HuntAssistConfig is not { AutoEngageTarget: true }) return 0;
+
+        return controller.EngageRequest.Read(Environment.TickCount64);
+    }
 
     /// <summary>替使用者按下某個模組的「帶我去」。只排隊、不等結果；出發與否由 DailyDuty 自己印到聊天視窗。</summary>
     private int TravelToModule(string moduleName) {

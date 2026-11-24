@@ -4056,5 +4056,32 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntEngageReasonNoCombat", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Asked WrathCombo to engage {0} and combat started; the rest is up to your combat plugin..
+        /// </summary>
+        internal static string HuntEngageStartedByWrath {
+            get {
+                return ResourceManager.GetString("HuntEngageStartedByWrath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to WrathCombo did not take over within {0} seconds (check that its Auto-Rotation is on and "Bypass Only in Combat for DailyDuty Hunt Marks" is ticked), and auto-attack did not work either: {1}.
+        /// </summary>
+        internal static string HuntEngageReasonWrathNoTakeover {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonWrathNoTakeover", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to there is no WrathCombo Auto-Rotation to hand over to (not loaded, or Auto-Rotation is off), and auto-attack did not work either: {0}.
+        /// </summary>
+        internal static string HuntEngageReasonNoWrath {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonNoWrath", resourceCulture);
+            }
+        }
     }
 }

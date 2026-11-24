@@ -148,6 +148,32 @@ public sealed class NavmeshIpc {
 }
 
 /// <summary>
+/// WrathCombo 的自動循環開關（EzIPC 前綴 "WrathCombo"，提供端是 <c>Func&lt;bool&gt;</c>）。只在開始自動開打那一刻問一次。
+/// </summary>
+public sealed class WrathComboIpc {
+	private const string InternalName = "WrathCombo";
+
+	private readonly ICallGateSubscriber<bool> getAutoRotationState;
+
+	public WrathComboIpc() {
+		getAutoRotationState = Service.PluginInterface.GetIpcSubscriber<bool>($"{InternalName}.GetAutoRotationState");
+	}
+
+	/// <summary>插件清單裡有載入中的 WrathCombo（每次呼叫即時讀 IsLoaded）。</summary>
+	public bool IsLoaded => IpcGuard.Safe(() => {
+		foreach (var plugin in Service.PluginInterface.InstalledPlugins) {
+			if (plugin.IsLoaded && string.Equals(plugin.InternalName, InternalName, StringComparison.OrdinalIgnoreCase)) return true;
+		}
+
+		return false;
+	}, false, "WrathCombo(probe)");
+
+	/// <summary>null＝沒載入或問不到；否則是 WrathCombo 回報的自動循環開關（含別的插件的租約）。</summary>
+	public bool? AutoRotationEnabled => !IsLoaded ? null : IpcGuard.Safe<bool?>(
+		() => getAutoRotationState.HasFunction ? getAutoRotationState.InvokeFunc() : null, null, "WrathCombo.GetAutoRotationState");
+}
+
+/// <summary>
 /// Subscriber for Lifestream's IPC surface. Lifestream registers via ECommons' EzIPC, which
 /// prefixes every tag with the plugin's InternalName ("Lifestream") and uses the method name
 /// verbatim.

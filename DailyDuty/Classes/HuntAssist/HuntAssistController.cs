@@ -138,6 +138,11 @@ public sealed class HuntAssistController {
 
 	public LifestreamIpc Lifestream { get; } = new();
 
+	public WrathComboIpc WrathCombo { get; } = new();
+
+	/// <summary>自動開打時對外發出的開打請求；只在 <see cref="HuntAssistStep.EngagingTarget"/> 期間有值，所有結束路徑都清掉。</summary>
+	internal EngageRequestSlot EngageRequest { get; } = new();
+
 	public HuntAssistStep Step { get; private set; } = HuntAssistStep.Idle;
 
 	private string statusText = string.Empty;
@@ -245,6 +250,10 @@ public sealed class HuntAssistController {
 	private bool menuListenerRegistered;
 
 	private readonly EngageMachine engageMachine = new();
+	private uint engageTerritory;
+
+	/// <summary>開始開打時 WrathCombo 的狀態（log 與交還說明用）；null＝可接手，會先請它開打。</summary>
+	private string? engageNoWrathReason;
 
 	/// <summary>
 	/// Starts the trip to a hunt board. Returns false (and says why via
@@ -1756,11 +1765,21 @@ public sealed class HuntAssistController {
 	private void EndAutomation() {
 		ResetAccept();
 		engageMachine.Reset();
+		EngageRequest.Clear();
 	}
 
 	private void BeginEngaging(HuntTargetInfo targetInfo, float distance, Vector3 playerPosition) {
-		engageMachine.Begin(Environment.TickCount64);
-		LogLeg("自動開打", $"{targetInfo.Name}（物件 {approachObjectId:X}）離 {distance:F1} 米；選取它並開自動攻擊，進入戰鬥後交給戰鬥插件", playerPosition);
+		engageNoWrathReason = WrathCombo.AutoRotationEnabled switch {
+			true => null,
+			false => "WrathCombo 的自動循環沒開",
+			null => "WrathCombo 沒載入或問不到",
+		};
+		engageTerritory = Service.ClientState.TerritoryType;
+		engageMachine.Begin(Environment.TickCount64, engageNoWrathReason is null);
+		var plan = engageNoWrathReason is null
+			? $"選取它並請 WrathCombo 開打，{EngageMachine.CombatPluginHandoffMilliseconds / 1000} 秒內沒進戰鬥才改開自動攻擊"
+			: $"{engageNoWrathReason}，選取它並開自動攻擊";
+		LogLeg("自動開打", $"{targetInfo.Name}（物件 {approachObjectId:X}）離 {distance:F1} 米；{plan}，進入戰鬥後交給戰鬥插件", playerPosition);
 		EnterStep(HuntAssistStep.EngagingTarget, string.Format(Strings.HuntEngageStatus, targetInfo.Name));
 	}
 
@@ -1774,7 +1793,8 @@ public sealed class HuntAssistController {
 		if (Service.ObjectTable.LocalPlayer is not { } player) return;
 
 		var now = Environment.TickCount64;
-		var mark = FindApproachObject(approachObjectId, targetInfo.BNpcBaseId);
+		// 換了區域同一個 id 可能是別的物件，一律當目標不見了。
+		var mark = Service.ClientState.TerritoryType == engageTerritory ? FindApproachObject(approachObjectId, targetInfo.BNpcBaseId) : null;
 		var state = mark is null ? EngageTargetState.Missing
 			: mark.IsDead || mark is IBattleChara { CurrentHp: 0 } ? EngageTargetState.Defeated
 			: EngageTargetState.Present;
@@ -1784,22 +1804,36 @@ public sealed class HuntAssistController {
 		bool? inRange = null;
 		if (!engageMachine.Acted && state is EngageTargetState.Present && targetable) inRange = HuntGameUi.InAutoAttackRange(player, mark!);
 
-		var frame = new EngageFrame(now, state, targetable, Service.Condition[ConditionFlag.InCombat], otherTarget, inRange, HuntGameUi.IsAutoAttacking() is true);
+		var frame = new EngageFrame(now, state, targetable, Service.Condition[ConditionFlag.InCombat], otherTarget, inRange, HuntGameUi.IsAutoAttacking() is true, player.IsCasting);
 		var distance = mark is null ? 0.0f : Vector3.Distance(player.Position, mark.Position);
 
 		switch (engageMachine.Observe(frame, out var stop)) {
+			case EngageAction.Request:
+				Service.TargetManager.Target = mark;
+				EngageRequest.Set(approachObjectId, now);
+				LogLeg("選取目標並請 WrathCombo 開打", $"{targetInfo.Name}（物件 {approachObjectId:X}）離 {distance:F1} 米，{(HuntFlight.IsMounted ? "騎乘中（WrathCombo 騎乘時不出招）" : "沒有騎乘")}；請求 {EngageRequestSlot.LifetimeMilliseconds / 1000} 秒後失效", player.Position);
+				return;
+
 			case EngageAction.Engage:
+				if (!EngageRequest.IsSet) EngageRequest.Set(approachObjectId, now);
 				if (!HuntGameUi.StartAutoAttack(mark!)) {
-					HandBackEngage(targetInfo, Strings.HuntEngageReasonAutoAttack, "選取或開自動攻擊的遊戲函式不可用", player.Position);
+					HandBackEngage(targetInfo, EngageFallbackReason(Strings.HuntEngageReasonAutoAttack), "選取或開自動攻擊的遊戲函式不可用", player.Position);
 					return;
 				}
 
-				LogLeg("選取目標並開自動攻擊", $"{targetInfo.Name} 離 {distance:F1} 米", player.Position);
+				LogLeg("選取目標並開自動攻擊", (engageMachine.Requested ? $"WrathCombo 請求後 {EngageMachine.CombatPluginHandoffMilliseconds / 1000} 秒內沒進戰鬥，改開自動攻擊；" : $"{engageNoWrathReason}；") +
+				                         $"{targetInfo.Name} 離 {distance:F1} 米", player.Position);
 				return;
 
 			case EngageAction.Done:
-				LogLeg("已進入戰鬥", engageMachine.Acted ? "自動攻擊開打，之後交給戰鬥插件" : "出手前就已在戰鬥中（使用者或別的插件開的），不另外出手", player.Position);
-				Finish(string.Format(engageMachine.Acted ? Strings.HuntEngageStarted : Strings.HuntEngageAlreadyInCombat, targetInfo.Name));
+				var how = engageMachine.Acted ? "自動攻擊開打，之後交給戰鬥插件"
+					: engageMachine.Requested ? "請 WrathCombo 開打後進入戰鬥，之後交給戰鬥插件"
+					: "出手前就已在戰鬥中（使用者或別的插件開的），不另外出手";
+				LogLeg("已進入戰鬥", how, player.Position);
+				var done = engageMachine.Acted ? Strings.HuntEngageStarted
+					: engageMachine.Requested ? Strings.HuntEngageStartedByWrath
+					: Strings.HuntEngageAlreadyInCombat;
+				Finish(string.Format(done, targetInfo.Name));
 				return;
 
 			case EngageAction.HandBack:
@@ -1808,8 +1842,8 @@ public sealed class HuntAssistController {
 					EngageStop.OtherTarget => Strings.HuntEngageReasonOtherTarget,
 					EngageStop.Untargetable => Strings.HuntEngageReasonUntargetable,
 					EngageStop.RangeUnknown or EngageStop.OutOfRange => Strings.HuntEngageReasonOutOfRange,
-					EngageStop.AutoAttackBlocked => Strings.HuntEngageReasonAutoAttack,
-					_ => Strings.HuntEngageReasonNoCombat,
+					EngageStop.AutoAttackBlocked => EngageFallbackReason(Strings.HuntEngageReasonAutoAttack),
+					_ => EngageFallbackReason(Strings.HuntEngageReasonNoCombat),
 				};
 
 				if (reason is null) {
@@ -1818,10 +1852,17 @@ public sealed class HuntAssistController {
 					return;
 				}
 
-				HandBackEngage(targetInfo, reason, $"{stop}；離目標 {distance:F1} 米，自動攻擊{(frame.AutoAttacking ? "開著" : "沒開")}，{(otherTarget ? "選著別的目標" : "沒有選別的目標")}", player.Position);
+				var wrath = engageMachine.Requested ? "已請 WrathCombo 開打、它沒有接手" : engageNoWrathReason ?? "還沒請 WrathCombo 開打";
+				HandBackEngage(targetInfo, reason, $"{stop}；{wrath}；離目標 {distance:F1} 米，{(HuntFlight.IsMounted ? "騎乘中" : "沒有騎乘")}，自動攻擊{(frame.AutoAttacking ? "開著" : "沒開")}，{(otherTarget ? "選著別的目標" : "沒有選別的目標")}", player.Position);
 				return;
 		}
 	}
+
+	/// <summary>改開自動攻擊之後才失敗的交還說明：前面加上 WrathCombo 是沒接手，還是本來就沒有可接手的。</summary>
+	private string EngageFallbackReason(string reason)
+		=> engageMachine.Requested
+			? string.Format(Strings.HuntEngageReasonWrathNoTakeover, EngageMachine.CombatPluginHandoffMilliseconds / 1000, reason)
+			: string.Format(Strings.HuntEngageReasonNoWrath, reason);
 
 	private void HandBackEngage(HuntTargetInfo targetInfo, string reason, string detail, Vector3 playerPosition) {
 		LogLeg("自動開打交還", detail, playerPosition);
