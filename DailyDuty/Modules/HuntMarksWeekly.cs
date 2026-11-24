@@ -39,6 +39,9 @@ public class HuntMarksWeekly : HuntMarksBase {
 		configChanged |= ImGui.Checkbox(Strings.HuntChainToggle, ref config.AutoContinueNextBill);
 		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntChainToggleHelp);
 
+		configChanged |= ImGui.Checkbox(Strings.HuntAutoAcceptToggle, ref config.AutoAcceptBill);
+		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntAutoAcceptToggleHelp);
+
 		configChanged |= ImGui.Checkbox(Strings.HuntAssistUseFlying, ref config.UseFlying);
 
 		configChanged |= ImGui.Checkbox(Strings.HuntAssistYieldToInput, ref config.YieldToManualInput);
@@ -61,6 +64,9 @@ public class HuntMarksWeekly : HuntMarksBase {
 
 		configChanged |= ImGui.Checkbox(Strings.HuntAssistApproachTarget, ref config.ApproachFoundTarget);
 		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntAssistApproachTargetHelp);
+
+		configChanged |= ImGui.Checkbox(Strings.HuntAutoEngageToggle, ref config.AutoEngageTarget);
+		if (ImGui.IsItemHovered()) ImGui.SetTooltip(Strings.HuntAutoEngageToggleHelp);
 
 		ImGui.TextUnformatted(Strings.HuntAssistApproachDistance);
 		ImGuiComponents.HelpMarker(Strings.HuntAssistApproachDistanceHelp);

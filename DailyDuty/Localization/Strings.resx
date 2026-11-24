@@ -1285,4 +1285,82 @@ Limited to once per 5 mins</value>
     <data name="HuntChainNotContinued" xml:space="preserve">
         <value>Mark done, but you moved, fought, talked or changed zones before it could leave; not heading to the next bill this time (auto-continue has stopped).</value>
     </data>
+    <data name="HuntAutoAcceptToggle" xml:space="preserve">
+        <value>Accept the bill at the board automatically</value>
+    </data>
+    <data name="HuntAutoAcceptToggleHelp" xml:space="preserve">
+        <value>When a trip you started to a hunt board arrives, DailyDuty talks to the board, picks the daily or weekly bill this trip is for and presses Accept; a weekly bill then heads straight to its mark (same as Go to Target Zone). It applies to daily and weekly trips. If anything does not match (the board is out of reach, the menu or the bill window looks different, YesAlready cannot be confirmed to stay out of the way, a confirmation appears), it stops and leaves the windows for you. Loading, logging in or changing zones never starts it.</value>
+    </data>
+    <data name="HuntAutoEngageToggle" xml:space="preserve">
+        <value>Start the fight when the mark is reached</value>
+    </data>
+    <data name="HuntAutoEngageToggleHelp" xml:space="preserve">
+        <value>When the approach to the mark finishes, DailyDuty targets that mark and turns on auto-attack; once combat starts, the rest is up to your combat plugin. It only acts on this bill's mark, only once, and only when the mark can be targeted and is within auto-attack range. If you already have another target or are already in combat, it leaves it to you. Some plugins block auto-attack outside combat (for example BossModReborn's auto-attack management); in that case it stops and tells you.</value>
+    </data>
+    <data name="HuntAcceptStatus" xml:space="preserve">
+        <value>Accepting the hunt bill...</value>
+    </data>
+    <data name="HuntAcceptDone" xml:space="preserve">
+        <value>Hunt bill accepted.</value>
+    </data>
+    <data name="HuntAcceptHandBack" xml:space="preserve">
+        <value>Did not accept the hunt bill automatically: {0}. Please continue by hand.</value>
+    </data>
+    <data name="HuntAcceptWindowStillOpen" xml:space="preserve">
+        <value>Hunt bill accepted, but its window did not close; close it and press Go to Target Zone.</value>
+    </data>
+    <data name="HuntAcceptReasonBoard" xml:space="preserve">
+        <value>the hunt board is not within reach</value>
+    </data>
+    <data name="HuntAcceptReasonBusy" xml:space="preserve">
+        <value>you are busy with something else</value>
+    </data>
+    <data name="HuntAcceptReasonCombat" xml:space="preserve">
+        <value>you are in combat</value>
+    </data>
+    <data name="HuntAcceptReasonYesAlready" xml:space="preserve">
+        <value>could not confirm that YesAlready will stay out of the way</value>
+    </data>
+    <data name="HuntAcceptReasonMenu" xml:space="preserve">
+        <value>the board menu did not open or did not match</value>
+    </data>
+    <data name="HuntAcceptReasonWindow" xml:space="preserve">
+        <value>the bill window did not open or its Accept button could not be pressed</value>
+    </data>
+    <data name="HuntAcceptReasonConfirm" xml:space="preserve">
+        <value>a confirmation appeared; please decide yourself</value>
+    </data>
+    <data name="HuntAcceptReasonNotObtained" xml:space="preserve">
+        <value>the bill was not accepted</value>
+    </data>
+    <data name="HuntAcceptReasonNoData" xml:space="preserve">
+        <value>the board menu data could not be read</value>
+    </data>
+    <data name="HuntEngageStatus" xml:space="preserve">
+        <value>Engaging {0}...</value>
+    </data>
+    <data name="HuntEngageStarted" xml:space="preserve">
+        <value>Engaged {0}; the rest is up to your combat plugin.</value>
+    </data>
+    <data name="HuntEngageAlreadyInCombat" xml:space="preserve">
+        <value>Already in combat; not engaging {0} automatically.</value>
+    </data>
+    <data name="HuntEngageHandBack" xml:space="preserve">
+        <value>Did not engage {0} automatically: {1}.</value>
+    </data>
+    <data name="HuntEngageReasonOtherTarget" xml:space="preserve">
+        <value>you have another target selected</value>
+    </data>
+    <data name="HuntEngageReasonUntargetable" xml:space="preserve">
+        <value>the mark cannot be targeted</value>
+    </data>
+    <data name="HuntEngageReasonOutOfRange" xml:space="preserve">
+        <value>the mark is out of auto-attack range</value>
+    </data>
+    <data name="HuntEngageReasonAutoAttack" xml:space="preserve">
+        <value>auto-attack did not turn on (another plugin may be blocking it, e.g. BossModReborn's auto-attack management)</value>
+    </data>
+    <data name="HuntEngageReasonNoCombat" xml:space="preserve">
+        <value>combat did not start</value>
+    </data>
 </root>

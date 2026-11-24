@@ -3822,5 +3822,239 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntChainNotContinued", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Accept the bill at the board automatically.
+        /// </summary>
+        internal static string HuntAutoAcceptToggle {
+            get {
+                return ResourceManager.GetString("HuntAutoAcceptToggle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to When a trip you started to a hunt board arrives, DailyDuty talks to the board, picks the daily or weekly bill this trip is for and presses Accept; a weekly bill then heads straight to its mark (same as Go to Target Zone). It applies to daily and weekly trips. If anything does not match (the board is out of reach, the menu or the bill window looks different, YesAlready cannot be confirmed to stay out of the way, a confirmation appears), it stops and leaves the windows for you. Loading, logging in or changing zones never starts it..
+        /// </summary>
+        internal static string HuntAutoAcceptToggleHelp {
+            get {
+                return ResourceManager.GetString("HuntAutoAcceptToggleHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Start the fight when the mark is reached.
+        /// </summary>
+        internal static string HuntAutoEngageToggle {
+            get {
+                return ResourceManager.GetString("HuntAutoEngageToggle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to When the approach to the mark finishes, DailyDuty targets that mark and turns on auto-attack; once combat starts, the rest is up to your combat plugin. It only acts on this bill's mark, only once, and only when the mark can be targeted and is within auto-attack range. If you already have another target or are already in combat, it leaves it to you. Some plugins block auto-attack outside combat (for example BossModReborn's auto-attack management); in that case it stops and tells you..
+        /// </summary>
+        internal static string HuntAutoEngageToggleHelp {
+            get {
+                return ResourceManager.GetString("HuntAutoEngageToggleHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Accepting the hunt bill....
+        /// </summary>
+        internal static string HuntAcceptStatus {
+            get {
+                return ResourceManager.GetString("HuntAcceptStatus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hunt bill accepted..
+        /// </summary>
+        internal static string HuntAcceptDone {
+            get {
+                return ResourceManager.GetString("HuntAcceptDone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Did not accept the hunt bill automatically: {0}. Please continue by hand..
+        /// </summary>
+        internal static string HuntAcceptHandBack {
+            get {
+                return ResourceManager.GetString("HuntAcceptHandBack", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hunt bill accepted, but its window did not close; close it and press Go to Target Zone..
+        /// </summary>
+        internal static string HuntAcceptWindowStillOpen {
+            get {
+                return ResourceManager.GetString("HuntAcceptWindowStillOpen", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the hunt board is not within reach.
+        /// </summary>
+        internal static string HuntAcceptReasonBoard {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonBoard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to you are busy with something else.
+        /// </summary>
+        internal static string HuntAcceptReasonBusy {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonBusy", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to you are in combat.
+        /// </summary>
+        internal static string HuntAcceptReasonCombat {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonCombat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to could not confirm that YesAlready will stay out of the way.
+        /// </summary>
+        internal static string HuntAcceptReasonYesAlready {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonYesAlready", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the board menu did not open or did not match.
+        /// </summary>
+        internal static string HuntAcceptReasonMenu {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonMenu", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the bill window did not open or its Accept button could not be pressed.
+        /// </summary>
+        internal static string HuntAcceptReasonWindow {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonWindow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to a confirmation appeared; please decide yourself.
+        /// </summary>
+        internal static string HuntAcceptReasonConfirm {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonConfirm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the bill was not accepted.
+        /// </summary>
+        internal static string HuntAcceptReasonNotObtained {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonNotObtained", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the board menu data could not be read.
+        /// </summary>
+        internal static string HuntAcceptReasonNoData {
+            get {
+                return ResourceManager.GetString("HuntAcceptReasonNoData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Engaging {0}....
+        /// </summary>
+        internal static string HuntEngageStatus {
+            get {
+                return ResourceManager.GetString("HuntEngageStatus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Engaged {0}; the rest is up to your combat plugin..
+        /// </summary>
+        internal static string HuntEngageStarted {
+            get {
+                return ResourceManager.GetString("HuntEngageStarted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Already in combat; not engaging {0} automatically..
+        /// </summary>
+        internal static string HuntEngageAlreadyInCombat {
+            get {
+                return ResourceManager.GetString("HuntEngageAlreadyInCombat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Did not engage {0} automatically: {1}..
+        /// </summary>
+        internal static string HuntEngageHandBack {
+            get {
+                return ResourceManager.GetString("HuntEngageHandBack", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to you have another target selected.
+        /// </summary>
+        internal static string HuntEngageReasonOtherTarget {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonOtherTarget", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the mark cannot be targeted.
+        /// </summary>
+        internal static string HuntEngageReasonUntargetable {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonUntargetable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the mark is out of auto-attack range.
+        /// </summary>
+        internal static string HuntEngageReasonOutOfRange {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonOutOfRange", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to auto-attack did not turn on (another plugin may be blocking it, e.g. BossModReborn's auto-attack management).
+        /// </summary>
+        internal static string HuntEngageReasonAutoAttack {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonAutoAttack", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to combat did not start.
+        /// </summary>
+        internal static string HuntEngageReasonNoCombat {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonNoCombat", resourceCulture);
+            }
+        }
     }
 }

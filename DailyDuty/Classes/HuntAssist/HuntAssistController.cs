@@ -4,13 +4,18 @@ using System.Diagnostics;
 using System.Numerics;
 using DailyDuty.Localization;
 using DailyDuty.Models;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using KamiLib.Extensions;
+using MobHunt = FFXIVClientStructs.FFXIV.Client.Game.UI.MobHunt;
+using MobHuntOrderType = Lumina.Excel.Sheets.MobHuntOrderType;
 
 namespace DailyDuty.Classes.HuntAssist;
 
@@ -26,6 +31,8 @@ public enum HuntAssistStep {
 	MountingForPatrol,
 	Patrolling,
 	ApproachingTarget,
+	AcceptingBill,
+	EngagingTarget,
 	Finished,
 	Stopped,
 }
@@ -38,7 +45,8 @@ public enum HuntAssistStep {
 /// vnavmesh drops the path on user input when its own option is enabled; with <see cref="HuntAssistConfig.YieldToManualInput"/>
 /// it pauses instead and only drops the path after 30 seconds of steering). Every external plugin is a
 /// soft dependency: no Lifestream falls back to the game's own teleport, no vnavmesh to a map flag.
-/// It never attacks, never targets, and never touches memory it does not own.
+/// 預設不按視窗、不選取、不攻擊；只有開了 <see cref="HuntAssistConfig.AutoAcceptBill"/>／<see cref="HuntAssistConfig.AutoEngageTarget"/>
+/// 才會在使用者起頭的這一趟裡和告示板互動接取、或對這一張的通緝目標開自動攻擊，任何對不上都停下交還。
 /// </summary>
 public sealed class HuntAssistController {
 	private static readonly TimeSpan TeleportTimeout = TimeSpan.FromSeconds(90);
@@ -140,7 +148,7 @@ public sealed class HuntAssistController {
 		private set => statusText = value;
 	}
 
-	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.ApproachingAetheryte or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling or HuntAssistStep.ApproachingTarget;
+	public bool IsRunning => Step is HuntAssistStep.Teleporting or HuntAssistStep.TeleportingToZone or HuntAssistStep.AethernetHop or HuntAssistStep.ApproachingAetheryte or HuntAssistStep.WaitingForAethernet or HuntAssistStep.Walking or HuntAssistStep.PreparingPatrol or HuntAssistStep.MountingForPatrol or HuntAssistStep.Patrolling or HuntAssistStep.ApproachingTarget or HuntAssistStep.AcceptingBill or HuntAssistStep.EngagingTarget;
 
 	/// <summary>The weekly bill row the running action belongs to, so the UI can highlight it.</summary>
 	public uint ActiveOrderTypeRowId { get; private set; }
@@ -224,13 +232,31 @@ public sealed class HuntAssistController {
 	private long approachNearUntargetableSince;
 	private bool approachTargetableSeen;
 
+	/// <summary>找告示板物件的半徑：抵達判定是 6 米，互動距離由遊戲判。</summary>
+	private const float BoardSearchRadius = 12.0f;
+
+	// 自動接取：出發當下決定要不要接、接哪一張（0＝不接）；告示板物件與視窗每幀照編號／名字重找。
+	private uint acceptBillRowId;
+	private IReadOnlyList<uint> acceptBoardIds = [];
+	private HuntBoardMenuExpectation? acceptMenu;
+	private readonly BillAcceptMachine acceptMachine = new();
+	private readonly HuntYesAlreadyPause yesAlready = new();
+	private readonly List<string> menuEntries = [];
+	private bool menuListenerRegistered;
+
+	private readonly EngageMachine engageMachine = new();
+
 	/// <summary>
 	/// Starts the trip to a hunt board. Returns false (and says why via
 	/// <see cref="StatusText"/>) when it could not start.
 	/// </summary>
 	/// <param name="startingStatus">First line shown to the user; null keeps the board wording.</param>
 	public bool GoToHuntBoard(HuntBoardLocation board, uint orderTypeRowId, string? startingStatus = null)
-		=> StartTrip(board, orderTypeRowId, startingStatus, board.Name.Length > 0 ? board.Name : Strings.HuntAssistBoard, true);
+		=> StartTrip(board, orderTypeRowId, startingStatus, board.Name.Length > 0 ? board.Name : Strings.HuntAssistBoard, true, orderTypeRowId);
+
+	/// <summary>到使用者記錄的告示板位置；與 <see cref="GoToLocation"/> 相同，只多記下抵達後要接的通緝令。</summary>
+	public bool GoToRecordedHuntBoard(HuntBoardLocation destination, uint orderTypeRowId)
+		=> StartTrip(destination, 0, Strings.TravelAssistStatusTeleporting, Strings.HuntAssistBoard, false, orderTypeRowId);
 
 	/// <summary>
 	/// The same trip, for a destination that is not a hunt board (a point of interest, or a
@@ -239,9 +265,10 @@ public sealed class HuntAssistController {
 	/// </summary>
 	/// <param name="destinationName">狀態文字裡的稱呼；null＝用目的地物件的遊戲名稱，再沒有就說「目的地」。</param>
 	public bool GoToLocation(HuntBoardLocation destination, string startingStatus, string? destinationName = null)
-		=> StartTrip(destination, 0, startingStatus, destinationName ?? (destination.Name.Length > 0 ? destination.Name : Strings.TravelAssistDestination), false);
+		=> StartTrip(destination, 0, startingStatus, destinationName ?? (destination.Name.Length > 0 ? destination.Name : Strings.TravelAssistDestination), false, 0);
 
-	private bool StartTrip(HuntBoardLocation board, uint orderTypeRowId, string? startingStatus, string label, bool isHuntBoard) {
+	/// <param name="billRowId">告示板行程要接的通緝令；開了自動接取才記下。</param>
+	private bool StartTrip(HuntBoardLocation board, uint orderTypeRowId, string? startingStatus, string label, bool isHuntBoard, uint billRowId) {
 		if (IsRunning) {
 			StatusText = Strings.HuntAssistAlreadyRunning;
 			return false;
@@ -261,6 +288,8 @@ public sealed class HuntAssistController {
 		teleportIssued = false;
 		moveIssued = false;
 		aetheryteApproaches = 0;
+		acceptBillRowId = billRowId is not 0 && System.HuntAssistConfig.AutoAcceptBill ? billRowId : 0;
+		acceptBoardIds = acceptBillRowId is 0 ? [] : HuntBoards.GetBoardObjectIds(acceptBillRowId);
 		Step = HuntAssistStep.Teleporting;
 		StatusText = startingStatus ?? string.Format(Strings.HuntAssistStatusTeleporting, label);
 		stepClock.Restart();
@@ -268,6 +297,8 @@ public sealed class HuntAssistController {
 		Service.Log.Information($"[HuntAssist] 出發：目的地 {board.EObjectId}（區域 {board.TerritoryId} {board.ZoneName}，{FormatPosition(board.Position)}），" +
 		                        $"傳送用乙太之光 {board.PrimaryAetheryteId}（區域 {board.PrimaryTerritoryId}），" +
 		                        $"最近的城內乙太之晶 {board.NearestAetheryteId}（離目的地 {board.NearestAetheryteDistance:F0} 米）；目前區域 {Service.ClientState.TerritoryType}。");
+
+		if (acceptBillRowId is not 0) Service.Log.Information($"[HuntAssist] 抵達後自動接取通緝令 {acceptBillRowId}（告示板物件 {string.Join("/", acceptBoardIds)}）。");
 
 		if (!Lifestream.IsInstalled) {
 			PrintMessage(Strings.HuntAssistLifestreamMissing);
@@ -296,6 +327,14 @@ public sealed class HuntAssistController {
 			return false;
 		}
 
+		if (!LaunchTargetZoneTrip(targetInfo, orderTypeRowId, patrolOnArrival)) return false;
+
+		TripSerial++;
+		return true;
+	}
+
+	/// <summary><see cref="GoToTargetZone"/> 的本體，不算新的一趟（接取後接著出發用）。false 時原因已寫進狀態文字。</summary>
+	private bool LaunchTargetZoneTrip(HuntTargetInfo targetInfo, uint orderTypeRowId, bool patrolOnArrival) {
 		if (targetInfo.AetheryteId is 0) {
 			// Nothing to teleport to (some zones have no aetheryte at all) - flag it instead.
 			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, Vector3.Zero, false);
@@ -336,7 +375,6 @@ public sealed class HuntAssistController {
 		Step = HuntAssistStep.TeleportingToZone;
 		StatusText = Strings.HuntAssistStatusTeleportingZone;
 		stepClock.Restart();
-		TripSerial++;
 		return true;
 	}
 
@@ -344,8 +382,8 @@ public sealed class HuntAssistController {
 	/// Walks the zone's known spawn points for the mark's rank, in a short greedy route from
 	/// wherever the player is standing, and stops as soon as the mark shows up.
 	///
-	/// It never attacks and never targets: finding the mark ends the run (after moving closer, see
-	/// <see cref="HuntAssistConfig.ApproachFoundTarget"/>) and hands control back. Manual movement pauses it (or ends it, with the yield option off or an older vnavmesh) -
+	/// Finding the mark ends the run (after moving closer, see <see cref="HuntAssistConfig.ApproachFoundTarget"/>) and hands
+	/// control back; only <see cref="HuntAssistConfig.AutoEngageTarget"/> goes on to target it and start auto-attack. Manual movement pauses it (or ends it, with the yield option off or an older vnavmesh) -
 	/// clicking patrol again re-plans from the new position.
 	/// </summary>
 	public bool StartPatrol(HuntTargetInfo targetInfo, uint orderTypeRowId) {
@@ -542,6 +580,7 @@ public sealed class HuntAssistController {
 	/// <summary>Stops everything this controller started. Safe to call at any time.</summary>
 	public void Cancel() {
 		NoteEnd(HuntTripEnd.Cancelled);
+		EndAutomation();
 
 		if (!IsRunning) {
 			EndMovementSupport();
@@ -612,6 +651,16 @@ public sealed class HuntAssistController {
 
 		if (Step is HuntAssistStep.ApproachingTarget) {
 			if (Service.ObjectTable.LocalPlayer is { } approachPlayer) UpdateApproachingTarget(approachPlayer.Position);
+			return;
+		}
+
+		if (Step is HuntAssistStep.AcceptingBill) {
+			RunHandingBackOnError(UpdateAcceptingBill, "自動接取", Strings.HuntAcceptReasonNotObtained);
+			return;
+		}
+
+		if (Step is HuntAssistStep.EngagingTarget) {
+			RunHandingBackOnError(UpdateEngagingTarget, "自動開打", Strings.HuntEngageReasonNoCombat);
 			return;
 		}
 
@@ -909,7 +958,15 @@ public sealed class HuntAssistController {
 		var distance = Vector3.Distance(playerPosition, board.Position);
 
 		if (distance <= ArrivalRadius) {
+			// 要自動接取時站進遊戲的互動距離才停；路徑走完了還不夠近，交給接取那一步判斷。
+			if (acceptBillRowId is not 0 && moveIssued && (Navmesh.PathfindInProgress || Navmesh.IsPathRunning) && !BoardInteractable(playerPosition)) return;
+
 			StopMovement();
+			if (acceptBillRowId is not 0) {
+				BeginAcceptingBill(playerPosition);
+				return;
+			}
+
 			Finish(LabelStatus(Strings.HuntAssistStatusArrived));
 			return;
 		}
@@ -1294,7 +1351,7 @@ public sealed class HuntAssistController {
 
 	/// <summary>
 	/// 每幀用發現當下抄下的 GameObjectId 重查目標：物件表裡不見、倒下、或近距離仍持續不可選取就停（遠處不可選取照常接近）。
-	/// 只移動，不選取、不攻擊；戰鬥、時限（讓位時暫停）、卡住與巡邏同一套判斷。
+	/// 只移動，不選取、不攻擊（開了自動開打才在接近完成後交給開打那一步）；戰鬥、時限（讓位時暫停）、卡住與巡邏同一套判斷。
 	/// </summary>
 	private void UpdateApproachingTarget(Vector3 playerPosition) {
 		if (patrolTarget is not { } targetInfo) {
@@ -1339,6 +1396,13 @@ public sealed class HuntAssistController {
 			StopMovement();
 			LogLeg("接近完成", $"離目標 {distance:F1} 米（門檻 {ApproachDistance:F0} 米，{(targetable ? "可選取" : "目前不可選取")}），" +
 			                   $"重新尋路 {approachRepaths} 次，共 {stepClock.Elapsed.TotalSeconds:F1} 秒", playerPosition);
+			if (System.HuntAssistConfig.AutoEngageTarget) {
+				// 只插旗不開地圖：要開打時地圖會擋住畫面。
+				SetMapFlag(targetInfo.TerritoryId, targetInfo.MapId, position);
+				BeginEngaging(targetInfo, distance, playerPosition);
+				return;
+			}
+
 			PlaceMapFlag(targetInfo.TerritoryId, targetInfo.MapId, position, true);
 			Finish(string.Format(Strings.HuntAssistTargetReached, targetInfo.Name, distance));
 			return;
@@ -1464,6 +1528,319 @@ public sealed class HuntAssistController {
 		return ApproachTargetState.Missing;
 	}
 
+	/// <summary>抵達判定用：告示板物件在不在遊戲的互動距離內。框架執行緒限定，物件只在這一幀用。</summary>
+	private bool BoardInteractable(Vector3 playerPosition) {
+		if (Service.ObjectTable.LocalPlayer is not { } player) return false;
+
+		var board = HuntGameUi.FindBoard(acceptBoardIds, playerPosition, BoardSearchRadius);
+		return board is not null && HuntGameUi.InInteractRange(player, board) is true;
+	}
+
+	private void BeginAcceptingBill(Vector3 playerPosition) {
+		var rowId = acceptBillRowId;
+		if (IsBillObtained(rowId) is true) {
+			LogLeg("抵達告示板，通緝令已在手上", $"通緝令 {rowId} 不再接取", playerPosition);
+			ContinueAfterAccept(rowId);
+			return;
+		}
+
+		acceptMenu = HuntBoardMenu.Resolve(rowId);
+		if (acceptMenu is not { } menu) {
+			HandBackAccept(Strings.HuntAcceptReasonNoData, $"組不出通緝令 {rowId} 的告示板選單", playerPosition);
+			return;
+		}
+
+		var now = Environment.TickCount64;
+		yesAlready.Renew(now);
+		RegisterMenuListener();
+		acceptMachine.Begin(now);
+		LogLeg("抵達告示板，自動接取", $"通緝令 {rowId}，選單第 {menu.OptionIndex + 1}/{menu.OptionCount + 1} 項「{menu.Option}」；請 YesAlready 暫停 SelectString：{yesAlready.Last}", playerPosition);
+		EnterStep(HuntAssistStep.AcceptingBill, Strings.HuntAcceptStatus);
+	}
+
+	/// <summary>每幀照名字重找選單與通緝令視窗，讀成值交給 <see cref="BillAcceptMachine"/>；它說要按才在同一幀按。</summary>
+	private void UpdateAcceptingBill() {
+		if (acceptMenu is not { } menu) {
+			HandBackAccept(Strings.HuntAcceptReasonNoData, "沒有告示板選單資料", null);
+			return;
+		}
+
+		if (Service.ObjectTable.LocalPlayer is not { } player) return;
+
+		var now = Environment.TickCount64;
+		var rowId = acceptBillRowId;
+		var phase = acceptMachine.Phase;
+		var condition = Service.Condition;
+
+		IGameObject? board = null;
+		var boardInRange = false;
+		if (phase is BillAcceptPhase.Interacting) {
+			board = HuntGameUi.FindBoard(acceptBoardIds, player.Position, BoardSearchRadius);
+			boardInRange = board is not null && HuntGameUi.InInteractRange(player, board) is true;
+		}
+
+		var menuReady = false;
+		var menuIndex = -1;
+		if (phase is BillAcceptPhase.WaitingMenu && HuntGameUi.TryReadSelectString(menuEntries)) {
+			menuReady = true;
+			menuIndex = HuntBoardMenuLayout.MatchMenu(menuEntries, menu.Option, menu.Cancel, menu.OptionIndex, menu.OptionCount);
+		}
+
+		var windowReady = phase is not (BillAcceptPhase.Interacting or BillAcceptPhase.WaitingMenu) && HuntGameUi.IsBillWindowOpen();
+		var windowName = string.Empty;
+		var buttonText = string.Empty;
+		var buttonUsable = phase is BillAcceptPhase.WaitingBillWindow && windowReady
+		                   && HuntGameUi.IsAcceptButtonUsable(HuntBoardMenu.AcceptButtonText, out windowName, out buttonText);
+
+		var frame = new BillAcceptFrame(now, IsBillObtained(rowId) is true, condition[ConditionFlag.InCombat], IsOccupied(condition),
+			board is not null, boardInRange, menuReady, menuIndex, windowReady, buttonUsable,
+			phase is BillAcceptPhase.WaitingObtained && HuntGameUi.IsSelectYesnoOpen(), yesAlready.IsExclusive(now));
+
+		switch (acceptMachine.Observe(frame, out var stop)) {
+			case BillAcceptAction.Interact:
+				if (board is null || !HuntGameUi.Interact(board)) {
+					HandBackAccept(Strings.HuntAcceptReasonBoard, "互動函式不可用", player.Position);
+					return;
+				}
+
+				LogLeg("和告示板互動", $"告示板物件 {board.BaseId}，離 {Vector3.Distance(player.Position, board.Position):F1} 米", player.Position);
+				return;
+
+			case BillAcceptAction.SelectOption:
+				if (!HuntGameUi.SelectStringOption(menuIndex)) {
+					HandBackAccept(Strings.HuntAcceptReasonMenu, "SelectString 這一幀不可用或回呼函式不可用", player.Position);
+					return;
+				}
+
+				LogLeg("選擇通緝令", $"第 {menuIndex + 1}/{menuEntries.Count} 項「{menuEntries[menuIndex]}」", player.Position);
+				return;
+
+			case BillAcceptAction.ClickAccept:
+				if (!HuntGameUi.ClickAcceptButton()) {
+					HandBackAccept(Strings.HuntAcceptReasonWindow, $"通緝令視窗 {windowName} 的接受鈕這一幀按不到（找不到按鈕或點擊事件）", player.Position);
+					return;
+				}
+
+				LogLeg("按下接受", $"通緝令視窗 {windowName}，按鈕文字「{buttonText}」", player.Position);
+				return;
+
+			case BillAcceptAction.Done:
+				LogLeg("通緝令已接取", acceptMachine.ObtainedWithoutClick ? $"通緝令 {rowId}（遊戲狀態先變成已接取，不是這邊按的）" : $"通緝令 {rowId}", player.Position);
+				ContinueAfterAccept(rowId);
+				return;
+
+			case BillAcceptAction.HandBack:
+				if (stop is BillAcceptStop.WindowStillOpen) {
+					LogLeg("自動接取交還", $"通緝令 {rowId} 已接取，但通緝令視窗或事件 {BillAcceptMachine.CloseTimeoutMilliseconds / 1000} 秒內沒有結束", player.Position);
+					Finish(Strings.HuntAcceptWindowStillOpen);
+					return;
+				}
+
+				var detail = stop switch {
+					BillAcceptStop.MenuMismatch => $"開著的選單和預期不同：[{string.Join("｜", menuEntries)}]，預期第 {menu.OptionIndex + 1} 項「{menu.Option}」、最後一項「{menu.Cancel}」",
+					BillAcceptStop.AcceptButtonUnusable => $"通緝令視窗 {windowName} 的接受鈕不可按或文字不同（讀到「{buttonText}」，預期「{HuntBoardMenu.AcceptButtonText}」）",
+					BillAcceptStop.YesAlreadyUnknown => $"YesAlready 暫停結果 {yesAlready.Last}",
+					_ => stop.ToString(),
+				};
+				HandBackAccept(AcceptStopReason(stop), detail, player.Position);
+				return;
+		}
+	}
+
+	private static string AcceptStopReason(BillAcceptStop stop) => stop switch {
+		BillAcceptStop.InCombat => Strings.HuntAcceptReasonCombat,
+		BillAcceptStop.Busy => Strings.HuntAcceptReasonBusy,
+		BillAcceptStop.NoBoard or BillAcceptStop.OutOfRange => Strings.HuntAcceptReasonBoard,
+		BillAcceptStop.YesAlreadyUnknown => Strings.HuntAcceptReasonYesAlready,
+		BillAcceptStop.MenuTimeout or BillAcceptStop.MenuMismatch => Strings.HuntAcceptReasonMenu,
+		BillAcceptStop.BillWindowTimeout or BillAcceptStop.AcceptButtonUnusable => Strings.HuntAcceptReasonWindow,
+		BillAcceptStop.ConfirmShown => Strings.HuntAcceptReasonConfirm,
+		_ => Strings.HuntAcceptReasonNotObtained,
+	};
+
+	/// <summary>停在告示板前交還使用者：開著的視窗一律不碰。</summary>
+	private void HandBackAccept(string reason, string detail, Vector3? playerPosition) {
+		LogLeg("自動接取交還", detail, playerPosition);
+		Finish(string.Format(Strings.HuntAcceptHandBack, reason));
+	}
+
+	/// <summary>接到（或本來就持有）之後：每週通緝令接著去目標（同「前往目標地圖」或巡邏），其餘停在這裡。</summary>
+	private void ContinueAfterAccept(uint rowId) {
+		ResetAccept();
+
+		var weekly = Service.DataManager.GetExcelSheet<MobHuntOrderType>().GetRowOrDefault(rowId) is { Type: 2 };
+		if (!weekly || HuntTargets.GetCurrentTarget(rowId) is not { } targetInfo) {
+			Finish(Strings.HuntAcceptDone);
+			return;
+		}
+
+		if (Service.ClientState.TerritoryType == targetInfo.TerritoryId) {
+			if (!Navmesh.IsInstalled) {
+				Finish(Strings.HuntAcceptDone);
+				return;
+			}
+
+			LogLeg("接取後巡邏", $"目標 {targetInfo.Name}（{targetInfo.BNpcBaseId}）就在這張地圖");
+			BeginPreparingPatrol(targetInfo, rowId);
+			return;
+		}
+
+		LogLeg("接取後前往目標地圖", $"目標 {targetInfo.Name}（{targetInfo.BNpcBaseId}），區域 {targetInfo.TerritoryId}");
+		if (!LaunchTargetZoneTrip(targetInfo, rowId, System.HuntAssistConfig.PatrolAfterZoneTeleport) && IsRunning) Finish(Strings.HuntAcceptDone);
+	}
+
+	private static unsafe bool? IsBillObtained(uint rowId) {
+		try {
+			var huntData = MobHunt.Instance();
+			return huntData is null ? null : huntData->IsMarkBillObtained((int) rowId);
+		}
+		catch (InvalidOperationException) {
+			return null;
+		}
+	}
+
+	/// <summary>這兩步擲例外時不能每幀重擲卡在原地（它們的時限在狀態機裡）：記一筆就交還使用者。</summary>
+	private void RunHandingBackOnError(Action step, string what, string reason) {
+		try {
+			step();
+		}
+		catch (Exception ex) {
+			Service.Log.Warning(ex, $"[HuntAssist] {what}擲例外，停下交還使用者。");
+			if (IsRunning) Finish(Step is HuntAssistStep.AcceptingBill ? string.Format(Strings.HuntAcceptHandBack, reason) : string.Format(Strings.HuntEngageHandBack, patrolTarget?.Name ?? string.Empty, reason));
+		}
+	}
+
+	/// <summary>在跟 NPC／物件對話、看過場、用傳喚鈴等：使用者在做別的事，或事件還沒結束。</summary>
+	private static bool IsOccupied(ICondition condition)
+		=> condition[ConditionFlag.Occupied] || condition[ConditionFlag.OccupiedInEvent] || condition[ConditionFlag.OccupiedInQuestEvent]
+		   || condition[ConditionFlag.Occupied30] || condition[ConditionFlag.Occupied33] || condition[ConditionFlag.Occupied38]
+		   || condition[ConditionFlag.Occupied39] || condition[ConditionFlag.OccupiedInCutSceneEvent] || condition[ConditionFlag.OccupiedSummoningBell];
+
+	private void RegisterMenuListener() {
+		if (menuListenerRegistered) return;
+
+		Service.AddonLifecycle.RegisterListener(AddonEvent.PreSetup, "SelectString", OnSelectStringPreSetup);
+		menuListenerRegistered = true;
+	}
+
+	private void UnregisterMenuListener() {
+		if (!menuListenerRegistered) return;
+
+		Service.AddonLifecycle.UnregisterListener(OnSelectStringPreSetup);
+		menuListenerRegistered = false;
+	}
+
+	/// <summary>選單出現前那一刻再請 YesAlready 暫停一次：要按時用的是這個答案。</summary>
+	private void OnSelectStringPreSetup(AddonEvent type, AddonArgs args) {
+		try {
+			if (Step is not HuntAssistStep.AcceptingBill || acceptMachine.Phase is not BillAcceptPhase.WaitingMenu) return;
+
+			var result = yesAlready.Renew(Environment.TickCount64);
+			Service.Log.Information($"[HuntAssist] 選單開啟前請 YesAlready 暫停 SelectString：{result}。");
+		}
+		catch (Exception ex) {
+			Service.Log.Warning(ex, "[HuntAssist] SelectString PreSetup 處理失敗");
+		}
+	}
+
+	private void ResetAccept() {
+		UnregisterMenuListener();
+		acceptMachine.Reset();
+		yesAlready.Reset();
+		acceptBillRowId = 0;
+		acceptBoardIds = [];
+		acceptMenu = null;
+	}
+
+	/// <summary>每個結束路徑都走：接取與開打的狀態歸零、放掉選單監聽。</summary>
+	private void EndAutomation() {
+		ResetAccept();
+		engageMachine.Reset();
+	}
+
+	private void BeginEngaging(HuntTargetInfo targetInfo, float distance, Vector3 playerPosition) {
+		engageMachine.Begin(Environment.TickCount64);
+		LogLeg("自動開打", $"{targetInfo.Name}（物件 {approachObjectId:X}）離 {distance:F1} 米；選取它並開自動攻擊，進入戰鬥後交給戰鬥插件", playerPosition);
+		EnterStep(HuntAssistStep.EngagingTarget, string.Format(Strings.HuntEngageStatus, targetInfo.Name));
+	}
+
+	/// <summary>每幀用發現當下抄下的 GameObjectId 重查目標，讀成值交給 <see cref="EngageMachine"/>；只對這一隻出手、只出手一次。</summary>
+	private void UpdateEngagingTarget() {
+		if (patrolTarget is not { } targetInfo) {
+			Cancel();
+			return;
+		}
+
+		if (Service.ObjectTable.LocalPlayer is not { } player) return;
+
+		var now = Environment.TickCount64;
+		var mark = FindApproachObject(approachObjectId, targetInfo.BNpcBaseId);
+		var state = mark is null ? EngageTargetState.Missing
+			: mark.IsDead || mark is IBattleChara { CurrentHp: 0 } ? EngageTargetState.Defeated
+			: EngageTargetState.Present;
+		var targetable = mark?.IsTargetable ?? false;
+		var current = Service.TargetManager.Target;
+		var otherTarget = current is not null && current.GameObjectId != approachObjectId;
+		bool? inRange = null;
+		if (!engageMachine.Acted && state is EngageTargetState.Present && targetable) inRange = HuntGameUi.InAutoAttackRange(player, mark!);
+
+		var frame = new EngageFrame(now, state, targetable, Service.Condition[ConditionFlag.InCombat], otherTarget, inRange, HuntGameUi.IsAutoAttacking() is true);
+		var distance = mark is null ? 0.0f : Vector3.Distance(player.Position, mark.Position);
+
+		switch (engageMachine.Observe(frame, out var stop)) {
+			case EngageAction.Engage:
+				if (!HuntGameUi.StartAutoAttack(mark!)) {
+					HandBackEngage(targetInfo, Strings.HuntEngageReasonAutoAttack, "選取或開自動攻擊的遊戲函式不可用", player.Position);
+					return;
+				}
+
+				LogLeg("選取目標並開自動攻擊", $"{targetInfo.Name} 離 {distance:F1} 米", player.Position);
+				return;
+
+			case EngageAction.Done:
+				LogLeg("已進入戰鬥", engageMachine.Acted ? "自動攻擊開打，之後交給戰鬥插件" : "出手前就已在戰鬥中（使用者或別的插件開的），不另外出手", player.Position);
+				Finish(string.Format(engageMachine.Acted ? Strings.HuntEngageStarted : Strings.HuntEngageAlreadyInCombat, targetInfo.Name));
+				return;
+
+			case EngageAction.HandBack:
+				var reason = stop switch {
+					EngageStop.TargetLost or EngageStop.TargetDefeated => null,
+					EngageStop.OtherTarget => Strings.HuntEngageReasonOtherTarget,
+					EngageStop.Untargetable => Strings.HuntEngageReasonUntargetable,
+					EngageStop.RangeUnknown or EngageStop.OutOfRange => Strings.HuntEngageReasonOutOfRange,
+					EngageStop.AutoAttackBlocked => Strings.HuntEngageReasonAutoAttack,
+					_ => Strings.HuntEngageReasonNoCombat,
+				};
+
+				if (reason is null) {
+					LogLeg("自動開打交還", stop is EngageStop.TargetDefeated ? "目標已倒下" : "物件表裡找不到目標", player.Position);
+					Finish(string.Format(stop is EngageStop.TargetDefeated ? Strings.HuntAssistApproachDefeated : Strings.HuntAssistApproachLost, targetInfo.Name));
+					return;
+				}
+
+				HandBackEngage(targetInfo, reason, $"{stop}；離目標 {distance:F1} 米，自動攻擊{(frame.AutoAttacking ? "開著" : "沒開")}，{(otherTarget ? "選著別的目標" : "沒有選別的目標")}", player.Position);
+				return;
+		}
+	}
+
+	private void HandBackEngage(HuntTargetInfo targetInfo, string reason, string detail, Vector3 playerPosition) {
+		LogLeg("自動開打交還", detail, playerPosition);
+		Finish(string.Format(Strings.HuntEngageHandBack, targetInfo.Name, reason));
+	}
+
+	/// <summary>框架執行緒限定；回傳的物件只在這一幀用。BaseId 也比，防 id 被別的物件沿用。</summary>
+	private static IGameObject? FindApproachObject(ulong objectId, uint baseId) {
+		if (objectId is 0) return null;
+
+		foreach (var gameObject in Service.ObjectTable) {
+			if (gameObject.GameObjectId != objectId) continue;
+
+			return gameObject.BaseId == baseId ? gameObject : null;
+		}
+
+		return null;
+	}
+
 	private void EnterStep(HuntAssistStep step, string status) {
 		Step = step;
 		StatusText = status;
@@ -1491,6 +1868,7 @@ public sealed class HuntAssistController {
 	private void Finish(string status, HuntTripEnd kind = HuntTripEnd.Finished) {
 		NoteEnd(kind);
 		LogEnd("結束", status);
+		EndAutomation();
 		lifestreamOwned = false;
 		EndMovementSupport();
 		Step = HuntAssistStep.Finished;
@@ -1515,6 +1893,7 @@ public sealed class HuntAssistController {
 	private void Fail(string status) {
 		NoteEnd(HuntTripEnd.Stopped);
 		LogEnd("停止", status);
+		EndAutomation();
 		lifestreamOwned = false;
 		EndMovementSupport();
 		Step = HuntAssistStep.Stopped;

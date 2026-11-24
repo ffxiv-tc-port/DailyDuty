@@ -141,6 +141,10 @@ public static class HuntBoards {
 		}
 	}
 
+	/// <summary>發這張通緝令的那一組告示板的 EObj 編號（不篩大國防聯軍）；不認得回空陣列。</summary>
+	public static IReadOnlyList<uint> GetBoardObjectIds(uint orderTypeRowId)
+		=> WeeklyBoardObjects.TryGetValue(GetBoardGroupKey(orderTypeRowId), out var objectIds) ? objectIds : [];
+
 	/// <summary>
 	/// All boards that can issue the given bill. For A Realm Reborn the list is filtered
 	/// down to the player's own Grand Company (the other two boards will not talk to them).

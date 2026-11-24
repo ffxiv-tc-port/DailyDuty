@@ -1285,4 +1285,82 @@
     <data name="HuntChainNotContinued" xml:space="preserve">
         <value>通緝目標已完成，但出發前偵測到移動、戰鬥、對話或換區，這次不自動前往下一張（自動接續已停止）。</value>
     </data>
+    <data name="HuntAutoAcceptToggle" xml:space="preserve">
+        <value>抵達告示板後自動接取通緝令</value>
+    </data>
+    <data name="HuntAutoAcceptToggleHelp" xml:space="preserve">
+        <value>按了前往告示板的那一趟抵達後，自動和告示板互動，選這一趟要接的每日或每週通緝令並按下接受；每週通緝令接到後直接前往目標（和按「前往目標地圖」一樣）。每日和每週的告示板行程都適用。任何一步對不上（告示板不在可互動的距離、選單或通緝令視窗和預期不同、無法確認 YesAlready 不會同時按、出現確認視窗）就停下，視窗留給你自己處理。載入、登入、換區都不會自己開始。</value>
+    </data>
+    <data name="HuntAutoEngageToggle" xml:space="preserve">
+        <value>接近通緝目標後自動開打</value>
+    </data>
+    <data name="HuntAutoEngageToggleHelp" xml:space="preserve">
+        <value>接近通緝目標完成後，選取那隻通緝目標並開啟自動攻擊；進入戰鬥後的出招交給戰鬥插件。只對這一張通緝令的目標、只出手一次，而且目標要可選取、在自動攻擊射程內。你已經選了別的目標或已在戰鬥中就不出手。有些插件會在戰鬥外擋下自動攻擊（例如 BossModReborn 的自動攻擊管理），這時會停下並告訴你。</value>
+    </data>
+    <data name="HuntAcceptStatus" xml:space="preserve">
+        <value>正在接取通緝令……</value>
+    </data>
+    <data name="HuntAcceptDone" xml:space="preserve">
+        <value>已接取通緝令。</value>
+    </data>
+    <data name="HuntAcceptHandBack" xml:space="preserve">
+        <value>沒有自動接取通緝令：{0}。請自己接續。</value>
+    </data>
+    <data name="HuntAcceptWindowStillOpen" xml:space="preserve">
+        <value>已接取通緝令，但視窗沒有自動關閉；關閉後請按「前往目標地圖」。</value>
+    </data>
+    <data name="HuntAcceptReasonBoard" xml:space="preserve">
+        <value>告示板不在可互動的距離內</value>
+    </data>
+    <data name="HuntAcceptReasonBusy" xml:space="preserve">
+        <value>你正在做別的事</value>
+    </data>
+    <data name="HuntAcceptReasonCombat" xml:space="preserve">
+        <value>正在戰鬥中</value>
+    </data>
+    <data name="HuntAcceptReasonYesAlready" xml:space="preserve">
+        <value>無法確認 YesAlready 不會同時按下選單</value>
+    </data>
+    <data name="HuntAcceptReasonMenu" xml:space="preserve">
+        <value>告示板選單沒有開啟或與預期不同</value>
+    </data>
+    <data name="HuntAcceptReasonWindow" xml:space="preserve">
+        <value>通緝令視窗沒有開啟或無法按下接受</value>
+    </data>
+    <data name="HuntAcceptReasonConfirm" xml:space="preserve">
+        <value>出現確認視窗，請自己決定</value>
+    </data>
+    <data name="HuntAcceptReasonNotObtained" xml:space="preserve">
+        <value>通緝令沒有被接取</value>
+    </data>
+    <data name="HuntAcceptReasonNoData" xml:space="preserve">
+        <value>讀不到告示板選單資料</value>
+    </data>
+    <data name="HuntEngageStatus" xml:space="preserve">
+        <value>正在對 {0} 開打……</value>
+    </data>
+    <data name="HuntEngageStarted" xml:space="preserve">
+        <value>已對 {0} 開打，之後的出招交給戰鬥插件。</value>
+    </data>
+    <data name="HuntEngageAlreadyInCombat" xml:space="preserve">
+        <value>已在戰鬥中，不另外對 {0} 開打。</value>
+    </data>
+    <data name="HuntEngageHandBack" xml:space="preserve">
+        <value>沒有自動對 {0} 開打：{1}。</value>
+    </data>
+    <data name="HuntEngageReasonOtherTarget" xml:space="preserve">
+        <value>你已選取其他目標</value>
+    </data>
+    <data name="HuntEngageReasonUntargetable" xml:space="preserve">
+        <value>目標無法選取</value>
+    </data>
+    <data name="HuntEngageReasonOutOfRange" xml:space="preserve">
+        <value>目標在自動攻擊射程外</value>
+    </data>
+    <data name="HuntEngageReasonAutoAttack" xml:space="preserve">
+        <value>自動攻擊沒有開啟（可能被其他插件擋下，例如 BossModReborn 的自動攻擊管理）</value>
+    </data>
+    <data name="HuntEngageReasonNoCombat" xml:space="preserve">
+        <value>沒有進入戰鬥</value>
+    </data>
 </root>

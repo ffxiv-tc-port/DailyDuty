@@ -35,6 +35,15 @@ public class HuntAssistConfig {
 	/// </summary>
 	public bool AutoContinueNextBill = true;
 
+	/// <summary>
+	/// 帶路到告示板後自動接取這一趟要接的那張（每日或每週），接到每週的就接著前往目標。預設關；
+	/// 只在使用者按出發（含自動接續）的告示板行程裡生效，出發當下從設定抄一份。
+	/// </summary>
+	public bool AutoAcceptBill = false;
+
+	/// <summary>接近通緝目標完成後選取它並開自動攻擊，進入戰鬥後的出招交給戰鬥插件。預設關。</summary>
+	public bool AutoEngageTarget = false;
+
 	public const float MinimumDetectionRadius = 10.0f;
 	public const float MaximumDetectionRadius = 300.0f;
 	public const float MinimumApproachDistance = 5.0f;

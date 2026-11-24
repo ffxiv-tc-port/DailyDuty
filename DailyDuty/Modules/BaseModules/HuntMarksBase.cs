@@ -133,7 +133,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 		// A recorded spot wins over the sheets, same as the table.
 		if (System.TravelAssistConfig.HuntBoardPositions.GetValueOrDefault(boardGroupKey) is { } recorded) {
 			var destination = HuntBoards.BuildFromPosition(recorded.TerritoryId, recorded.ToVector3());
-			return controller.GoToLocation(destination, Strings.TravelAssistStatusTeleporting, Strings.HuntAssistBoard);
+			return controller.GoToRecordedHuntBoard(destination, orderTypeRowId);
 		}
 
 		var boards = HuntBoards.GetBoards(orderTypeRowId);
@@ -496,7 +496,7 @@ public abstract unsafe class HuntMarksBase : Modules.SpecialTask<ModuleTaskData<
 				if (recorded is not null) {
 					if (ImGui.Button($"{Strings.HuntAssistRecordedPosition}##hunt_recorded_{config.RowId}")) {
 						var destination = HuntBoards.BuildFromPosition(recorded.TerritoryId, recorded.ToVector3());
-						if (controller.GoToLocation(destination, Strings.TravelAssistStatusTeleporting, Strings.HuntAssistBoard)) ArmChain("告示板（記錄的位置）", config.RowId);
+						if (controller.GoToRecordedHuntBoard(destination, config.RowId)) ArmChain("告示板（記錄的位置）", config.RowId);
 					}
 
 					if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
