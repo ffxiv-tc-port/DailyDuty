@@ -1295,7 +1295,7 @@
         <value>接近通緝目標後自動開打</value>
     </data>
     <data name="HuntAutoEngageToggleHelp" xml:space="preserve">
-        <value>接近通緝目標完成後，選取那隻通緝目標並開啟自動攻擊；進入戰鬥後的出招交給戰鬥插件。只對這一張通緝令的目標、只出手一次，而且目標要可選取、在自動攻擊射程內。你已經選了別的目標或已在戰鬥中就不出手。WrathCombo 的自動循環開著時，會先選取目標並請 WrathCombo 開打（要在 WrathCombo 自動循環設定勾「DailyDuty 通緝目標繞過『僅於戰鬥中』限制」），幾秒內沒進入戰鬥才改開自動攻擊。有些插件會在戰鬥外擋下自動攻擊（例如 BossModReborn 的自動攻擊管理），這時會停下並告訴你。</value>
+        <value>接近通緝目標完成後，選取那隻通緝目標並開啟自動攻擊；進入戰鬥後的出招交給戰鬥插件。只對這一張通緝令的目標、只出手一次，而且目標要可選取、在自動攻擊射程內。你已經選了別的目標或已在戰鬥中就不出手。人在坐騎上會先下坐騎（飛行中第一下只會降落）。WrathCombo 的自動循環開著時，會先選取目標並請 WrathCombo 開打（要在 WrathCombo 自動循環設定勾「DailyDuty 通緝目標繞過『僅於戰鬥中』限制」），幾秒內沒進入戰鬥才改開自動攻擊。有些插件會在戰鬥外擋下自動攻擊（例如 BossModReborn 的自動攻擊管理），這時會停下並告訴你。</value>
     </data>
     <data name="HuntAcceptStatus" xml:space="preserve">
         <value>正在接取通緝令……</value>
@@ -1371,5 +1371,8 @@
     </data>
     <data name="HuntEngageReasonNoWrath" xml:space="preserve">
         <value>沒有可接手的 WrathCombo 自動循環（沒載入或自動循環沒開），改用自動攻擊也不成：{0}</value>
+    </data>
+    <data name="HuntEngageReasonStillMounted" xml:space="preserve">
+        <value>沒能下坐騎（等了 {0} 秒仍在坐騎上）</value>
     </data>
 </root>

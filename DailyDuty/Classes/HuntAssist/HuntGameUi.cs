@@ -221,6 +221,32 @@ internal static unsafe class HuntGameUi {
 		}
 	}
 
+	/// <summary>一般動作 23（跳下）此刻遊戲允許使用；問不到當不允許。</summary>
+	public static bool CanDismount() {
+		if (ActionManager.MemberFunctionPointers.GetActionStatus is null) return false;
+
+		try {
+			var actionManager = ActionManager.Instance();
+			return actionManager is not null && actionManager->GetActionStatus(ActionType.GeneralAction, 23) is 0;
+		}
+		catch (InvalidOperationException) {
+			return false;
+		}
+	}
+
+	/// <summary>送一般動作 23（跳下）。不用 9（隨機坐騎）：狀態旗標慢一拍時重送 9 會再騎上去。</summary>
+	public static bool Dismount() {
+		if (ActionManager.MemberFunctionPointers.UseAction is null) return false;
+
+		try {
+			var actionManager = ActionManager.Instance();
+			return actionManager is not null && actionManager->UseAction(ActionType.GeneralAction, 23);
+		}
+		catch (InvalidOperationException) {
+			return false;
+		}
+	}
+
 	/// <summary>選取目標並開自動攻擊。一般動作 1 是切換，所以已經開著就不送。</summary>
 	public static bool StartAutoAttack(IGameObject target) {
 		if (ActionManager.MemberFunctionPointers.UseAction is null) return false;

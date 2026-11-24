@@ -4083,5 +4083,14 @@ namespace DailyDuty.Localization {
                 return ResourceManager.GetString("HuntEngageReasonNoWrath", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to could not get off the mount (still mounted after {0} seconds).
+        /// </summary>
+        internal static string HuntEngageReasonStillMounted {
+            get {
+                return ResourceManager.GetString("HuntEngageReasonStillMounted", resourceCulture);
+            }
+        }
     }
 }

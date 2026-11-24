@@ -1804,10 +1804,29 @@ public sealed class HuntAssistController {
 		bool? inRange = null;
 		if (!engageMachine.Acted && state is EngageTargetState.Present && targetable) inRange = HuntGameUi.InAutoAttackRange(player, mark!);
 
-		var frame = new EngageFrame(now, state, targetable, Service.Condition[ConditionFlag.InCombat], otherTarget, inRange, HuntGameUi.IsAutoAttacking() is true, player.IsCasting);
+		var mounted = HuntFlight.IsMounted;
+		var frame = new EngageFrame(now, state, targetable, Service.Condition[ConditionFlag.InCombat], otherTarget, inRange, HuntGameUi.IsAutoAttacking() is true,
+			player.IsCasting, mounted, mounted && HuntGameUi.CanDismount());
 		var distance = mark is null ? 0.0f : Vector3.Distance(player.Position, mark.Position);
 
-		switch (engageMachine.Observe(frame, out var stop)) {
+		var action = engageMachine.Observe(frame, out var stop);
+		if (engageMachine.JustDismounted) {
+			LogLeg("已下坐騎", $"送了 {engageMachine.DismountPresses} 次「跳下」，等了 {engageMachine.DismountElapsedMilliseconds / 1000.0:F1} 秒；離目標 {distance:F1} 米，接著重新判射程再開打", player.Position);
+		}
+
+		switch (action) {
+			case EngageAction.Dismount:
+				var sent = HuntGameUi.Dismount();
+				if (engageMachine.DismountPresses is 1) {
+					LogLeg("開始下坐騎", $"{targetInfo.Name} 離 {distance:F1} 米、在射程內，人在坐騎上{(HuntFlight.IsFlying ? "（飛行中，第一下只會降落）" : "")}；" +
+					                   $"送「跳下」（遊戲回傳 {sent}），每 {EngageMachine.DismountPressIntervalMilliseconds / 1000.0:F1} 秒最多一次，最多等 {EngageMachine.DismountTimeoutMilliseconds / 1000} 秒", player.Position);
+				}
+				else {
+					Service.Log.Debug($"[HuntAssist] 送「跳下」第 {engageMachine.DismountPresses} 次（遊戲回傳 {sent}）。");
+				}
+
+				return;
+
 			case EngageAction.Request:
 				Service.TargetManager.Target = mark;
 				EngageRequest.Set(approachObjectId, now);
@@ -1837,6 +1856,13 @@ public sealed class HuntAssistController {
 				return;
 
 			case EngageAction.HandBack:
+				if (stop is EngageStop.StillMounted) {
+					HandBackEngage(targetInfo, string.Format(Strings.HuntEngageReasonStillMounted, EngageMachine.DismountTimeoutMilliseconds / 1000),
+						$"沒能下坐騎：等了 {engageMachine.DismountElapsedMilliseconds / 1000.0:F1} 秒仍在坐騎上，送了 {engageMachine.DismountPresses} 次「跳下」，" +
+						$"{(HuntFlight.IsFlying ? "還在飛行" : "已在地面")}，「跳下」{(frame.CanDismount ? "可用" : "目前不可用")}；離目標 {distance:F1} 米", player.Position);
+					return;
+				}
+
 				var reason = stop switch {
 					EngageStop.TargetLost or EngageStop.TargetDefeated => null,
 					EngageStop.OtherTarget => Strings.HuntEngageReasonOtherTarget,
