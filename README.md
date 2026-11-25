@@ -61,12 +61,12 @@
 
 ## 需要搭配的插件
 
-- 選用：Lifestream、vnavmesh（「帶我去」）、TataruPraise
+- 選用：[Lifestream](https://github.com/ffxiv-tc-port/Lifestream)、[vnavmesh](https://github.com/ffxiv-tc-port/vnavmesh)（「帶我去」）、[TataruPraise](https://github.com/ffxiv-tc-port/TataruPraise)
 
 ## 安裝
 
-在 Dalamud 設定的「自訂插件庫」加入
-`https://raw.githubusercontent.com/ffxiv-tc-port/DalamudPluginsTC/main/repo.json`
-並啟用，再從插件列表安裝。
+`/xlsettings` 開「Dalamud 設定」→「試驗性功能」→「第三方插件倉庫」，加入 `https://raw.githubusercontent.com/ffxiv-tc-port/DalamudPluginsTC/main/repo.json` 並啟用、儲存，再到「插件管理員」（`/xlplugins`）安裝；同一個插件只裝這裡的版本，不要同時裝上游版。
 
 原作者：[MidoriKami](https://github.com/MidoriKami/DailyDuty)
+
+授權：AGPL-3.0-or-later（見 LICENSE）
