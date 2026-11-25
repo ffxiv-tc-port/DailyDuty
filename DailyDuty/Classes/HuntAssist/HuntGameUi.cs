@@ -157,7 +157,10 @@ internal static unsafe class HuntGameUi {
 		return expectedText.Length > 0 && string.Equals(actualText.ReplaceLineEndings(string.Empty), expectedText.ReplaceLineEndings(string.Empty), StringComparison.Ordinal);
 	}
 
-	/// <summary>用按鈕自己登記的點擊事件按下「接受」（與滑鼠點擊走同一條路）；事件不屬於這扇視窗就不按。</summary>
+	/// <summary>
+	/// 用按鈕自己登記的點擊事件按下「接受」（與滑鼠點擊走同一條路）；事件不屬於這扇視窗就不按。
+	/// 契約：一律帶一份零值的 <see cref="AtkEventData"/>，不傳 null——視窗的事件處理若去讀它，空指標是攔不住的崩潰。
+	/// </summary>
 	public static bool ClickAcceptButton() {
 		var addon = FindBillWindow(out _);
 		if (addon is null) return false;
@@ -172,7 +175,8 @@ internal static unsafe class HuntGameUi {
 			if (atkEvent->State.EventType is not AtkEventType.ButtonClick) continue;
 			if (atkEvent->Listener != (AtkEventListener*) addon) return false;
 
-			addon->ReceiveEvent(atkEvent->State.EventType, (int) atkEvent->Param, atkEvent);
+			var eventData = default(AtkEventData);
+			addon->ReceiveEvent(atkEvent->State.EventType, (int) atkEvent->Param, atkEvent, &eventData);
 			return true;
 		}
 
