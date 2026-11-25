@@ -1,8 +1,8 @@
 {
   "Author": "MidoriKami",
   "Name": "DailyDuty",
-  "Punchline": "輕鬆追蹤每日／每週任務",
-  "Description": "自動追蹤並完成各種每日與每週任務",
+  "Punchline": "追蹤每日與每週任務進度，提醒還沒做的項目。",
+  "Description": "追蹤各項每日與每週任務的進度，用待辦清單、重置倒數與聊天訊息提醒你還沒做的項目。\n- 追蹤項目：隨機任務、理符任務、怪物通緝令、友好部族任務、老主顧交易、天書奇談、時尚品鑑、仙人微彩與仙人仙彩等\n- 待辦清單與每日／每週重置倒數計時疊在遊戲畫面上；副本收藏品總表列出各副本還缺哪些收藏品\n- 「帶我去」：按一下就傳送並走到對應的 NPC 或告示板前，隨時可取消；可搭配 Lifestream 傳送、vnavmesh 走路\n- 怪物通緝令：可在抵達告示板後自動接取、接近通緝目標後自動開打（兩項都預設關），開打可交給 WrathCombo\n- 指令 /dd 開啟設定視窗",
   "Tags": [    "utility", "gil", "tasks", "dailies", "tracking", "todo"   ],
   "InternalName": "dailyduty",
   "RepoUrl": "https://github.com/ffxiv-tc-port/DailyDuty",
