@@ -97,13 +97,13 @@
         <value>幻巧拼圖</value>
     </data>
     <data name="GrandCompanyProvision" xml:space="preserve">
-        <value>軍隊（軍需品）</value>
+        <value>籌備補給品</value>
     </data>
     <data name="GrandCompanySquadron" xml:space="preserve">
-        <value>軍隊（冒險者分隊）</value>
+        <value>冒險者分隊</value>
     </data>
     <data name="GrandCompanySupply" xml:space="preserve">
-        <value>軍隊（物資補給）</value>
+        <value>籌備軍需品</value>
     </data>
     <data name="HuntMarksDaily" xml:space="preserve">
         <value>怪物通緝令（每日）</value>
@@ -1127,7 +1127,7 @@
         <value>每日重置後仍有未完成項目時出聲</value>
     </data>
     <data name="SpeakOnResetHelp" xml:space="preserve">
-        <value>每日重置之後，只要還有任何啟用中的項目沒完成，就請 TataruPraise（塔塔露誇獎）插件念一句簡短的提醒。其他重置（每週、理符受理限額、仙人仙彩開獎、軍隊交納）不會出聲，因為 TataruPraise 只有每日重置的句子。全部都做完時不會出聲；登入時也不會出聲，只有在遊戲中真的碰到重置那一刻才會。沒有安裝 TataruPraise 時完全不會有任何動作。</value>
+        <value>每日重置之後，只要還有任何啟用中的項目沒完成，就請 TataruPraise（塔塔露誇獎）插件念一句簡短的提醒。其他重置（每週、理符受理限額、仙人仙彩開獎、籌備任務）不會出聲，因為 TataruPraise 只有每日重置的句子。全部都做完時不會出聲；登入時也不會出聲，只有在遊戲中真的碰到重置那一刻才會。沒有安裝 TataruPraise 時完全不會有任何動作。</value>
     </data>
     <data name="TravelAssistSectionTitle" xml:space="preserve">
         <value>前往捷徑</value>
