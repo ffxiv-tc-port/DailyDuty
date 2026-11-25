@@ -5,3 +5,4 @@
 [submodule "KamiToolKit"]
 	path = KamiToolKit
 	url = https://github.com/ffxiv-tc-port/KamiToolKit.git
+	branch = tc-7.30
